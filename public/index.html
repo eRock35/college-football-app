@@ -2091,10 +2091,28 @@
   // own Express/Firestore API, so the rest of this file (written against
   // the Claude Artifact "db" capability) needs no other changes. ----------
   function makeDbShim(){
-    function pollCollection(url, cb, errCb, intervalMs){
+    // One poller per URL, ever. The subscribe* functions below get called
+    // again after each research action to pick up fresh data, and without
+    // this they'd stack a new timer every time and never stop the old one.
+    var activePollers = {};
+
+    function startPoller(url, intervalMs, tick){
+      if (activePollers[url]) activePollers[url]();
       var stopped = false;
-      function tick(){
-        if (stopped) return;
+      function run(){ if (!stopped) tick(); }
+      run();
+      var timer = setInterval(run, intervalMs);
+      var unsub = function(){
+        stopped = true;
+        clearInterval(timer);
+        if (activePollers[url] === unsub) delete activePollers[url];
+      };
+      activePollers[url] = unsub;
+      return unsub;
+    }
+
+    function pollCollection(url, cb, errCb, intervalMs){
+      return startPoller(url, intervalMs || 60000, function(){
         fetch(url).then(function(r){ if (!r.ok) throw new Error('bad status'); return r.json(); })
           .then(function(arr){
             var docs = (arr || []).map(function(item){
@@ -2106,25 +2124,17 @@
             cb({ docs: docs });
           })
           .catch(function(err){ if (errCb) errCb(err); });
-      }
-      tick();
-      var timer = setInterval(tick, intervalMs || 25000);
-      return function unsub(){ stopped = true; clearInterval(timer); };
+      });
     }
     function pollDoc(url, cb, errCb, intervalMs){
-      var stopped = false;
-      function tick(){
-        if (stopped) return;
+      return startPoller(url, intervalMs || 120000, function(){
         fetch(url).then(function(r){ if (!r.ok) throw new Error('bad status'); return r.json(); })
           .then(function(obj){
             var exists = !!(obj && Object.keys(obj).length);
             cb({ exists: exists, data: function(){ return obj; } });
           })
           .catch(function(err){ if (errCb) errCb(err); });
-      }
-      tick();
-      var timer = setInterval(tick, intervalMs || 30000);
-      return function unsub(){ stopped = true; clearInterval(timer); };
+      });
     }
     var COLLECTION_URLS = { games: '/api/games', changelog: '/api/changelog', asks: '/api/asks' };
     var DOC_URLS = { 'control/status': '/api/status', 'fan/uga': '/api/uga' };
@@ -2134,7 +2144,7 @@
           orderBy: function(){ return api; },
           limit: function(){ return api; },
           onSnapshot: function(cb, errCb){
-            return pollCollection(COLLECTION_URLS[name] || ('/api/' + name), cb, errCb, name === 'games' ? 20000 : 25000);
+            return pollCollection(COLLECTION_URLS[name] || ('/api/' + name), cb, errCb, 60000);
           },
           add: function(){
             // The original artifact used this as a fire-and-forget queue
@@ -2150,7 +2160,7 @@
           onSnapshot: function(cb, errCb){
             var url = DOC_URLS[path];
             if (!url){ if (errCb) errCb(new Error('unknown doc: ' + path)); return function(){}; }
-            return pollDoc(url, cb, errCb, 30000);
+            return pollDoc(url, cb, errCb, 120000);
           }
         };
       }
