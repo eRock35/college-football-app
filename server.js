@@ -3,6 +3,7 @@ const path = require('path');
 const { Firestore } = require('@google-cloud/firestore');
 const Anthropic = require('@anthropic-ai/sdk');
 const { createPasskeyAuth } = require('./auth');
+const analytics = require('./analytics');
 const sitepass = require('./sitepass');
 
 const PORT = process.env.PORT || 8080;
@@ -34,6 +35,9 @@ const anthropic = new Anthropic(); // reads ANTHROPIC_API_KEY from env
 
 const app = express();
 app.use(express.json());
+// Analytics. Serves an inert file unless GA_MEASUREMENT_ID is set.
+analytics.mount(app, 'football');
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ---------------------------------------------------------------------------

@@ -10,6 +10,9 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <style>[hidden]:not([hidden=until-found i]){display:none!important}</style>
+  <!-- Analytics. Serves an inert file unless GA_MEASUREMENT_ID is set on
+       the service, so local runs and browser tests send nothing. -->
+  <script src="/analytics.js" async></script>
 </head><body>
 <style>
   /* =========================================================================
