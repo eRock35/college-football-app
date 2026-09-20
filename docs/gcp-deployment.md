@@ -163,6 +163,31 @@ matter — which is exactly why game day is carved out.
   or spam the changelog.
 - `POST /api/research/refresh-board` — the live path, used Saturday.
 
+### Cloud Scheduler jobs (live)
+
+All in `America/New_York`, so they track game days correctly through the
+November DST change instead of drifting an hour. Each POSTs to the Cloud Run
+URL with an `X-Cron-Key` header.
+
+| Job | Schedule | Path |
+|---|---|---|
+| `cfb-batch-submit` | `0 8,18 * * 2-5` | `/api/research/batch-submit` |
+| `cfb-batch-collect` | `30 * * * 2-6` | `/api/research/batch-collect` |
+| `cfb-saturday-live` | `0 9-23 * * 6` | `/api/research/refresh-board` |
+
+Verified end to end: a forced run of `cfb-batch-submit` delivered cleanly
+(`lastAttemptTime` recorded, no error code), and the route itself was proven
+against real Firestore and the real Batch API — 8 games submitted, batch id
+recorded in `control/batch`.
+
+Note on reading job status: a Cloud Scheduler job that has never run reports
+`status: {code: -1}` with no `lastAttemptTime`. That is the initial state,
+**not** a failure — don't go debugging a job that simply hasn't fired yet.
+A successful run clears the code and sets `lastAttemptTime`.
+
+That batch took well over six minutes to process, which is normal (the API
+allows up to 24 hours) and is exactly why Saturday stays on the live path.
+
 **Auth:** these take `requireLoginOrCron` — either the normal login (a human
 clicking) or `X-Cron-Key` matching the `cron-secret` Secret Manager value.
 The cron key is deliberately *not* the site login: a scheduler job config is
@@ -256,16 +281,7 @@ stakes than it already has.
   a Cloud Run mapping — it serves the landing page from the
   `www.strongtechnicalconsulting.com` GCS bucket.
 - **Runtime service account** — see "Known compromise" above.
-- **Create the Cloud Scheduler jobs** — the routes and the cron secret are
-  deployed, but the deployer service account lacks `cloudscheduler.jobs.create`
-  (needs `roles/cloudscheduler.admin`). Jobs to create, all in
-  `America/New_York` so they track game days across DST, POSTing to the Cloud
-  Run URL with header `X-Cron-Key: <cron-secret>`:
-  | Job | Schedule | Path |
-  |---|---|---|
-  | `cfb-batch-submit` | `0 8,18 * * 2-5` | `/api/research/batch-submit` |
-  | `cfb-batch-collect` | `30 * * * 2-6` | `/api/research/batch-collect` |
-  | `cfb-saturday-live` | `0 9-23 * * 6` | `/api/research/refresh-board` |
+- Nothing blocking. (Scheduler jobs are live — see below.)
 - The `games` data is seeded from the Artifact's Sep 2026 snapshot. It only
   moves forward when someone hits "Refresh research" or adds a game, until
   the Cloud Scheduler job above exists.

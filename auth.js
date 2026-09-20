@@ -99,6 +99,11 @@ function rpInfo(req) {
  */
 function createPasskeyAuth(opts) {
   const { db, collection, rpName, sessionSecret, userName, passwordGate } = opts;
+  // The verify step can't carry the password - its body is the WebAuthn
+  // credential. The options step already demanded the password, and the
+  // signed 5-minute challenge cookie proves this is the same flow, so verify
+  // can accept a looser gate where an app needs one.
+  const verifyGate = opts.verifyGate || passwordGate;
 
   function hasSession(req) {
     if (!sessionSecret) return false;
@@ -144,7 +149,7 @@ function createPasskeyAuth(opts) {
       }
     });
 
-    app.post('/api/auth/passkey/register/verify', passwordGate, async (req, res) => {
+    app.post('/api/auth/passkey/register/verify', verifyGate, async (req, res) => {
       try {
         const { rpID, origin } = rpInfo(req);
         const stashed = readToken(parseCookies(req).reg_challenge, sessionSecret);
