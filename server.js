@@ -5,6 +5,8 @@ const Anthropic = require('@anthropic-ai/sdk');
 const { createPasskeyAuth } = require('./auth');
 const analytics = require('./analytics');
 const sitepass = require('./sitepass');
+const identityLib = require('./identity');
+const identityStore = require('./identity-store');
 
 const PORT = process.env.PORT || 8080;
 const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || 'metal-celerity-236019';
@@ -73,7 +75,7 @@ async function requireLogin(req, res, next) {
   if (!SITE_LOGIN_USERNAME || !SITE_LOGIN_PASSWORD) {
     return res.status(500).json({ error: 'Server login is not configured.' });
   }
-  if (passkeyAuth.hasSession(req)) return next();
+  if (signedIn(req)) return next();
   if (await passwordOk(req)) return next();
   res.set('WWW-Authenticate', 'Basic realm="College Football App"');
   return res.status(401).send('Login required.');
@@ -88,7 +90,7 @@ async function requireLoginSilent(req, res, next) {
   if (!SITE_LOGIN_USERNAME || !SITE_LOGIN_PASSWORD) {
     return res.status(500).json({ error: 'Server login is not configured.' });
   }
-  if (passkeyAuth.hasSession(req)) return next();
+  if (signedIn(req)) return next();
   if (await passwordOk(req)) return next();
   return res.status(401).json({ error: 'not signed in' });
 }
@@ -116,6 +118,34 @@ const passkeyAuth = createPasskeyAuth({
 });
 passkeyAuth.mount(app);
 
+// The shared account, mounted at its own /api/id so it collides with nothing
+// this app already serves. There is deliberately NO new UI here: the session
+// cookie is scoped to the parent domain, so signing in on any sibling app
+// means this one already sees you on the next request. This app's own
+// registration stays exactly as it was, as the second door.
+const identity = identityLib.create({
+  store: identityStore.store,
+  secret: () => process.env.IDENTITY_SESSION_SECRET || '',
+  app: 'football',
+  baseDomain: process.env.PASSKEY_RP_ID || '',
+  rpName: 'College Football App',
+});
+identity.mount(app);
+
+/** Whoever is signed in, by either door. The shared account wins when both
+ *  are present, since it is the one that means something across the domain.
+ *  `uid` differs between them - identity derives base64url of the email, this
+ *  app's own accounts used the raw address - so callers must not assume. */
+function currentUser(req) {
+  if (req.user) return { uid: req.user.id, email: req.user.email, shared: true, access: req.user.access };
+  const me = passkeyAuth.currentUser(req);
+  return me ? { uid: me.uid, email: me.email, shared: false } : null;
+}
+
+function signedIn(req) {
+  return Boolean(req.user) || passkeyAuth.hasSession(req);
+}
+
 // The site password can be changed without a deploy. The env var stays as the
 // bootstrap: it is what works on a fresh deploy, and what still works if the
 // stored password is ever cleared.
@@ -134,9 +164,14 @@ const sitePassword = sitepass.create({
   canChange: async (req) => {
     const supplied = (req.body || {}).current;
     if (supplied && await sitePassword.verify(supplied)) return true;
-    if (passkeyAuth.sessionVia(req) !== 'passkey') return false;
-    const me = passkeyAuth.currentUser(req);
-    return !!(me && isResearchEmail(me.email));
+    // A Face ID session proves identity at least as well as the password it
+    // would replace - by either door - but it still has to belong to someone
+    // allowed to spend, since this password is what gates that.
+    const viaPasskey = (req.user && req.user.via === 'passkey') || passkeyAuth.sessionVia(req) === 'passkey';
+    if (!viaPasskey) return false;
+    const me = currentUser(req);
+    if (!me) return false;
+    return isResearchEmail(me.email) || identityLib.hasAccess(req.user, 'football', 'research');
   },
 });
 sitePassword.mount(app);
@@ -155,8 +190,11 @@ async function requireResearch(req, res, next) {
   // MUST be awaited. This is the gate on everything that spends Anthropic
   // tokens, and `if (promise)` is always true.
   if (await passwordOk(req)) return next();
-  const me = passkeyAuth.currentUser(req);
+  const me = currentUser(req);
+  // Three ways to qualify: the env allowlist (how it always worked), an admin
+  // grant on the shared account, or the site password above.
   if (me && isResearchEmail(me.email)) return next();
+  if (me && identityLib.hasAccess(req.user, 'football', 'research')) return next();
   if (!me) {
     res.set('WWW-Authenticate', 'Basic realm="College Football App"');
     return res.status(401).send('Login required.');
@@ -181,8 +219,17 @@ app.get('/api/login', requireLogin, (req, res) => {
 // 'slip' document; without this every signed-in visitor would write over the
 // owner's.
 function slipDocId(req) {
-  const me = passkeyAuth.currentUser(req);
+  const me = currentUser(req);
   return me ? me.uid : 'slip';
+}
+
+/** The same person under this app's older key. Accounts here were keyed by the
+ *  raw address; the shared account uses base64url of it. Reading the old
+ *  document once keeps a slip from vanishing the first time someone arrives on
+ *  the shared session instead of this app's own. */
+function legacySlipDocId(req) {
+  const me = currentUser(req);
+  return me && me.shared ? me.email : null;
 }
 
 // Cross-device slip state. Gated: this app is public, and an ungated write
@@ -195,10 +242,14 @@ app.get('/api/slip', requireLoginSilent, async (req, res) => {
     // The owner's pre-accounts slip lived under 'slip'. Read it once as a
     // fallback so the current week survives the migration; the next save
     // writes to their own document and this stops mattering.
-    const me = passkeyAuth.currentUser(req);
-    if ((!doc.exists || doc.data().weekKey !== week) && id !== 'slip' && me && isResearchEmail(me.email)) {
-      const legacy = await db.collection('user-state').doc('slip').get();
-      if (legacy.exists && legacy.data().weekKey === week) doc = legacy;
+    const me = currentUser(req);
+    if (!doc.exists || doc.data().weekKey !== week) {
+      // This app's older per-account key, then the owner's pre-accounts slip.
+      for (const fallback of [legacySlipDocId(req), (me && isResearchEmail(me.email)) ? 'slip' : null]) {
+        if (!fallback || fallback === id) continue;
+        const legacy = await db.collection('user-state').doc(fallback).get();
+        if (legacy.exists && legacy.data().weekKey === week) { doc = legacy; break; }
+      }
     }
     const data = doc.exists ? doc.data() : null;
     // Last week's slip is stale by definition - don't hand it back.
