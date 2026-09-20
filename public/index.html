@@ -1,17 +1,41 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>College Football App</title>
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#F5F5F7">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CFB App">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<style>[hidden]:not([hidden=until-found i]){display:none!important}</style>
+</head><body>
 <style>
+  /* =========================================================================
+     Tokens. The app's brand hue (Apple-style blue) stays the tint; the
+     existing names (--accent, --surface, --text-dim...) are kept because the
+     script emits markup that uses them, and iOS-style aliases (--tint,
+     --fill, --sep, --label-2) sit alongside for the new chrome.
+     ========================================================================= */
   :root{
-    --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color-scheme: light dark;
+    --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
     --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     --bg:#F5F5F7;
     --surface:#FFFFFF;
-    --surface-2:#FAFAFA;
+    --surface-2:#F2F2F7;
     --border:#E3E3E8;
+    --fill:rgba(120,120,128,.12);
+    --fill-2:rgba(120,120,128,.20);
+    --sep:rgba(60,60,67,.22);
+    --bar-bg:rgba(249,249,249,.82);
     --text:#1D1D1F;
     --text-dim:#6E6E73;
     --text-faint:#8E8E93;
+    --label-2:#6E6E73;
     --accent:#0071E3;
+    --tint:#0071E3;
     --accent-soft:#E8F1FE;
     --positive:#1D8A3B;
     --positive-soft:#E5F7EA;
@@ -21,9 +45,12 @@
     --warning-soft:#FFEFDF;
     --parlay:#8944AB;
     --parlay-soft:#F4E9FB;
-    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 10px 24px -16px rgba(0,0,0,.12);
-    --radius: 18px;
-    color-scheme: light;
+    --uga-red:#BA0C2F;
+    --uga-red-soft:#FBE4E8;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 20px -14px rgba(0,0,0,.10);
+    --radius: 16px;
+    --tabbar-h: 49px;
+    --header-h: 44px;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
@@ -31,10 +58,16 @@
       --surface:#1C1C1E;
       --surface-2:#2C2C2E;
       --border:#38383A;
+      --fill:rgba(120,120,128,.24);
+      --fill-2:rgba(120,120,128,.36);
+      --sep:rgba(84,84,88,.6);
+      --bar-bg:rgba(20,20,22,.78);
       --text:#F5F5F7;
       --text-dim:#AEAEB2;
       --text-faint:#8E8E93;
+      --label-2:#AEAEB2;
       --accent:#0A84FF;
+      --tint:#0A84FF;
       --accent-soft:#0F2E4F;
       --positive:#30D158;
       --positive-soft:#103A1E;
@@ -44,7 +77,9 @@
       --warning-soft:#3D2600;
       --parlay:#BF5AF2;
       --parlay-soft:#341A47;
-      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+      --uga-red:#FF4B5C;
+      --uga-red-soft:#3A1319;
+      --shadow: none;
     }
   }
   :root[data-theme="dark"]{
@@ -52,10 +87,16 @@
     --surface:#1C1C1E;
     --surface-2:#2C2C2E;
     --border:#38383A;
+    --fill:rgba(120,120,128,.24);
+    --fill-2:rgba(120,120,128,.36);
+    --sep:rgba(84,84,88,.6);
+    --bar-bg:rgba(20,20,22,.78);
     --text:#F5F5F7;
     --text-dim:#AEAEB2;
     --text-faint:#8E8E93;
+    --label-2:#AEAEB2;
     --accent:#0A84FF;
+    --tint:#0A84FF;
     --accent-soft:#0F2E4F;
     --positive:#30D158;
     --positive-soft:#103A1E;
@@ -65,462 +106,614 @@
     --warning-soft:#3D2600;
     --parlay:#BF5AF2;
     --parlay-soft:#341A47;
-    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+    --uga-red:#FF4B5C;
+    --uga-red-soft:#3A1319;
+    --shadow: none;
   }
 
-  *{box-sizing:border-box;}
+  /* ---- Base ---- */
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html{background:var(--bg); -webkit-text-size-adjust:100%;}
   body{
+    margin:0;
     background:var(--bg);
     color:var(--text);
     font-family:var(--font-ui);
-    padding-inline:16px;
-    padding-block:0 32px;
-    max-width:840px;
-    margin-inline:auto;
+    font-size:16px;
+    line-height:1.4;
     -webkit-font-smoothing:antialiased;
-    font-weight:400;
+    overscroll-behavior-y:none;
+    touch-action:manipulation;
+    /* Room for the fixed tab bar plus the home indicator. */
+    padding-bottom:calc(var(--tabbar-h) + 8px + env(safe-area-inset-bottom,0px) + 24px);
   }
-  h1,h2,h3,.display{
-    font-family:var(--font-ui);
-    font-weight:700;
-    letter-spacing:-.01em;
-    text-wrap:balance;
-    margin:0;
-  }
-  .mono{ font-family:var(--font-mono); font-variant-numeric: tabular-nums; }
-  a{color:var(--accent);}
-  button{font-family:inherit;}
-
-  /* ---- Header ---- */
-  .topbar{
-    position:sticky;
-    top:env(safe-area-inset-top,0px);
-    z-index:20;
-    background:var(--bg);
-    padding-block:14px 10px;
-    border-bottom:1px solid var(--border);
-    margin-inline:-16px;
-    padding-inline:16px;
-  }
-  .topbar-row{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap;}
-  .brand{display:flex; align-items:baseline; gap:10px;}
-  .brand h1{font-size:1.5rem; font-weight:700; color:var(--text);}
-  .brand .tag{font-size:.68rem; color:var(--accent); font-family:var(--font-mono); letter-spacing:.06em; border:1px solid var(--accent); border-radius:20px; padding:2px 8px; text-transform:uppercase;}
-  .asof{font-size:.72rem; color:var(--text-faint); font-family:var(--font-mono);}
-  /* Auth lives in the header as well as at the foot of My Slip: the gated
-     actions are on Research, and a browser password box with no hint that
-     Face ID exists two tabs over is a dead end. */
-  .topbar-meta{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;}
-  .auth-chip{
-    font-size:.68rem; font-family:var(--font-mono); letter-spacing:.06em; text-transform:uppercase;
-    color:var(--accent); background:transparent; border:1px solid var(--accent); border-radius:20px;
-    padding:2px 8px; cursor:pointer;
-  }
-  .auth-chip[data-state="in"]{color:var(--text-faint); border-color:var(--border);}
-  .auth-chip[data-state="armed"]{background:var(--accent); color:#fff;}
-  .auth-panel{
-    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
-    padding:14px; margin-top:14px; box-shadow:var(--shadow);
-  }
-  .auth-panel p{font-size:.82rem; color:var(--text-dim); line-height:1.5; margin:0 0 10px; max-width:52ch;}
-  .auth-panel label{
-    display:block; font-size:.72rem; font-family:var(--font-ui); font-weight:600;
-    text-transform:uppercase; letter-spacing:.03em; color:var(--text-dim); margin-bottom:4px;
-  }
-  .auth-panel input{
-    width:100%; padding:10px 12px; font-size:1rem; font-family:var(--font-ui);
-    color:var(--text); background:var(--bg); border:1px solid var(--border); border-radius:10px;
-  }
-  .auth-panel-actions{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:10px;}
-  .auth-or{
-    font-size:.72rem; color:var(--text-faint); font-family:var(--font-mono);
-    text-transform:uppercase; letter-spacing:.06em; margin:12px 0 10px;
-  }
-  .auth-go{
-    font-family:var(--font-ui); font-weight:600; font-size:.82rem; padding:9px 16px;
-    border:none; border-radius:11px; background:var(--accent); color:#fff; cursor:pointer;
-  }
-
-  .tabs{display:flex; gap:4px; margin-top:14px; overflow-x:auto; padding:4px; background:var(--surface-2); border-radius:14px;}
-  .tab{
-    flex:0 0 auto;
-    font-family:var(--font-ui); font-weight:600;
-    font-size:.82rem;
-    letter-spacing:0;
-    padding:8px 14px;
-    border-radius:11px;
-    border:none;
-    background:transparent;
-    color:var(--text-dim);
-    cursor:pointer;
-  }
-  .tab[aria-selected="true"]{background:var(--accent); color:#fff;}
-
+  .page{max-width:840px; margin-inline:auto; padding-inline:16px;}
+  h1,h2,h3{font-weight:700; letter-spacing:-.01em; margin:0; text-wrap:balance;}
+  a{color:var(--tint);}
+  button{font-family:inherit; font-size:inherit; color:inherit; touch-action:manipulation;}
+  button, .tabbar, .compact-header, .sheet .grabber{-webkit-user-select:none; user-select:none;}
+  img{max-width:100%;}
+  .mono{font-family:var(--font-mono); font-variant-numeric:tabular-nums;}
+  .num, .payout, .stat-tile .v, .uga-countdown, .uga-stat .v, .futures-table td.odds, .leg .m, .game-market{font-variant-numeric:tabular-nums;}
+  :focus-visible{outline:2px solid var(--tint); outline-offset:2px;}
   section[role="tabpanel"][hidden]{display:none!important;}
+  section[role="tabpanel"]{animation:panel-in .22s ease-out;}
+  @keyframes panel-in{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
 
-  /* ---- Intro strip ---- */
-  .intro{padding-block:18px 8px;}
-  .intro p{color:var(--text-dim); font-size:.95rem; max-width:60ch; line-height:1.5; margin:0 0 10px;}
-  .slate-strip{display:flex; gap:8px; overflow-x:auto; padding-block:4px 2px; margin:0 -16px; padding-inline:16px;}
+  /* ---- Large title header ---- */
+  .app-header{
+    padding-top:calc(env(safe-area-inset-top,0px) + 10px);
+    padding-bottom:6px;
+  }
+  .header-row{display:flex; align-items:flex-start; justify-content:space-between; gap:12px;}
+  .eyebrow{
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+    font-size:13px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--tint);
+    min-height:18px;
+  }
+  .eyebrow #asof-line{color:var(--label-2); text-transform:none; letter-spacing:0; font-weight:500;}
+  .large-title{font-size:32px; font-weight:700; letter-spacing:-.02em; line-height:1.15; margin-top:2px; color:var(--text);}
+  .auth-chip{
+    flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    min-width:44px; min-height:44px; height:44px; padding:0; border:none; border-radius:22px;
+    background:var(--fill); color:var(--tint); cursor:pointer; margin-top:2px;
+    transition:transform .12s ease, background .15s ease;
+  }
+  .auth-chip svg{width:24px; height:24px; display:block;}
+  .auth-chip .auth-chip-label{display:none; font-size:15px; font-weight:600; padding-right:14px;}
+  .auth-chip[data-state="in"]{color:var(--label-2);}
+  .auth-chip[data-state="armed"]{background:var(--tint); color:#fff;}
+  .auth-chip:active{transform:scale(.94);}
+
+  .compact-header{
+    position:fixed; top:0; left:0; right:0; z-index:30;
+    height:calc(var(--header-h) + env(safe-area-inset-top,0px));
+    padding-top:env(safe-area-inset-top,0px);
+    display:flex; align-items:center; justify-content:center;
+    background:var(--bar-bg);
+    -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%);
+    border-bottom:1px solid var(--sep);
+    opacity:0; pointer-events:none; transition:opacity .2s ease-out;
+  }
+  .compact-header.on{opacity:1; pointer-events:auto;}
+  .compact-title{font-size:17px; font-weight:600; color:var(--text); letter-spacing:-.01em;}
+
+  /* ---- Tab bar (phone: fixed bottom; desktop: segmented control) ---- */
+  .tabbar{
+    position:fixed; left:0; right:0; bottom:0; z-index:40;
+    display:flex; align-items:stretch; justify-content:space-around;
+    padding:4px 8px calc(8px + env(safe-area-inset-bottom,0px));
+    background:var(--bar-bg);
+    -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%);
+    border-top:1px solid var(--sep);
+  }
+  .tab{
+    flex:1 1 0; min-height:49px; min-width:44px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    border:none; background:transparent; color:var(--label-2); cursor:pointer;
+    font-size:10.5px; font-weight:500; letter-spacing:.01em; padding:4px 0 2px; border-radius:10px;
+    transition:color .15s ease;
+  }
+  .tab svg{width:24px; height:24px; display:block;}
+  .tab[aria-selected="true"], .tab.more-active{color:var(--tint);}
+  .tab .l-full{display:none;}
+  .tab .l-short{display:inline;}
+  @media (max-width:767px){
+    #tab-futures, #tab-uga{display:none;}
+  }
+  @media (min-width:768px){
+    body{padding-bottom:40px;}
+    .app-header{padding-top:24px;}
+    .large-title{font-size:34px;}
+    .auth-chip{padding-left:10px; border-radius:22px;}
+    .auth-chip .auth-chip-label{display:inline;}
+    .compact-header{display:none;}
+    .tabbar{
+      position:static; display:flex; gap:2px; padding:3px; margin:12px 0 4px;
+      background:var(--fill); border-radius:12px; border:none;
+      -webkit-backdrop-filter:none; backdrop-filter:none;
+    }
+    .tab{flex-direction:row; gap:7px; min-height:40px; font-size:14px; font-weight:600; border-radius:10px; padding:0 10px; white-space:nowrap;}
+    .tab svg{width:18px; height:18px;}
+    .tab[aria-selected="true"]{background:var(--surface); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.12);}
+    .tab .l-full{display:inline;}
+    .tab .l-short{display:none;}
+    #tab-more{display:none;}
+  }
+
+  /* ---- Sheets (bottom sheet on phone, centred card on desktop) ---- */
+  .sheet-backdrop{
+    position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.4);
+    opacity:0; transition:opacity .25s ease-out;
+  }
+  .sheet-backdrop.on{opacity:1;}
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:51;
+    background:var(--surface); color:var(--text);
+    border-radius:20px 20px 0 0;
+    padding:8px 16px calc(16px + env(safe-area-inset-bottom,0px));
+    max-height:calc(100dvh - 48px); overflow-y:auto; -webkit-overflow-scrolling:touch;
+    box-shadow:0 -8px 40px rgba(0,0,0,.18);
+    transform:translateY(100%); transition:transform .3s cubic-bezier(.2,.8,.2,1);
+    margin-inline:auto; max-width:840px;
+  }
+  .sheet.on{transform:translateY(0);}
+  .sheet.dragging{transition:none;}
+  .grabber{width:36px; height:5px; border-radius:3px; background:var(--fill-2); margin:0 auto 14px; touch-action:none;}
+  .sheet-title{font-size:20px; font-weight:700; letter-spacing:-.02em; margin:0 0 6px;}
+  .sheet-msg{font-size:15px; color:var(--label-2); line-height:1.45; margin:0 0 14px;}
+  .sheet p{font-size:15px; color:var(--label-2); line-height:1.45; margin:0 0 12px;}
+  .sheet-actions{display:flex; flex-direction:column; gap:8px; margin-top:6px;}
+  .sheet-action{
+    width:100%; min-height:50px; border:none; border-radius:14px; background:var(--fill);
+    color:var(--tint); font-size:17px; font-weight:600; cursor:pointer; transition:transform .12s ease;
+  }
+  .sheet-action.primary{background:var(--tint); color:#fff;}
+  .sheet-action.destructive{color:var(--negative);}
+  .sheet-action:active{transform:scale(.97);}
+  .sheet-cancel{margin-top:2px;}
+  .auth-panel-actions{display:flex; flex-direction:column; gap:4px;}
+  .auth-panel-actions .text-toggle-btn{width:100%;}
+  .auth-or{font-size:13px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.06em; font-weight:600; text-align:center; margin:14px 0 10px;}
+  body.sheet-open{overflow:hidden;}
+  @media (min-width:768px){
+    .sheet{
+      left:50%; right:auto; bottom:auto; top:50%;
+      width:min(460px, calc(100% - 32px)); border-radius:20px;
+      padding:20px 20px 20px; max-height:calc(100dvh - 64px);
+      transform:translate(-50%,-50%) scale(.96); opacity:0;
+      transition:transform .22s ease-out, opacity .22s ease-out;
+      box-shadow:0 20px 60px rgba(0,0,0,.28);
+    }
+    .sheet.on{transform:translate(-50%,-50%) scale(1); opacity:1;}
+    .grabber{display:none;}
+  }
+
+  /* ---- Toast ---- */
+  .toast{
+    position:fixed; left:50%; top:calc(env(safe-area-inset-top,0px) + 12px); z-index:70;
+    transform:translate(-50%,-12px); opacity:0; pointer-events:none;
+    background:var(--text); color:var(--bg); font-size:14px; font-weight:600;
+    padding:10px 18px; border-radius:999px; box-shadow:0 6px 20px rgba(0,0,0,.2);
+    max-width:calc(100% - 32px); text-align:center;
+    transition:opacity .2s ease-out, transform .2s ease-out;
+  }
+  .toast.on{opacity:1; transform:translate(-50%,0);}
+
+  /* ---- Lists (inset grouped) ---- */
+  .list-group{background:var(--surface-2); border-radius:14px; overflow:hidden; margin-top:8px;}
+  .list-row{
+    display:flex; align-items:center; gap:12px; width:100%; min-height:50px; padding:0 16px;
+    border:none; background:transparent; color:var(--text); font-size:17px; text-align:left; cursor:pointer;
+  }
+  .list-row + .list-row{box-shadow:inset 0 1px 0 var(--sep); background-clip:padding-box;}
+  .list-row:active{background:var(--fill);}
+  .list-row svg{width:24px; height:24px; color:var(--tint); flex:0 0 auto;}
+  .list-row .chev{margin-left:auto; color:var(--text-faint); font-size:22px; line-height:1;}
+
+  /* ---- Forms ---- */
+  :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea){
+    font-family:var(--font-ui); font-size:16px; color:var(--text);
+    background:var(--fill); border:none; border-radius:12px;
+    min-height:44px; padding:10px 14px; width:100%;
+    -webkit-appearance:none; appearance:none; margin:0;
+  }
+  input::placeholder, textarea::placeholder{color:var(--text-faint);}
+  .chat-input::placeholder{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; max-width:100%;}
+  input:focus, select:focus, textarea:focus{outline:none; box-shadow:0 0 0 2px var(--tint);}
+  input[type="search"]::-webkit-search-decoration, input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;}
+  input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none; margin:0;}
+  select{
+    padding-right:38px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center;
+  }
+  .field-label, .auth-panel label, .add-card-label, .custom-research-label, .asks-heading, .chat-label{
+    display:block; font-size:13px; font-weight:600; color:var(--label-2); margin:0 0 6px;
+  }
+  .form-group{background:var(--surface-2); border-radius:14px; padding:12px; margin-top:6px;}
+  .form-group + .form-group{margin-top:10px;}
+  .form-group input, .form-group textarea{background:var(--surface);}
+  .sheet .form-group{background:var(--fill);}
+  .sheet .form-group input{background:var(--surface);}
+  :root[data-theme="dark"] .form-group input, :root[data-theme="dark"] .sheet .form-group input{background:var(--surface-2);}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .form-group input, :root:not([data-theme="light"]) .sheet .form-group input{background:var(--surface-2);}
+  }
+
+  /* ---- Buttons ---- */
+  .auth-go, .refresh-btn, .reset-btn, .text-toggle-btn, .add-slip-btn, .remove-card-btn, .chat-send, .sheet-action{
+    transition:transform .12s ease, opacity .15s ease, background .15s ease;
+  }
+  .auth-go:active, .refresh-btn:active, .reset-btn:active, .text-toggle-btn:active, .add-slip-btn:active, .remove-card-btn:active, .chat-send:active{transform:scale(.97);}
+  .auth-go{
+    display:block; width:100%; min-height:50px; border:none; border-radius:14px;
+    background:var(--tint); color:#fff; font-size:17px; font-weight:600; cursor:pointer; margin-top:10px;
+  }
+  .refresh-btn{
+    flex:0 0 auto; min-height:44px; min-width:44px; padding:0 16px; border:none; border-radius:12px;
+    background:var(--tint); color:#fff; font-size:15px; font-weight:600; cursor:pointer; white-space:nowrap;
+  }
+  .refresh-btn:disabled, .auth-go:disabled{opacity:.5; cursor:default;}
+  .reset-btn{
+    min-height:44px; padding:0 16px; border:none; border-radius:12px;
+    background:var(--fill); color:var(--tint); font-size:15px; font-weight:600; cursor:pointer;
+  }
+  .reset-btn.destructive, #reset-slip{color:var(--negative);}
+  .text-toggle-btn{
+    min-height:44px; padding:0 6px; border:none; background:transparent;
+    color:var(--tint); font-size:15px; font-weight:600; cursor:pointer;
+  }
+  .text-toggle-btn.destructive{color:var(--negative);}
+  .remove-card-btn{
+    min-height:44px; padding:0 6px; border:none; background:transparent;
+    color:var(--negative); font-size:15px; font-weight:600; cursor:pointer;
+  }
+  .add-slip-btn{
+    min-height:44px; padding:0 16px; border:none; border-radius:12px;
+    background:var(--fill); color:var(--tint); font-size:15px; font-weight:600; cursor:pointer; width:100%;
+  }
+  .add-slip-btn.on-slip{color:var(--positive); background:var(--positive-soft);}
+
+  /* ---- Section intros ---- */
+  .intro{padding:8px 0 4px;}
+  .intro p{color:var(--label-2); font-size:15px; line-height:1.45; margin:0 0 10px; max-width:64ch;}
+  .slate-strip{display:flex; gap:8px; overflow-x:auto; padding:4px 16px 6px; margin:0 -16px; scrollbar-width:none; -webkit-overflow-scrolling:touch;}
+  .slate-strip::-webkit-scrollbar{display:none;}
   .slate-chip{
-    flex:0 0 auto; background:var(--surface); border:1px solid var(--border); border-radius:10px;
-    padding:7px 10px; font-family:var(--font-mono); font-size:.7rem; color:var(--text-dim); white-space:nowrap;
+    flex:0 0 auto; background:var(--surface); border-radius:10px; box-shadow:var(--shadow);
+    padding:8px 12px; font-size:13px; color:var(--label-2); white-space:nowrap; font-variant-numeric:tabular-nums;
   }
   .slate-chip b{color:var(--text); font-weight:600;}
 
-  /* ---- Add card row ---- */
+  /* ---- Search / add rows ---- */
   .add-card-block{margin-top:14px;}
-  .add-card-label{font-family:var(--font-ui); font-weight:700; font-size:.78rem; color:var(--text-dim); margin-bottom:8px;}
   .add-card-row{display:flex; gap:8px; align-items:stretch; margin-top:8px;}
   .add-card-row:first-of-type{margin-top:0;}
-  .add-card-row select, .add-card-row input{
-    flex:1; min-width:0; padding:11px 14px; border-radius:12px; border:1px solid var(--border); background:var(--surface);
-    color:var(--text); font-family:var(--font-ui); font-size:.9rem;
+  .add-card-row select, .add-card-row input{flex:1; min-width:0;}
+  .games-search-row{display:flex; gap:8px; align-items:stretch; margin-top:12px;}
+  .games-search-row input{flex:1; min-width:0;}
+  .sticky-search{
+    position:sticky; top:calc(var(--header-h) + env(safe-area-inset-top,0px)); z-index:20;
+    background:var(--bg); padding:8px 0; margin-top:4px;
   }
-  .add-card-row select:disabled{color:var(--text-faint);}
-  .remove-card-btn{
-    border:none; background:transparent; color:var(--negative); font-family:var(--font-ui); font-weight:600;
-    font-size:.78rem; padding:6px 4px; cursor:pointer;
-  }
+  .sticky-search input{background:var(--surface-2); box-shadow:var(--shadow);}
+  @media (min-width:768px){ .sticky-search{position:static; padding:0; margin-top:12px;} }
+  .games-actions{display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap;}
+  .games-actions .refresh-btn{background:var(--fill); color:var(--tint);}
+  .games-status, .refresh-meta{font-size:13px; color:var(--text-faint); margin-top:8px; min-height:1.2em; line-height:1.4;}
+  .copy-status{font-size:13px; color:var(--positive); min-height:1.2em; line-height:1.4;}
+  .copy-status.error{color:var(--negative);}
+  .custom-research{margin-top:14px;}
+  .custom-research .games-search-row{margin-top:0;}
 
-  /* ---- Pick cards ---- */
+  /* ---- Cards ---- */
   .card-list{display:flex; flex-direction:column; gap:12px; margin-top:14px;}
-  .pick{
-    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
-    box-shadow:var(--shadow); overflow:hidden;
+  .pick, .game-card, .research-game, .ask-item, .stat-tile, .bankroll-row, .uga-next, .uga-story, .uga-research, .review-col{
+    background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
   }
-  .pick-head{
-    display:flex; justify-content:space-between; align-items:flex-start; gap:12px;
-    padding:14px 16px 10px;
-  }
+  .pick, .game-card{overflow:hidden;}
+  .pick-head{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:16px 16px 8px;}
   .pick-kind{
-    font-family:var(--font-mono); font-size:.64rem; letter-spacing:.08em; text-transform:uppercase;
+    font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
     padding:3px 8px; border-radius:6px; display:inline-block; margin-bottom:6px;
   }
-  .pick-kind.straight{ background:var(--accent-soft); color:var(--accent); }
-  .pick-kind.parlay{ background:var(--parlay-soft); color:var(--parlay); }
-  .pick-title{font-size:1.15rem; font-weight:600; color:var(--text);}
-  .pick-sub{font-size:.82rem; color:var(--text-dim); margin-top:2px;}
-  .pick-time{font-size:.7rem; color:var(--text-faint); font-family:var(--font-mono); margin-top:2px;}
+  .pick-kind.straight{background:var(--accent-soft); color:var(--tint);}
+  .pick-kind.parlay{background:var(--parlay-soft); color:var(--parlay);}
+  .pick-title{font-size:20px; font-weight:700; letter-spacing:-.01em; color:var(--text); line-height:1.2;}
+  .pick-sub{font-size:15px; color:var(--label-2); margin-top:3px;}
+  .pick-time{font-size:13px; color:var(--text-faint); margin-top:3px; font-variant-numeric:tabular-nums;}
 
   .confidence{display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex:0 0 auto;}
-  .confidence .lbl{font-size:.62rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:.06em; font-family:var(--font-mono);}
-  .dots{display:flex; gap:3px;}
-  .dots i{width:7px; height:7px; border-radius:50%; background:var(--border); display:block;}
-  .dots i.on{background:var(--accent);}
+  .confidence .lbl{font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.06em; font-weight:600;}
+  .dots{display:flex; gap:4px;}
+  .dots i{width:8px; height:8px; border-radius:50%; background:var(--fill-2); display:block;}
+  .dots i.on{background:var(--tint);}
 
-  .pick-legs{border-top:1px dashed var(--border); padding:10px 16px; display:flex; flex-direction:column; gap:8px;}
-  .leg{display:flex; justify-content:space-between; gap:10px; font-size:.85rem; align-items:baseline;}
+  .pick-legs{border-top:1px solid var(--sep); margin-left:16px; padding:10px 16px 10px 0; display:flex; flex-direction:column; gap:8px;}
+  .leg{display:flex; justify-content:space-between; gap:10px; font-size:15px; align-items:baseline;}
   .leg .g{color:var(--text);}
-  .leg .m{color:var(--text-dim); font-family:var(--font-mono); font-size:.8rem; white-space:nowrap;}
-
-  .pick-thesis{padding:0 16px 12px; color:var(--text-dim); font-size:.88rem; line-height:1.45;}
+  .leg .m{color:var(--label-2); font-size:13px; white-space:nowrap;}
+  .pick-thesis{padding:4px 16px 12px; color:var(--label-2); font-size:15px; line-height:1.45;}
 
   .why-toggle{
-    width:100%; text-align:left; background:var(--surface-2); border:none; border-top:1px solid var(--border);
-    padding:10px 16px; font-family:var(--font-ui); font-weight:600; text-transform:uppercase; font-size:.72rem; letter-spacing:.05em;
-    color:var(--accent); cursor:pointer; display:flex; justify-content:space-between; align-items:center;
+    width:100%; min-height:48px; text-align:left; background:transparent; border:none;
+    border-top:1px solid var(--sep); padding:0 16px; font-size:15px; font-weight:600;
+    color:var(--tint); cursor:pointer; display:flex; justify-content:space-between; align-items:center;
   }
-  .why-toggle .arrow{transition:transform .18s ease;}
+  .why-toggle:active{background:var(--fill);}
+  .why-toggle .arrow{transition:transform .2s ease; font-size:13px; color:var(--text-faint);}
   .why-toggle[aria-expanded="true"] .arrow{transform:rotate(180deg);}
-  .why-body{padding:14px 16px 4px; color:var(--text-dim); font-size:.88rem; line-height:1.55; background:var(--surface-2);}
-  .why-body[hidden]{display:none;}
-  .risk-line{margin-top:10px; padding:8px 10px; border-radius:8px; background:var(--warning-soft); color:var(--warning); font-size:.8rem; line-height:1.4;}
-  .slip-live{margin-top:10px; padding:8px 10px; border-radius:8px; background:var(--accent-soft); font-size:.8rem; line-height:1.45;}
-  .slip-live-label{font-family:var(--font-ui); font-weight:700; font-size:.64rem; text-transform:uppercase; letter-spacing:.05em; color:var(--accent); margin-bottom:3px;}
+  .why-body{padding:12px 16px 12px; color:var(--label-2); font-size:15px; line-height:1.5; background:var(--surface-2);}
+  .why-body p{margin:0 0 10px;}
+  .why-body p:last-child{margin-bottom:0;}
+  .risk-line{margin-top:10px; padding:10px 12px; border-radius:10px; background:var(--warning-soft); color:var(--warning); font-size:14px; line-height:1.4;}
+  .slip-live{margin-top:10px; padding:10px 12px; border-radius:10px; background:var(--accent-soft); font-size:14px; line-height:1.45;}
+  .slip-live-label{font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--tint); margin-bottom:3px;}
   .slip-live-row{color:var(--text); margin-bottom:3px;}
   .slip-live-row:last-child{margin-bottom:0;}
-  .slip-live-time{color:var(--text-faint); font-family:var(--font-mono); font-size:.72rem;}
+  .slip-live-time{color:var(--text-faint); font-size:13px;}
 
-  .slip-row{
-    display:flex; align-items:center; gap:10px; padding:10px 16px 16px; background:var(--surface-2);
-    flex-wrap:wrap;
+  /* Slip row: a 44px switch row, then stake + payout beneath it. */
+  .slip-row{border-top:1px solid var(--sep); padding:4px 16px 12px; background:var(--surface);}
+  .switch-row{display:flex; align-items:center; justify-content:space-between; min-height:44px; cursor:pointer; gap:12px;}
+  .switch-row .switch-label{font-size:17px; color:var(--text);}
+  .switch{position:relative; display:inline-block; width:51px; height:31px; flex:0 0 auto;}
+  .switch input{position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer; z-index:1;}
+  .switch .track{
+    position:absolute; inset:0; border-radius:16px; background:var(--fill-2);
+    transition:background .2s ease;
   }
-  .slip-row label{display:flex; align-items:center; gap:6px; font-size:.8rem; color:var(--text-dim); cursor:pointer;}
-  .slip-row input[type="checkbox"]{width:16px; height:16px; accent-color:var(--accent);}
-  .stake-field{display:flex; align-items:center; gap:6px; margin-left:auto;}
-  .stake-field span{font-size:.78rem; color:var(--text-faint); font-family:var(--font-mono);}
-  .stake-field input{
-    width:76px; padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:var(--surface);
-    color:var(--text); font-family:var(--font-mono); font-size:.85rem;
+  .switch .track::after{
+    content:""; position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%;
+    background:#fff; box-shadow:0 3px 8px rgba(0,0,0,.18), 0 1px 1px rgba(0,0,0,.08);
+    transition:transform .2s cubic-bezier(.2,.8,.2,1);
   }
-  .payout{font-family:var(--font-mono); font-size:.8rem; color:var(--positive); white-space:nowrap;}
+  .switch input:checked + .track{background:var(--positive);}
+  .switch input:checked + .track::after{transform:translateX(20px);}
+  .switch input:focus-visible + .track{box-shadow:0 0 0 2px var(--bg), 0 0 0 4px var(--tint);}
+  .stake-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; min-height:44px;}
+  .stake-field{display:flex; align-items:center; gap:8px;}
+  .stake-field span{font-size:15px; color:var(--label-2);}
+  .stake-field input{width:110px; text-align:right; font-variant-numeric:tabular-nums;}
+  .payout{font-size:15px; font-weight:600; color:var(--positive); white-space:nowrap; margin-left:auto;}
+  .stake-row .remove-card-btn{width:100%; text-align:left; padding:0;}
 
   /* ---- Research tab ---- */
-  .research-game{
-    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
-    box-shadow:var(--shadow); padding:16px; margin-top:14px;
-  }
-  .research-game.has-update{border-color:var(--warning);}
-  .research-game h3{font-size:1.05rem; color:var(--text); margin-bottom:2px;}
-  .research-meta{font-size:.74rem; color:var(--text-faint); font-family:var(--font-mono); margin-bottom:10px;}
-  .research-game p{color:var(--text-dim); font-size:.9rem; line-height:1.55; margin:0 0 10px;}
+  .research-game{padding:16px; margin-top:12px;}
+  .research-game.has-update{box-shadow:0 0 0 1.5px var(--warning);}
+  .research-game h3{font-size:18px; color:var(--text); margin-bottom:2px; letter-spacing:-.01em;}
+  .research-meta{font-size:13px; color:var(--text-faint); margin-bottom:10px; font-variant-numeric:tabular-nums;}
+  .research-game p{color:var(--label-2); font-size:15px; line-height:1.5; margin:0 0 10px;}
   .research-game p:last-child{margin-bottom:0;}
-  .flag{display:inline-block; font-size:.66rem; text-transform:uppercase; letter-spacing:.06em; font-family:var(--font-mono); padding:2px 7px; border-radius:5px; margin-right:6px; margin-bottom:8px;}
+  .flag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:3px 8px; border-radius:6px; margin-right:6px; margin-bottom:8px;}
   .flag.injury{background:var(--warning-soft); color:var(--warning);}
 
   /* ---- Futures tab ---- */
-  .futures-block{margin-top:16px;}
-  .futures-block h2{font-size:1rem; margin-bottom:2px;}
-  .futures-note{font-size:.78rem; color:var(--text-faint); font-family:var(--font-mono); margin-bottom:10px;}
-  .futures-table{width:100%; border-collapse:collapse; font-size:.86rem;}
+  .futures-block{margin-top:16px; background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px;}
+  .futures-block h2{font-size:20px; margin-bottom:2px; letter-spacing:-.02em;}
+  .futures-note{font-size:13px; color:var(--text-faint); margin-bottom:8px;}
+  .futures-table{width:100%; border-collapse:collapse; font-size:16px;}
   .futures-table th{
-    text-align:left; font-family:var(--font-ui); font-weight:600; text-transform:uppercase; font-size:.68rem; letter-spacing:.05em;
-    color:var(--text-faint); border-bottom:1px solid var(--border); padding:6px 8px;
+    text-align:left; font-weight:600; text-transform:uppercase; font-size:11px; letter-spacing:.05em;
+    color:var(--text-faint); border-bottom:1px solid var(--sep); padding:8px 0;
   }
-  .futures-table td{padding:7px 8px; border-bottom:1px solid var(--border); color:var(--text-dim);}
-  .futures-table td:first-child{color:var(--text); font-weight:600;}
-  .futures-table td.odds{font-family:var(--font-mono); color:var(--text); text-align:right;}
-  .futures-table tr.value td:first-child{color:var(--accent);}
-  .value-tag{font-family:var(--font-mono); font-size:.6rem; color:var(--accent); border:1px solid var(--accent); border-radius:4px; padding:1px 4px; margin-left:6px;}
-  .futures-why{font-size:.85rem; color:var(--text-dim); line-height:1.5; margin-top:10px; padding:10px 12px; background:var(--surface-2); border-radius:10px;}
+  .futures-table td{padding:11px 0; border-bottom:1px solid var(--sep); color:var(--label-2);}
+  .futures-table tr:last-child td{border-bottom:none;}
+  .futures-table td:first-child{color:var(--text); font-weight:500;}
+  .futures-table td.odds{color:var(--text); text-align:right; font-weight:600; font-variant-numeric:tabular-nums;}
+  .futures-table tr.value td:first-child{color:var(--tint); font-weight:600;}
+  .value-tag{font-size:11px; font-weight:700; color:var(--tint); background:var(--accent-soft); border-radius:5px; padding:2px 6px; margin-left:6px; vertical-align:middle;}
+  .futures-why{font-size:15px; color:var(--label-2); line-height:1.5; margin-top:12px; padding:12px 14px; background:var(--surface-2); border-radius:12px;}
 
   /* ---- Slip tab ---- */
-  .slip-summary{
-    display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;
-  }
-  .stat-tile{
-    flex:1 1 140px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
-    padding:12px 14px; box-shadow:var(--shadow);
-  }
-  .stat-tile .k{font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint); font-family:var(--font-mono);}
-  .stat-tile .v{font-family:var(--font-mono); font-size:1.3rem; font-weight:600; margin-top:2px;}
+  .slip-summary{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+  .slip-summary:empty{display:none;}
+  .stat-tile{padding:14px 16px;}
+  .stat-tile:nth-child(3){grid-column:1 / -1;}
+  .stat-tile .k{font-size:13px; color:var(--label-2); font-weight:500;}
+  .stat-tile .v{font-size:26px; font-weight:700; margin-top:2px; letter-spacing:-.02em; font-variant-numeric:tabular-nums;}
   .stat-tile .v.win{color:var(--positive);}
-  .empty-slip{margin-top:16px; color:var(--text-faint); font-size:.88rem; text-align:center; padding:30px 16px; border:1px dashed var(--border); border-radius:var(--radius);}
-  .reset-btn{
-    margin-top:14px; background:none; border:1px solid var(--border); color:var(--text-dim); font-size:.84rem;
-    padding:8px 14px; border-radius:10px; cursor:pointer; font-family:var(--font-ui); font-weight:600;
+  @media (min-width:768px){ .slip-summary{grid-template-columns:repeat(3,1fr);} .stat-tile:nth-child(3){grid-column:auto;} }
+  .empty-slip, .games-empty, .state{
+    margin-top:14px; color:var(--label-2); font-size:15px; text-align:center; padding:32px 20px;
+    background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); line-height:1.45;
   }
-  .text-toggle-btn{
-    margin-top:14px; background:none; border:none; color:var(--accent); font-size:.82rem;
-    padding:8px 4px; cursor:pointer; font-family:var(--font-ui); font-weight:600;
-  }
-  .reset-btn:hover{border-color:var(--negative); color:var(--negative);}
+  .state-glyph{width:40px; height:40px; color:var(--text-faint); margin:0 auto 10px; display:block;}
+  .state-title{font-size:17px; font-weight:600; color:var(--text); margin-bottom:4px;}
+  .games-empty p{margin:0 0 10px;}
+  .slip-footer{margin-top:14px; display:flex; flex-direction:column; gap:2px;}
+  .slip-footer .text-toggle-btn{text-align:left; padding:0 4px;}
+  .slip-footer .reset-btn{align-self:flex-start;}
 
   /* ---- Bankroll + review ---- */
-  .bankroll-row{
-    display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap;
-    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:10px 14px; box-shadow:var(--shadow);
-  }
-  .bankroll-row label{font-size:.78rem; color:var(--text-dim); font-family:var(--font-ui); font-weight:600; text-transform:uppercase; letter-spacing:.03em;}
-  .bankroll-hint{font-family:var(--font-ui); text-transform:none; letter-spacing:0; color:var(--text-faint); font-size:.72rem; display:block; margin-top:2px;}
-  .bankroll-input-wrap{display:flex; align-items:center; gap:4px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:5px 10px;}
-  .bankroll-input-wrap span{color:var(--text-faint); font-family:var(--font-mono); font-size:.85rem;}
-  .bankroll-input-wrap input{border:none; background:transparent; width:88px; font-family:var(--font-mono); font-size:.9rem; color:var(--text);}
-  .bankroll-input-wrap input:focus{outline:none;}
+  .bankroll-row{display:flex; flex-direction:column; align-items:stretch; gap:10px; margin-top:14px; padding:14px 16px;}
+  @media (min-width:768px){ .bankroll-row{flex-direction:row; justify-content:space-between; align-items:center; gap:12px;} }
+  .bankroll-row label{font-size:15px; color:var(--text); font-weight:600;}
+  .bankroll-hint{font-weight:400; color:var(--label-2); font-size:13px; display:block; margin-top:2px;}
+  .bankroll-input-wrap{display:flex; align-items:center; gap:2px; background:var(--fill); border-radius:12px; padding:0 12px; min-height:44px; flex:0 0 auto;}
+  @media (min-width:768px){ .bankroll-input-wrap input{width:110px;} }
+  .bankroll-input-wrap span{color:var(--text-faint); font-size:16px;}
+  .bankroll-input-wrap input{background:transparent; width:100%; flex:1; min-height:42px; padding:0 4px; font-variant-numeric:tabular-nums;}
+  .bankroll-input-wrap:focus-within{box-shadow:0 0 0 2px var(--tint);}
+  .bankroll-input-wrap input:focus{box-shadow:none;}
 
-  .review-heading{font-size:1rem; margin-top:20px; margin-bottom:8px; color:var(--text);}
-  .review-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
-  .review-col{border-radius:var(--radius); padding:12px 14px; border:1px solid var(--border); border-top-width:3px; background:var(--surface); box-shadow:var(--shadow);}
-  .review-col h3{font-size:.7rem; letter-spacing:.07em; margin-bottom:8px; font-family:var(--font-ui); font-weight:600; text-transform:uppercase;}
-  .review-col ul{margin:0; padding-left:16px; display:flex; flex-direction:column; gap:8px;}
-  .review-col li{font-size:.81rem; color:var(--text-dim); line-height:1.45;}
+  .review-heading{font-size:22px; letter-spacing:-.02em; margin-top:24px; margin-bottom:10px; color:var(--text);}
+  .review-grid{display:grid; grid-template-columns:1fr; gap:10px;}
+  @media (min-width:768px){ .review-grid{grid-template-columns:repeat(3,1fr);} }
+  .review-col{padding:14px 16px; border-top:3px solid var(--border);}
+  .review-col h3{font-size:12px; letter-spacing:.07em; margin-bottom:8px; font-weight:700; text-transform:uppercase;}
+  .review-col ul{margin:0; padding-left:18px; display:flex; flex-direction:column; gap:8px;}
+  .review-col li{font-size:15px; color:var(--label-2); line-height:1.45;}
   .review-col.good{border-top-color:var(--positive);}
   .review-col.good h3{color:var(--positive);}
   .review-col.bad{border-top-color:var(--negative);}
   .review-col.bad h3{color:var(--negative);}
   .review-col.diff{border-top-color:var(--parlay);}
   .review-col.diff h3{color:var(--parlay);}
-  @media (max-width:640px){ .review-grid{grid-template-columns:1fr;} }
 
   /* ---- Full summary ---- */
-  .summary-lead{color:var(--text-dim); font-size:.9rem; line-height:1.5; margin:0 0 12px;}
-  .summary-copy-wrap{display:flex; align-items:center; gap:10px; margin-top:10px; flex-wrap:wrap;}
-  .copy-status{font-size:.75rem; color:var(--positive); font-family:var(--font-mono); min-height:1em;}
+  .summary-lead{color:var(--label-2); font-size:15px; line-height:1.5; margin:0 0 12px;}
+  .summary-copy-wrap{display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap;}
   .summary-text{
-    width:100%; margin-top:10px; font-family:var(--font-ui); font-size:.84rem; line-height:1.6;
-    background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:14px; color:var(--text-dim);
-    resize:vertical;
+    width:100%; margin-top:10px; font-size:16px; line-height:1.55;
+    background:var(--surface); border-radius:12px; padding:14px; color:var(--label-2);
+    resize:vertical; min-height:160px;
   }
-  .summary-text:focus{outline:2px solid var(--accent); outline-offset:1px;}
 
   /* ---- All Games tab ---- */
-  .games-search-row{margin-top:14px; display:flex; gap:8px; align-items:stretch;}
-  .games-search-row input{
-    flex:1; min-width:0; padding:11px 14px; border-radius:12px; border:1px solid var(--border); background:var(--surface);
-    color:var(--text); font-family:var(--font-ui); font-size:.92rem;
-  }
-  .games-search-row input::placeholder{color:var(--text-faint);}
-  .refresh-btn{
-    flex:0 0 auto; border:none; background:var(--accent); color:#fff; font-family:var(--font-ui); font-weight:600;
-    font-size:.86rem; padding:0 16px; border-radius:12px; cursor:pointer; white-space:nowrap;
-  }
-  .refresh-btn:disabled{opacity:.5; cursor:default;}
-  .games-status{font-size:.74rem; color:var(--text-faint); font-family:var(--font-mono); margin-top:8px; min-height:1em;}
-  .refresh-meta{font-size:.74rem; color:var(--text-faint); font-family:var(--font-mono); margin-top:2px; min-height:1em;}
-  .custom-research{margin-top:16px; padding-top:14px; border-top:1px dashed var(--border);}
-  .custom-research-label{font-family:var(--font-ui); font-weight:700; font-size:.78rem; color:var(--text-dim); margin-bottom:8px;}
-  .custom-research .games-search-row{margin-top:0;}
   .asks-feed{margin-top:14px; display:flex; flex-direction:column; gap:8px;}
-  .asks-heading{font-family:var(--font-ui); font-weight:700; font-size:.78rem; color:var(--text-dim); margin-bottom:2px;}
-  .ask-item{padding:10px 12px; background:var(--surface); border:1px solid var(--border); border-radius:11px;}
+  .ask-item{padding:14px 16px;}
   .ask-item-head{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
-  .ask-q{font-size:.86rem; color:var(--text); font-style:italic; flex:1;}
-  .ask-badge{flex:0 0 auto; font-family:var(--font-ui); font-weight:700; font-size:.6rem; text-transform:uppercase; letter-spacing:.04em; padding:2px 7px; border-radius:6px; white-space:nowrap;}
+  .ask-q{font-size:15px; color:var(--text); font-style:italic; flex:1;}
+  .ask-badge{flex:0 0 auto; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.04em; padding:3px 8px; border-radius:6px; white-space:nowrap;}
   .ask-badge.pending{background:var(--warning-soft); color:var(--warning);}
   .ask-badge.answered{background:var(--positive-soft); color:var(--positive);}
-  .ask-time{font-family:var(--font-mono); font-size:.66rem; color:var(--text-faint); margin-top:3px;}
-  .ask-answer{font-size:.83rem; color:var(--text); margin-top:6px; line-height:1.45;}
-  .ask-waiting{font-size:.8rem; color:var(--text-faint); margin-top:6px;}
+  .ask-time{font-size:13px; color:var(--text-faint); margin-top:3px;}
+  .ask-answer{font-size:15px; color:var(--text); margin-top:8px; line-height:1.45;}
+  .ask-waiting{font-size:14px; color:var(--text-faint); margin-top:6px;}
+  .ask-item .game-lean{margin:10px 0 8px;}
+  .ask-item .add-slip-row{margin:0;}
   .games-grid{display:flex; flex-direction:column; gap:10px; margin-top:10px;}
-  .game-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;}
-  .game-card.has-update{border-color:var(--warning);}
+  .game-card.has-update{box-shadow:0 0 0 1.5px var(--warning);}
   .updated-badge{
-    display:inline-block; font-family:var(--font-ui); font-weight:700; font-size:.6rem; text-transform:uppercase; letter-spacing:.04em;
-    background:var(--warning); color:#fff; padding:2px 7px; border-radius:6px; margin-left:6px; vertical-align:middle;
+    display:inline-block; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.04em;
+    background:var(--warning); color:#fff; padding:3px 8px; border-radius:6px; margin-left:6px; vertical-align:middle;
   }
-  .game-card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:12px 14px 8px;}
-  .game-tag{font-family:var(--font-mono); font-size:.62rem; letter-spacing:.07em; text-transform:uppercase; padding:2px 7px; border-radius:6px; display:inline-block; margin-bottom:5px;}
-  .game-tag.top25{background:var(--accent-soft); color:var(--accent);}
+  .game-card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:16px 16px 8px;}
+  .game-tag{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:6px; display:inline-block; margin-bottom:6px;}
+  .game-tag.top25{background:var(--accent-soft); color:var(--tint);}
   .game-tag.interesting{background:var(--parlay-soft); color:var(--parlay);}
-  .game-title{font-size:1rem; font-weight:600; color:var(--text);}
-  .game-meta{font-size:.76rem; color:var(--text-dim); margin-top:2px;}
-  .game-market{font-family:var(--font-mono); font-size:.78rem; color:var(--text); margin-top:4px;}
-  .game-updated{font-size:.66rem; color:var(--text-faint); font-family:var(--font-mono); white-space:nowrap; text-align:right;}
-  .game-lean{display:flex; align-items:center; gap:9px; margin:0 14px 10px; padding:9px 12px; background:var(--accent-soft); border-radius:11px;}
-  .lean-label{font-family:var(--font-ui); font-weight:700; font-size:.66rem; text-transform:uppercase; letter-spacing:.04em; color:var(--accent); flex:0 0 auto;}
-  .lean-pick{font-family:var(--font-mono); font-weight:600; font-size:.86rem; color:var(--text); flex:1;}
-  .game-pass{margin:0 14px 10px; padding:9px 12px; background:var(--surface-2); border-radius:11px; font-size:.8rem; color:var(--text-faint); font-style:italic;}
-  .add-slip-row{margin:0 14px 10px;}
-  .add-slip-btn{
-    border:1px solid var(--accent); background:transparent; color:var(--accent); font-family:var(--font-ui); font-weight:600;
-    font-size:.78rem; padding:6px 12px; border-radius:10px; cursor:pointer;
-  }
-  .add-slip-btn.on-slip{border-color:var(--positive); color:var(--positive);}
-  .game-detail{border-top:1px solid var(--border); padding:12px 14px; background:var(--surface-2); display:flex; flex-direction:column; gap:10px;}
-  .game-detail p{margin:0; color:var(--text-dim); font-size:.86rem; line-height:1.5;}
-  .games-empty{margin-top:14px; padding:24px 16px; text-align:center; border:1px dashed var(--border); border-radius:var(--radius); color:var(--text-dim); font-size:.88rem;}
-  .games-empty p{margin:0 0 10px;}
+  .game-title{font-size:18px; font-weight:700; color:var(--text); letter-spacing:-.01em; line-height:1.2;}
+  .game-meta{font-size:14px; color:var(--label-2); margin-top:3px;}
+  .game-market{font-size:14px; color:var(--text); margin-top:4px; font-weight:500;}
+  .game-updated{font-size:12px; color:var(--text-faint); white-space:nowrap; text-align:right; font-variant-numeric:tabular-nums;}
+  .game-lean{display:flex; align-items:center; gap:10px; margin:4px 16px 10px; padding:10px 12px; background:var(--accent-soft); border-radius:12px; flex-wrap:wrap;}
+  .lean-label{font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--tint); flex:0 0 auto;}
+  .lean-pick{font-weight:600; font-size:15px; color:var(--text); flex:1; min-width:0;}
+  .game-pass{margin:4px 16px 12px; padding:10px 12px; background:var(--surface-2); border-radius:12px; font-size:14px; color:var(--text-faint); font-style:italic;}
+  .add-slip-row{margin:0 16px 12px;}
+  .game-detail{border-top:1px solid var(--sep); padding:12px 16px 14px; background:var(--surface-2); display:flex; flex-direction:column; gap:10px;}
+  .game-detail p{margin:0; color:var(--label-2); font-size:15px; line-height:1.5;}
 
-  /* ---- Chat ---- */
-  .chat-block{border-top:1px dashed var(--border); padding-top:10px; margin-top:2px;}
-  .chat-label{font-family:var(--font-ui); font-weight:600; text-transform:uppercase; font-size:.68rem; letter-spacing:.05em; color:var(--text-faint); margin-bottom:6px;}
-  .chat-log{display:flex; flex-direction:column; gap:6px; max-height:220px; overflow-y:auto; margin-bottom:8px;}
-  .chat-empty{font-size:.8rem; color:var(--text-faint); font-style:italic;}
-  .chat-msg{font-size:.84rem; line-height:1.45; padding:7px 10px; border-radius:10px; max-width:88%;}
-  .chat-msg.me{align-self:flex-end; background:var(--accent-soft); color:var(--text);}
-  .chat-msg.ai{align-self:flex-start; background:var(--surface); border:1px solid var(--border); color:var(--text-dim);}
-  .chat-msg.ai.pending{color:var(--text-faint); font-style:italic;}
-  .chat-input-row{display:flex; gap:8px;}
+  /* ---- Chat (lives inside each card) ---- */
+  .chat-block{border-top:1px solid var(--sep); padding-top:12px; margin-top:4px;}
+  .chat-log{display:flex; flex-direction:column; gap:6px; max-height:300px; overflow-y:auto; margin-bottom:10px; -webkit-overflow-scrolling:touch;}
+  .chat-empty{font-size:14px; color:var(--text-faint); text-align:center; padding:8px 0;}
+  .chat-msg{font-size:15px; line-height:1.4; padding:8px 13px; border-radius:17px; max-width:84%; -webkit-user-select:text; user-select:text; overflow-wrap:anywhere;}
+  .chat-msg.me{align-self:flex-end; background:var(--tint); color:#fff; border-bottom-right-radius:5px;}
+  .chat-msg.me a{color:#fff;}
+  .chat-msg.ai{align-self:flex-start; background:var(--fill); color:var(--text); border-bottom-left-radius:5px;}
+  .chat-msg.ai.pending{font-style:normal;}
+  .typing{display:inline-flex; gap:4px; align-items:center; height:14px;}
+  .typing i{width:7px; height:7px; border-radius:50%; background:var(--text-faint); display:block; animation:typing 1.2s infinite ease-in-out;}
+  .typing i:nth-child(2){animation-delay:.15s;}
+  .typing i:nth-child(3){animation-delay:.3s;}
+  @keyframes typing{0%,60%,100%{opacity:.35; transform:translateY(0);} 30%{opacity:1; transform:translateY(-3px);}}
+  .chat-composer{display:flex; gap:8px; align-items:flex-end;}
   .chat-input{
-    flex:1; padding:9px 12px; border-radius:10px; border:1px solid var(--border); background:var(--surface);
-    color:var(--text); font-family:var(--font-ui); font-size:.86rem;
+    flex:1; min-width:0; min-height:40px; max-height:124px; resize:none; line-height:20px; padding:10px 14px;
+    border-radius:20px; background:var(--surface); overflow-y:auto;
+  }
+  .game-detail .chat-input, .why-body .chat-input{background:var(--surface);}
+  :root[data-theme="dark"] .game-detail .chat-input, :root[data-theme="dark"] .why-body .chat-input{background:var(--fill);}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .game-detail .chat-input, :root:not([data-theme="light"]) .why-body .chat-input{background:var(--fill);}
   }
   .chat-send{
-    border:none; background:var(--accent); color:#fff; font-family:var(--font-ui); font-weight:600;
-    font-size:.82rem; padding:0 18px; border-radius:10px; cursor:pointer;
+    flex:0 0 auto; width:34px; height:34px; margin-bottom:3px; border:none; border-radius:50%;
+    background:var(--tint); color:#fff; display:inline-flex; align-items:center; justify-content:center;
+    cursor:pointer; padding:0; position:relative;
   }
-  .chat-send:disabled{opacity:.5; cursor:default;}
-  .chat-hint{font-size:.72rem; color:var(--warning); font-family:var(--font-mono); margin-top:6px; min-height:1em;}
+  .chat-send::before{content:""; position:absolute; inset:-5px; border-radius:50%;} /* 44px hit area */
+  .chat-send svg{width:18px; height:18px; display:block;}
+  .chat-send:disabled{opacity:.4; cursor:default; transform:none;}
+  .chat-hint{font-size:13px; color:var(--warning); margin-top:6px; min-height:1.2em;}
 
   /* ---- My Dawgs (UGA) ---- */
-  :root{ --uga-red:#BA0C2F; --uga-red-soft:#FBE4E8; }
-  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --uga-red:#FF4B5C; --uga-red-soft:#3A1319; } }
-  :root[data-theme="dark"]{ --uga-red:#FF4B5C; --uga-red-soft:#3A1319; }
-
   .uga-hero{background:linear-gradient(135deg, var(--uga-red), #7A0A1F); color:#fff; border-radius:20px; padding:22px 20px; margin-top:14px; box-shadow:var(--shadow);}
-  .uga-hero .eyebrow{font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; font-weight:700; opacity:.85;}
-  .uga-hero h2{font-size:1.6rem; font-weight:800; margin:2px 0 14px; color:#fff;}
-  .uga-stats{display:flex; gap:22px; flex-wrap:wrap;}
-  .uga-stat .v{font-family:var(--font-mono); font-size:1.3rem; font-weight:700;}
-  .uga-stat .k{font-size:.66rem; opacity:.85; text-transform:uppercase; letter-spacing:.05em; margin-top:2px;}
-
-  .uga-next{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; margin-top:14px;}
-  .uga-next h3{font-size:.95rem; margin-bottom:2px;}
-  .uga-next .meta{font-size:.78rem; color:var(--text-faint); font-family:var(--font-mono); margin-bottom:8px;}
-  .uga-countdown{font-family:var(--font-mono); font-size:1.5rem; font-weight:700; color:var(--uga-red); margin:4px 0;}
-  .uga-line{font-size:.84rem; color:var(--text-dim);}
-
-  .uga-schedule{margin-top:14px; display:flex; flex-direction:column; gap:6px;}
-  .uga-game{display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:12px; background:var(--surface); border:1px solid var(--border);}
-  .uga-game.played{opacity:.65;}
-  .uga-game.current{border-color:var(--uga-red); background:var(--uga-red-soft);}
-  .uga-game .wk{font-family:var(--font-mono); font-size:.7rem; color:var(--text-faint); width:60px; flex:0 0 auto;}
-  .uga-game .opp{flex:1; font-size:.86rem; color:var(--text); font-weight:500;}
-  .uga-game .badge{font-size:.6rem; font-family:var(--font-ui); font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:2px 7px; border-radius:6px; flex:0 0 auto;}
+  .uga-hero .eyebrow{color:rgba(255,255,255,.85); font-size:12px;}
+  .uga-hero h2{font-size:26px; font-weight:800; letter-spacing:-.02em; margin:4px 0 14px; color:#fff;}
+  .uga-stats{display:flex; gap:24px; flex-wrap:wrap;}
+  .uga-stat .v{font-size:24px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .uga-stat .k{font-size:11px; opacity:.85; text-transform:uppercase; letter-spacing:.05em; margin-top:2px;}
+  .uga-next{padding:16px; margin-top:12px;}
+  .uga-next h3{font-size:18px; margin-bottom:2px; letter-spacing:-.01em;}
+  .uga-next .meta{font-size:13px; color:var(--text-faint); margin-bottom:8px;}
+  .uga-countdown{font-size:26px; font-weight:700; letter-spacing:-.02em; color:var(--uga-red); margin:4px 0; font-variant-numeric:tabular-nums;}
+  .uga-line{font-size:15px; color:var(--label-2);}
+  .uga-schedule{margin-top:12px; background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;}
+  .uga-game{display:flex; align-items:center; gap:10px; min-height:48px; padding:8px 16px; background:var(--surface);}
+  .uga-game + .uga-game{box-shadow:inset 0 1px 0 var(--sep);}
+  .uga-game.played{opacity:.6;}
+  .uga-game.current{background:var(--uga-red-soft);}
+  .uga-game .wk{font-size:13px; color:var(--text-faint); width:56px; flex:0 0 auto; font-variant-numeric:tabular-nums;}
+  .uga-game .opp{flex:1; font-size:16px; color:var(--text); font-weight:500; min-width:0;}
+  .uga-game .badge{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:3px 8px; border-radius:6px; flex:0 0 auto;}
   .uga-game .badge.rivalry{background:var(--uga-red-soft); color:var(--uga-red);}
-  .uga-game .badge.ranked{background:var(--accent-soft); color:var(--accent);}
-  .uga-game .result{font-family:var(--font-mono); font-size:.76rem; color:var(--positive); font-weight:600; flex:0 0 auto;}
-
-  .uga-story{margin-top:14px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px;}
-  .uga-story h3{font-size:.95rem; margin-bottom:8px;}
-  .uga-story p{color:var(--text-dim); font-size:.88rem; line-height:1.55; margin:0 0 10px;}
+  .uga-game .badge.ranked{background:var(--accent-soft); color:var(--tint);}
+  .uga-game .result{font-size:14px; color:var(--positive); font-weight:600; flex:0 0 auto; font-variant-numeric:tabular-nums;}
+  .uga-story{margin-top:12px; padding:16px;}
+  .uga-story h3{font-size:18px; margin-bottom:8px; letter-spacing:-.01em;}
+  .uga-story p{color:var(--label-2); font-size:15px; line-height:1.5; margin:0 0 10px;}
   .uga-story p:last-child{margin-bottom:0;}
-
-  .uga-research{margin-top:14px; background:var(--surface); border:1px solid var(--uga-red); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px;}
-  .uga-research h3{font-size:.95rem; margin-bottom:10px;}
-  .uga-research p{color:var(--text-dim); font-size:.88rem; line-height:1.55; margin:0 0 10px;}
+  .uga-research{margin-top:12px; padding:16px; box-shadow:0 0 0 1.5px var(--uga-red);}
+  .uga-research h3{font-size:18px; margin-bottom:10px; letter-spacing:-.01em;}
+  .uga-research p{color:var(--label-2); font-size:15px; line-height:1.5; margin:0 0 10px;}
   .uga-research p:last-child{margin-bottom:0;}
   .uga-research .game-lean, .uga-research .game-pass{margin:0 0 10px;}
 
   /* ---- Footer ---- */
-  footer{margin-top:32px; padding-top:16px; border-top:1px solid var(--border);}
-  .disclaimer{font-size:.74rem; color:var(--text-faint); line-height:1.55; max-width:66ch;}
-  .disclaimer strong{color:var(--text-dim);}
-  .sources{font-size:.68rem; color:var(--text-faint); font-family:var(--font-mono); margin-top:10px; line-height:1.6;}
+  footer{margin-top:32px; padding-top:16px; border-top:1px solid var(--sep);}
+  .disclaimer{font-size:13px; color:var(--text-faint); line-height:1.5; max-width:66ch;}
+  .disclaimer strong{color:var(--label-2);}
+  .sources{font-size:12px; color:var(--text-faint); margin-top:10px; line-height:1.55;}
+  .muted{font-size:13px; color:var(--text-faint);}
 
   /* ---- rendered markdown ---- */
   .md-list{margin:6px 0; padding-left:20px; display:flex; flex-direction:column; gap:4px;}
   .md-list li{line-height:1.45;}
   .md-h{font-weight:700; margin:8px 0 4px; font-size:.95em;}
-  .md-code{font-family:var(--font-mono); font-size:.88em; background:var(--fill, rgba(120,120,128,.14)); padding:1px 5px; border-radius:5px;}
-  .md-pre{background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 12px; overflow-x:auto; margin:8px 0;}
+  .md-code{font-family:var(--font-mono); font-size:.88em; background:var(--fill); padding:1px 5px; border-radius:5px;}
+  .md-pre{background:var(--surface-2); border-radius:8px; padding:10px 12px; overflow-x:auto; margin:8px 0;}
   .md-pre code{font-family:var(--font-mono); font-size:.85em; background:none; padding:0;}
   .ask-answer p, .chat-msg p{margin:0 0 8px;}
   .ask-answer p:last-child, .chat-msg p:last-child{margin-bottom:0;}
   .ask-answer > *:first-child, .chat-msg > *:first-child{margin-top:0;}
 
-  :focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
-
-  @media (max-width:460px){
-    .brand h1{font-size:1.25rem;}
-    .stake-field{margin-left:0;}
-    .pick-head{flex-direction:column;}
-    .confidence{flex-direction:row; align-items:center;}
-  }
   @media (prefers-reduced-motion: reduce){
-    *{transition:none!important;}
+    *{transition:none!important; animation:none!important;}
   }
 </style>
 
-<div class="topbar">
-  <div class="topbar-row">
-    <div class="brand">
-      <h1>College Football App</h1>
-      <span class="tag">CFB · Wk 3</span>
-    </div>
-    <div class="topbar-meta">
-      <div class="asof" id="asof-line">Odds as of Sat, Sep 19, 2026 · AM ET</div>
-      <button class="auth-chip" id="auth-chip" type="button" hidden></button>
-    </div>
-  </div>
-  <div class="tabs" role="tablist" aria-label="Sections">
-    <button class="tab" role="tab" aria-selected="true" aria-controls="panel-card" id="tab-card">Today's Card</button>
-    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-games" id="tab-games">All Games</button>
-    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-research" id="tab-research">Research</button>
-    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-futures" id="tab-futures">Futures Watch</button>
-    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-slip" id="tab-slip">My Slip</button>
-    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-uga" id="tab-uga">My Dawgs</button>
-  </div>
-</div>
+<div class="compact-header" id="compact-header" aria-hidden="true"><span class="compact-title" id="compact-title">College Football</span></div>
 
-<div class="auth-panel" id="auth-panel" hidden>
-  <p>Keep your slip, picks and bankroll in sync across your devices. Browsing the board needs no account, and research stays with the site owner.</p>
-  <button class="auth-go" id="auth-signin-btn" type="button" hidden>Sign in with Face ID</button>
-  <div class="auth-or" id="auth-or" hidden>or register a new account</div>
-  <label for="auth-email">Email</label>
-  <input type="email" id="auth-email" inputmode="email" autocomplete="username webauthn" placeholder="you@example.com">
-  <div id="auth-password-wrap" hidden>
-    <label for="auth-password" style="margin-top:10px;">Site password</label>
-    <input type="password" id="auth-password" autocomplete="current-password" placeholder="Owner password">
+<div class="page">
+<header class="app-header">
+  <div class="header-row">
+    <div>
+      <div class="eyebrow"><span>CFB · Week 3</span><span aria-hidden="true">·</span><span id="asof-line">Odds as of Sat, Sep 19, 2026 · AM ET</span></div>
+      <h1 class="large-title" id="large-title">College Football</h1>
+    </div>
+    <button class="auth-chip" id="auth-chip" type="button" aria-label="Account" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6"/></svg>
+      <span class="auth-chip-label"></span>
+    </button>
   </div>
-  <div class="auth-panel-actions">
-    <button class="auth-go" id="auth-register-btn" type="button">Continue</button>
-    <button class="text-toggle-btn" id="auth-panel-close" type="button" style="margin-top:0;">Cancel</button>
-  </div>
-  <div class="copy-status" id="auth-panel-status"></div>
-</div>
+</header>
 
+<nav class="tabbar" role="tablist" aria-label="Sections">
+  <button class="tab" role="tab" aria-selected="true" aria-controls="panel-card" id="tab-card" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 6v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-6z"/><path d="M12 9.5l.9 1.9 2.1.3-1.5 1.5.4 2.1-1.9-1-1.9 1 .4-2.1-1.5-1.5 2.1-.3z"/></svg>
+    <span class="tab-label"><span class="l-short">Card</span><span class="l-full">Today's Card</span></span>
+  </button>
+  <button class="tab" role="tab" aria-selected="false" aria-controls="panel-games" id="tab-games" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
+    <span class="tab-label"><span class="l-short">Games</span><span class="l-full">All Games</span></span>
+  </button>
+  <button class="tab" role="tab" aria-selected="false" aria-controls="panel-slip" id="tab-slip" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-2.3-1.5L14.4 21l-2.4-1.5L9.6 21l-2.3-1.5L5 21z"/><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"/></svg>
+    <span class="tab-label"><span class="l-short">Slip</span><span class="l-full">My Slip</span></span>
+  </button>
+  <button class="tab" role="tab" aria-selected="false" aria-controls="panel-research" id="tab-research" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
+    <span class="tab-label"><span class="l-short">Research</span><span class="l-full">Research</span></span>
+  </button>
+  <button class="tab" role="tab" aria-selected="false" aria-controls="panel-futures" id="tab-futures" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5.5-6 4 4L21 7"/><path d="M15 7h6v6"/></svg>
+    <span class="tab-label"><span class="l-short">Futures</span><span class="l-full">Futures Watch</span></span>
+  </button>
+  <button class="tab" role="tab" aria-selected="false" aria-controls="panel-uga" id="tab-uga" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-4.6-7-10.5A4.5 4.5 0 0 1 12 8a4.5 4.5 0 0 1 7 2.5C19 16.4 12 21 12 21z"/></svg>
+    <span class="tab-label"><span class="l-short">My Dawgs</span><span class="l-full">My Dawgs</span></span>
+  </button>
+  <button class="tab" id="tab-more" type="button" aria-haspopup="dialog" aria-controls="more-sheet" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="8" cy="12" r=".6" fill="currentColor"/><circle cx="12" cy="12" r=".6" fill="currentColor"/><circle cx="16" cy="12" r=".6" fill="currentColor"/></svg>
+    <span class="tab-label"><span class="l-short">More</span></span>
+  </button>
+</nav>
+
+<main>
 <section role="tabpanel" id="panel-card" aria-labelledby="tab-card">
   <div class="intro">
     <p>Plays off Saturday's board — straight bets and 3-leg parlays — built from DraftKings-market lines and this week's injury and personnel notes. Confidence dots reflect how much the number, not just the winner, is in our favor.</p>
@@ -529,7 +722,7 @@
   <div class="add-card-block">
     <div class="add-card-label">Add a game</div>
     <div class="add-card-row">
-      <input type="text" id="card-search-input" placeholder="Search any team or matchup…" maxlength="120">
+      <input type="search" id="card-search-input" placeholder="Search any team or matchup…" maxlength="120" enterkeyhint="search" autocomplete="off" autocapitalize="words" aria-label="Search any team or matchup">
       <button class="refresh-btn" id="card-search-btn" type="button">Find</button>
     </div>
     <div class="refresh-meta" id="card-search-status"></div>
@@ -539,8 +732,10 @@
 
 <section role="tabpanel" id="panel-games" aria-labelledby="tab-games" hidden>
   <div class="intro"><p>Every Top 25 and notable game we're tracking, refreshed from a research pass roughly hourly Thursday through Saturday. Click a game to see the full detail and ask about it directly.</p></div>
-  <div class="games-search-row">
-    <input type="search" id="games-search" placeholder="Search a team or matchup…" aria-label="Search tracked games">
+  <div class="games-search-row sticky-search">
+    <input type="search" id="games-search" placeholder="Search a team or matchup…" aria-label="Search tracked games" enterkeyhint="search" autocomplete="off" autocapitalize="words">
+  </div>
+  <div class="games-actions">
     <button class="refresh-btn" id="refresh-research-btn" type="button">Refresh research</button>
   </div>
   <div class="games-status" id="games-status">Loading the live board…</div>
@@ -554,7 +749,7 @@
   <div class="custom-research">
     <div class="custom-research-label">Custom research</div>
     <div class="games-search-row">
-      <input type="text" id="custom-research-input" placeholder="e.g. &quot;find me a bet I should make&quot; or &quot;research the Alabama-Florida State game&quot;" maxlength="300">
+      <input type="text" id="custom-research-input" placeholder="e.g. &quot;find me a bet I should make&quot; or &quot;research the Alabama-Florida State game&quot;" maxlength="300" enterkeyhint="search" autocomplete="off" autocapitalize="sentences" aria-label="Custom research question">
       <button class="refresh-btn" id="custom-research-btn" type="button">Research this</button>
     </div>
     <div class="refresh-meta" id="custom-research-status"></div>
@@ -572,23 +767,26 @@
   <div class="intro"><p>Check off what you actually place and set a stake. You'll get a full summary of your week below — every pick, the full "why," and your payout — plus a Good / Bad / Different read on the slip you've built. Everything here stays in your browser only; nothing connects to DraftKings or anywhere else.</p></div>
   <div class="bankroll-row">
     <label for="bankroll-input">Bankroll for this slate<span class="bankroll-hint">Optional — powers the risk-% notes below</span></label>
-    <div class="bankroll-input-wrap"><span>$</span><input type="number" min="0" step="25" id="bankroll-input" placeholder="e.g. 500" inputmode="decimal"></div>
+    <div class="bankroll-input-wrap"><span>$</span><input type="number" min="0" step="25" id="bankroll-input" placeholder="e.g. 500" inputmode="decimal" enterkeyhint="done" autocomplete="off"></div>
   </div>
   <div class="slip-summary" id="slip-summary"></div>
   <div id="slip-body"></div>
   <div id="slip-review"></div>
-  <button class="reset-btn" id="reset-slip">Clear my slip</button>
-  <button class="text-toggle-btn" id="passkey-signin-btn" type="button" hidden>Sign in with Face ID</button>
-  <button class="text-toggle-btn" id="passkey-setup-btn" type="button" hidden>Register an account</button>
-  <button class="text-toggle-btn" id="slip-sync-btn" type="button">Sign in with password</button>
-  <button class="text-toggle-btn" id="passkey-logout-btn" type="button" hidden>Sign out</button>
-  <div class="copy-status" id="slip-sync-status"></div>
-  <p class="muted" style="margin-top:10px; font-size:.78rem; color:var(--text-faint);">Your slip clears automatically each Tuesday when the new football week starts.</p>
+  <div class="slip-footer">
+    <button class="reset-btn" id="reset-slip" type="button">Clear my slip</button>
+    <button class="text-toggle-btn" id="passkey-signin-btn" type="button" hidden>Sign in with Face ID</button>
+    <button class="text-toggle-btn" id="passkey-setup-btn" type="button" hidden>Register an account</button>
+    <button class="text-toggle-btn" id="slip-sync-btn" type="button">Sign in with password</button>
+    <button class="text-toggle-btn" id="passkey-logout-btn" type="button" hidden>Sign out</button>
+    <div class="copy-status" id="slip-sync-status"></div>
+  </div>
+  <p class="muted" style="margin-top:10px;">Your slip clears automatically each Tuesday when the new football week starts.</p>
 </section>
 
 <section role="tabpanel" id="panel-uga" aria-labelledby="tab-uga" hidden>
   <div id="uga-root"></div>
 </section>
+</main>
 
 <footer>
   <p class="disclaimer">
@@ -597,6 +795,51 @@
   </p>
   <p class="sources">Sources: DraftKings Sportsbook &amp; DK Network, CBS Sports, Covers.com, FanDuel Research, Action Network, TheSpread.com, SportsGrid, SI.com, RotoWire — compiled Sep 19, 2026.</p>
 </footer>
+</div>
+
+<div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
+
+<!-- Auth lives in a sheet reachable from every tab: the gated actions are on
+     Research, and a browser password box with no hint that Face ID exists two
+     tabs over is a dead end. Every id and handler here is unchanged. -->
+<div class="sheet auth-panel" id="auth-panel" role="dialog" aria-modal="true" aria-labelledby="auth-panel-title" hidden>
+  <div class="grabber"></div>
+  <h2 class="sheet-title" id="auth-panel-title">Account</h2>
+  <p>Keep your slip, picks and bankroll in sync across your devices. Browsing the board needs no account, and research stays with the site owner.</p>
+  <button class="auth-go" id="auth-signin-btn" type="button" hidden>Sign in with Face ID</button>
+  <div class="auth-or" id="auth-or" hidden>or register a new account</div>
+  <div class="form-group">
+    <label for="auth-email">Email</label>
+    <input type="email" id="auth-email" inputmode="email" autocomplete="username webauthn" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="you@example.com">
+    <div id="auth-password-wrap" hidden>
+      <label for="auth-password" style="margin-top:10px;">Site password</label>
+      <input type="password" id="auth-password" autocomplete="current-password" enterkeyhint="done" placeholder="Owner password">
+    </div>
+  </div>
+  <div class="auth-panel-actions">
+    <button class="auth-go" id="auth-register-btn" type="button">Continue</button>
+    <button class="text-toggle-btn" id="auth-panel-close" type="button">Cancel</button>
+  </div>
+  <div class="copy-status" id="auth-panel-status"></div>
+</div>
+
+<div class="sheet" id="more-sheet" role="dialog" aria-modal="true" aria-label="More sections" hidden>
+  <div class="grabber"></div>
+  <h2 class="sheet-title">More</h2>
+  <div class="list-group">
+    <button class="list-row" type="button" data-tab-target="tab-futures">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5.5-6 4 4L21 7"/><path d="M15 7h6v6"/></svg>
+      <span>Futures Watch</span><span class="chev" aria-hidden="true">›</span>
+    </button>
+    <button class="list-row" type="button" data-tab-target="tab-uga">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-4.6-7-10.5A4.5 4.5 0 0 1 12 8a4.5 4.5 0 0 1 7 2.5C19 16.4 12 21 12 21z"/></svg>
+      <span>My Dawgs</span><span class="chev" aria-hidden="true">›</span>
+    </button>
+  </div>
+</div>
+
+<div class="sheet" id="dyn-sheet" role="dialog" aria-modal="true" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 (function(){
@@ -877,17 +1120,23 @@
   // The header chip mirrors the My Slip buttons - same states, same handlers,
   // just reachable from every tab. Armed beats everything: a half-finished
   // Face ID prompt is the thing the user most needs to see.
+  function labelChip(chip, text, state){
+    var span = chip.querySelector('.auth-chip-label');
+    if (span) span.textContent = text;
+    chip.setAttribute('aria-label', text);
+    chip.title = text;
+    chip.dataset.state = state;
+  }
   function paintChip(){
     var chip = document.getElementById('auth-chip');
     if (!chip) return;
     if (!passkeySupported()){ chip.hidden = true; return; }
     chip.hidden = false;
     if ((armedReg && armedFresh(armedRegAt)) || (armedLogin && armedFresh(armedLoginAt))){
-      chip.textContent = 'Tap again'; chip.dataset.state = 'armed'; return;
+      labelChip(chip, 'Tap again', 'armed'); return;
     }
-    if (lastAuthState.signedIn){ chip.textContent = 'Signed in'; chip.dataset.state = 'in'; return; }
-    chip.textContent = lastAuthState.passkeyRegistered ? 'Sign in' : 'Register';
-    chip.dataset.state = 'out';
+    if (lastAuthState.signedIn){ labelChip(chip, 'Signed in', 'in'); return; }
+    labelChip(chip, lastAuthState.passkeyRegistered ? 'Sign in' : 'Register', 'out');
   }
 
   // Every branch calls create()/get() directly, so the tap that reaches this
@@ -957,7 +1206,7 @@
   function openAuthPanel(){
     var panel = document.getElementById('auth-panel');
     if (!panel) return;
-    panel.hidden = false;
+    openSheet(panel, {onDismiss: closeAuthPanel});
     // Offer sign-in only where this host actually holds a passkey; the email
     // form is always there, since a passkey existing says nothing about
     // whether it is THIS person's.
@@ -970,7 +1219,7 @@
   }
   function closeAuthPanel(){
     var panel = document.getElementById('auth-panel');
-    if (panel) panel.hidden = true;
+    if (panel) closeSheet(panel);
     var wrap = document.getElementById('auth-password-wrap');
     if (wrap) wrap.hidden = true;
     var pwd = document.getElementById('auth-password');
@@ -1142,7 +1391,7 @@
         authBusy = false;
         disarmLogin();
         var panel = document.getElementById('auth-panel');
-        if (panel) panel.hidden = true;
+        if (panel) closeSheet(panel);
         syncEnabled = true;
         setAuthStatus('Signed in');
         refreshAuthStatus();
@@ -1367,7 +1616,12 @@
 
   function stakeInputHtml(id){
     var saved = slipState[id] && slipState[id].stake != null ? slipState[id].stake : 25;
-    return '<div class="stake-field"><span>Stake</span><input type="number" min="0" step="5" value="' + saved + '" data-stake-for="' + id + '" id="stake-' + id + '"></div>';
+    return '<div class="stake-field"><span>Stake</span><input type="number" min="0" step="5" inputmode="decimal" enterkeyhint="done" autocomplete="off" aria-label="Stake in dollars" value="' + saved + '" data-stake-for="' + id + '" id="stake-' + id + '"></div>';
+  }
+
+  function switchRowHtml(id){
+    return '<label class="switch-row"><span class="switch-label">On my slip</span>' +
+      '<span class="switch"><input type="checkbox" data-placed-for="' + id + '" ' + checkedFor(id) + '><span class="track" aria-hidden="true"></span></span></label>';
   }
 
   function checkedFor(id){
@@ -1395,9 +1649,8 @@
         '<button class="why-toggle" aria-expanded="false" data-why="' + p.id + '">Why this number <span class="arrow">&#9662;</span></button>' +
         '<div class="why-body" id="why-' + p.id + '" hidden><p>' + p.why + '</p><div class="risk-line">Risk: ' + p.risk + '</div>' + chatBlockHtml(p.id) + '</div>' +
         '<div class="slip-row">' +
-          '<label><input type="checkbox" data-placed-for="' + p.id + '" ' + checkedFor(p.id) + '> On my slip</label>' +
-          stakeInputHtml(p.id) +
-          '<span class="payout" data-payout-for="' + p.id + '"></span>' +
+          switchRowHtml(p.id) +
+          '<div class="stake-row">' + stakeInputHtml(p.id) + '<span class="payout" data-payout-for="' + p.id + '"></span></div>' +
         '</div>' +
       '</article>';
     });
@@ -1422,9 +1675,8 @@
         '<button class="why-toggle" aria-expanded="false" data-why="' + p.id + '">Why this parlay <span class="arrow">&#9662;</span></button>' +
         '<div class="why-body" id="why-' + p.id + '" hidden><p>' + p.why + '</p><div class="risk-line">Risk: ' + p.risk + '</div>' + chatBlockHtml(p.id) + '</div>' +
         '<div class="slip-row">' +
-          '<label><input type="checkbox" data-placed-for="' + p.id + '" ' + checkedFor(p.id) + '> On my slip</label>' +
-          stakeInputHtml(p.id) +
-          '<span class="payout" data-payout-for="' + p.id + '"></span>' +
+          switchRowHtml(p.id) +
+          '<div class="stake-row">' + stakeInputHtml(p.id) + '<span class="payout" data-payout-for="' + p.id + '"></span></div>' +
         '</div>' +
       '</article>';
     });
@@ -1445,10 +1697,9 @@
         '<button class="why-toggle" aria-expanded="false" data-why="' + p.id + '">Why this number <span class="arrow">&#9662;</span></button>' +
         '<div class="why-body" id="why-' + p.id + '" hidden><p>' + p.why + '</p><div class="risk-line">Risk: ' + p.risk + '</div>' + chatBlockHtml(p.id) + '</div>' +
         '<div class="slip-row">' +
-          '<label><input type="checkbox" data-placed-for="' + p.id + '" ' + checkedFor(p.id) + '> On my slip</label>' +
-          stakeInputHtml(p.id) +
-          '<span class="payout" data-payout-for="' + p.id + '"></span>' +
-          '<button class="remove-card-btn" data-remove-card="' + p.id.slice(5) + '" type="button">Remove card</button>' +
+          switchRowHtml(p.id) +
+          '<div class="stake-row">' + stakeInputHtml(p.id) + '<span class="payout" data-payout-for="' + p.id + '"></span>' +
+            '<button class="remove-card-btn" data-remove-card="' + p.id.slice(5) + '" type="button">Remove card</button></div>' +
         '</div>' +
       '</article>';
     });
@@ -1600,7 +1851,10 @@
 
     if (placedOnes.length === 0){
       summaryEl.innerHTML = '';
-      bodyEl.innerHTML = '<div class="empty-slip">Nothing on your slip yet. Check “On my slip” on any play in Today’s Card to track it here.</div>';
+      bodyEl.innerHTML = '<div class="empty-slip">' + EMPTY_GLYPH +
+        '<div class="state-title">Your slip is empty</div>' +
+        '<div>Nothing on your slip yet. Check “On my slip” on any play in Today’s Card to track it here.</div>' +
+        '<button class="reset-btn" type="button" data-go-tab="tab-card" style="margin-top:14px;">Go to Today’s Card</button></div>';
       renderReview(placedOnes);
       return;
     }
@@ -1867,13 +2121,29 @@
     return '<div class="chat-block" data-chat-for="' + gameId + '">' +
       '<div class="chat-label">Ask about this game</div>' +
       '<div class="chat-log" id="chat-log-' + gameId + '"></div>' +
-      '<div class="chat-input-row">' +
-        '<input type="text" class="chat-input" id="chat-input-' + gameId + '" placeholder="e.g. how worried should I be about the QB?">' +
-        '<button class="chat-send" type="button" data-chat-send="' + gameId + '">Ask</button>' +
+      '<div class="chat-composer">' +
+        '<textarea class="chat-input" id="chat-input-' + gameId + '" rows="1" enterkeyhint="send" autocomplete="off" autocapitalize="sentences" placeholder="e.g. how worried should I be about the QB?" aria-label="Ask about this game"></textarea>' +
+        '<button class="chat-send" type="button" data-chat-send="' + gameId + '" aria-label="Ask" disabled>' + SEND_GLYPH + '</button>' +
       '</div>' +
       '<div class="chat-hint" id="chat-hint-' + gameId + '"></div>' +
     '</div>';
   }
+
+  var SEND_GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg>';
+  var TYPING_HTML = '<span class="typing" aria-label="Thinking"><i></i><i></i><i></i></span>';
+
+  // Keeps a composer honest after any change: the textarea grows to ~5 lines
+  // and the send button is only live when there is something to send.
+  function syncComposer(inp){
+    if (!inp || !inp.classList || !inp.classList.contains('chat-input')) return;
+    inp.style.height = 'auto';
+    inp.style.height = Math.min(inp.scrollHeight, 124) + 'px';
+    var gid = inp.id.replace('chat-input-', '');
+    var btn = document.querySelector('[data-chat-send="' + gid + '"]');
+    if (btn) btn.disabled = !inp.value.trim() || chatPending[gid] != null;
+  }
+
+  var EMPTY_GLYPH = '<svg class="state-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-2.3-1.5L14.4 21l-2.4-1.5L9.6 21l-2.3-1.5L5 21z"/><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"/></svg>';
 
   function chatKey(id){ return 'cover-sheet-chat-' + id; }
   function loadChatTurns(id){
@@ -1895,7 +2165,7 @@
       return '<div class="chat-msg ' + (t.role === 'user' ? 'me' : 'ai') + '">' + body + '</div>';
     }).join('');
     if (chatPending[gameId] != null){
-      html += '<div class="chat-msg ai pending">' + escapeHtml(chatPending[gameId] || 'Thinking…') + '</div>';
+      html += '<div class="chat-msg ai pending">' + (chatPending[gameId] ? escapeHtml(chatPending[gameId]) : TYPING_HTML) + '</div>';
     }
     el.innerHTML = html || '<div class="chat-empty">Ask a question about this game — injuries, the number, anything.</div>';
     el.scrollTop = el.scrollHeight;
@@ -1928,6 +2198,7 @@
     if (input) input.value = '';
     if (btn) btn.disabled = true;
     chatPending[gameId] = '';
+    syncComposer(input);
     if (hint) hint.textContent = '';
     renderChatLog(gameId);
 
@@ -1940,12 +2211,12 @@
       delete chatPending[gameId];
       saveChatTurns(gameId, chatHistories[gameId]);
       renderChatLog(gameId);
-      if (btn) btn.disabled = false;
+      syncComposer(document.getElementById('chat-input-' + gameId));
     }).catch(function(err){
       delete chatPending[gameId];
       renderChatLog(gameId);
       if (hint) hint.textContent = chatErrorMessage(err);
-      if (btn) btn.disabled = false;
+      syncComposer(document.getElementById('chat-input-' + gameId));
     });
   }
 
@@ -2029,7 +2300,7 @@
     if (!state) return;
     Object.keys(state.drafts).forEach(function(id){
       var inp = document.getElementById(id);
-      if (inp) inp.value = state.drafts[id];
+      if (inp){ inp.value = state.drafts[id]; syncComposer(inp); }
     });
     if (state.activeId){
       var a = document.getElementById(state.activeId);
@@ -2060,7 +2331,7 @@
     } else {
       grid.hidden = true;
       emptyEl.hidden = false;
-      emptyEl.innerHTML = '<p>No tracked game matches “' + escapeHtml(q) + '.”</p>' +
+      emptyEl.innerHTML = EMPTY_GLYPH + '<p>No tracked game matches “' + escapeHtml(q) + '.”</p>' +
         (dbCap ?
           '<button class="reset-btn" id="request-game-btn" type="button">Add it to the research queue</button><span class="copy-status" id="request-status"></span>' :
           '<p>Live search isn’t connected in this preview — open the published page to search and queue new games.</p>');
@@ -2492,7 +2763,7 @@
     });
 
     document.getElementById('card-list').addEventListener('keydown', function(e){
-      if (e.key === 'Enter' && e.target.matches('.chat-input')){
+      if (e.key === 'Enter' && !e.shiftKey && e.target.matches('.chat-input')){
         e.preventDefault();
         var gid2 = e.target.id.replace('chat-input-', '');
         sendChat(gid2, contextForChat(gid2));
@@ -2541,7 +2812,7 @@
       }
     });
     gamesPanel.addEventListener('keydown', function(e){
-      if (e.key === 'Enter' && e.target.matches('.chat-input')){
+      if (e.key === 'Enter' && !e.shiftKey && e.target.matches('.chat-input')){
         e.preventDefault();
         var gid3 = e.target.id.replace('chat-input-', '');
         sendChat(gid3, contextForChat(gid3));
@@ -2595,10 +2866,19 @@
     if (chip) chip.addEventListener('click', authChipClick);
 
     document.getElementById('reset-slip').addEventListener('click', function(){
-      slipState = {};
-      saveSlip(slipState);
-      renderCards();
-      refreshAllRows();
+      confirmSheet({
+        title: 'Clear my slip?',
+        message: 'This unchecks every play and resets the stakes. Your added cards stay on Today’s Card.',
+        confirmLabel: 'Clear my slip',
+        destructive: true
+      }).then(function(ok){
+        if (!ok) return;
+        slipState = {};
+        saveSlip(slipState);
+        renderCards();
+        refreshAllRows();
+        toast('Slip cleared');
+      });
     });
 
     var bankrollInput = document.getElementById('bankroll-input');
@@ -2628,6 +2908,7 @@
       var status = document.getElementById('copy-status');
       if (!ta) return;
       function showStatus(msg){
+        toast(msg);
         if (!status) return;
         status.textContent = msg;
         setTimeout(function(){ status.textContent = ''; }, 2500);
@@ -2656,16 +2937,202 @@
       }
     });
 
-    var tabs = document.querySelectorAll('.tab');
-    tabs.forEach(function(tabEl){
-      tabEl.addEventListener('click', function(){
-        tabs.forEach(function(t2){ t2.setAttribute('aria-selected','false'); });
-        tabEl.setAttribute('aria-selected','true');
-        var panels = document.querySelectorAll('section[role="tabpanel"]');
-        panels.forEach(function(p){ p.hidden = true; });
-        document.getElementById(tabEl.getAttribute('aria-controls')).hidden = false;
-      });
+    document.querySelectorAll('.tab[role="tab"]').forEach(function(tabEl){
+      tabEl.addEventListener('click', function(){ showTab(tabEl); });
     });
+    var moreBtn = document.getElementById('tab-more');
+    var moreSheet = document.getElementById('more-sheet');
+    if (moreBtn && moreSheet){
+      moreBtn.addEventListener('click', function(){
+        openSheet(moreSheet, {onClose: function(){ moreBtn.setAttribute('aria-expanded', 'false'); }});
+        moreBtn.setAttribute('aria-expanded', 'true');
+      });
+      moreSheet.addEventListener('click', function(e){
+        var row = e.target.closest('[data-tab-target]');
+        if (!row) return;
+        closeSheet(moreSheet);
+        var target = document.getElementById(row.getAttribute('data-tab-target'));
+        if (target) showTab(target);
+      });
+    }
+    document.addEventListener('click', function(e){
+      var go = e.target.closest('[data-go-tab]');
+      if (!go) return;
+      var target = document.getElementById(go.getAttribute('data-go-tab'));
+      if (target) showTab(target);
+    });
+    window.addEventListener('hashchange', applyHash);
+
+    // Composers: grow with the text, arm the send button, and keep the box
+    // visible above the iOS keyboard when it gets focus.
+    document.addEventListener('input', function(e){
+      if (e.target.matches && e.target.matches('.chat-input')) syncComposer(e.target);
+    });
+    document.addEventListener('focusin', function(e){
+      if (!(e.target.matches && e.target.matches('.chat-input'))) return;
+      var el = e.target;
+      setTimeout(function(){ try{ el.scrollIntoView({block: 'center', behavior: 'smooth'}); }catch(err){} }, 300);
+    });
+  }
+
+  // ---------- chrome: tabs, sheets, toast, compact header ----------
+  var TAB_HASHES = {'tab-card': 'card', 'tab-games': 'games', 'tab-research': 'research', 'tab-futures': 'futures', 'tab-slip': 'slip', 'tab-uga': 'uga'};
+
+  function showTab(tabEl, opts){
+    opts = opts || {};
+    if (!tabEl) return;
+    document.querySelectorAll('.tab[role="tab"]').forEach(function(t2){ t2.setAttribute('aria-selected', 'false'); });
+    tabEl.setAttribute('aria-selected', 'true');
+    document.querySelectorAll('section[role="tabpanel"]').forEach(function(p){ p.hidden = true; });
+    var panel = document.getElementById(tabEl.getAttribute('aria-controls'));
+    if (panel) panel.hidden = false;
+    var more = document.getElementById('tab-more');
+    if (more) more.classList.toggle('more-active', tabEl.id === 'tab-futures' || tabEl.id === 'tab-uga');
+    var hash = TAB_HASHES[tabEl.id];
+    if (hash && !opts.fromHash){
+      try{ history.replaceState(null, '', '#' + hash); }catch(e){ location.hash = hash; }
+    }
+    if (!opts.fromHash || opts.scroll) window.scrollTo(0, 0);
+  }
+
+  function applyHash(){
+    var h = (location.hash || '').replace(/^#/, '');
+    var id = null;
+    Object.keys(TAB_HASHES).forEach(function(k){ if (TAB_HASHES[k] === h) id = k; });
+    if (!id) return false;
+    var tab = document.getElementById(id);
+    if (!tab || tab.getAttribute('aria-selected') === 'true') return !!tab;
+    showTab(tab, {fromHash: true, scroll: true});
+    return true;
+  }
+
+  function reducedMotion(){
+    return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
+
+  // One sheet at a time. Programmatic closeSheet() never fires onDismiss;
+  // a backdrop tap, Escape or a drag on the grabber does, so a caller can
+  // treat "the user waved it away" exactly like its own Cancel button.
+  var openSheetEl = null, openSheetOpts = null, sheetReturnFocus = null;
+  function openSheet(el, opts){
+    if (!el) return;
+    opts = opts || {};
+    if (openSheetEl && openSheetEl !== el) closeSheet(openSheetEl);
+    var bd = document.getElementById('sheet-backdrop');
+    openSheetEl = el; openSheetOpts = opts;
+    sheetReturnFocus = document.activeElement;
+    el.hidden = false;
+    if (bd) bd.hidden = false;
+    document.body.classList.add('sheet-open');
+    el.tabIndex = -1;
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      el.classList.add('on');
+      if (bd) bd.classList.add('on');
+      try{ el.focus({preventScroll: true}); }catch(e){}
+    }); });
+  }
+  function closeSheet(el){
+    if (!el || el.hidden) return;
+    var bd = document.getElementById('sheet-backdrop');
+    var opts = (openSheetEl === el && openSheetOpts) || {};
+    el.classList.remove('on');
+    el.style.transform = '';
+    if (openSheetEl === el){ openSheetEl = null; openSheetOpts = null; }
+    if (bd && !openSheetEl) bd.classList.remove('on');
+    document.body.classList.remove('sheet-open');
+    var delay = reducedMotion() ? 0 : 320;
+    setTimeout(function(){
+      if (!el.classList.contains('on')) el.hidden = true;
+      if (bd && !openSheetEl) bd.hidden = true;
+    }, delay);
+    if (opts.onClose) opts.onClose();
+    if (sheetReturnFocus && sheetReturnFocus.focus && document.contains(sheetReturnFocus)){
+      try{ sheetReturnFocus.focus({preventScroll: true}); }catch(e){}
+    }
+    sheetReturnFocus = null;
+  }
+  function dismissSheet(){
+    var el = openSheetEl, opts = openSheetOpts || {};
+    if (!el) return;
+    if (opts.onDismiss) opts.onDismiss(); else closeSheet(el);
+  }
+
+  // Confirmation as an iOS action sheet. Resolves true only on the named action.
+  function confirmSheet(cfg){
+    cfg = cfg || {};
+    var sheet = document.getElementById('dyn-sheet');
+    if (!sheet) return Promise.resolve(false);
+    return new Promise(function(resolve){
+      var done = false;
+      function finish(ok){ if (done) return; done = true; closeSheet(sheet); resolve(ok); }
+      sheet.innerHTML = '<div class="grabber"></div>' +
+        (cfg.title ? '<h2 class="sheet-title">' + escapeHtml(cfg.title) + '</h2>' : '') +
+        (cfg.message ? '<p class="sheet-msg">' + escapeHtml(cfg.message) + '</p>' : '') +
+        '<div class="sheet-actions">' +
+          '<button class="sheet-action' + (cfg.destructive ? ' destructive' : ' primary') + '" type="button" data-sheet-ok>' + escapeHtml(cfg.confirmLabel || 'OK') + '</button>' +
+          '<button class="sheet-action sheet-cancel" type="button" data-sheet-cancel>' + escapeHtml(cfg.cancelLabel || 'Cancel') + '</button>' +
+        '</div>';
+      sheet.setAttribute('aria-label', cfg.title || 'Confirm');
+      sheet.onclick = function(e){
+        if (e.target.closest('[data-sheet-ok]')) finish(true);
+        else if (e.target.closest('[data-sheet-cancel]')) finish(false);
+      };
+      openSheet(sheet, {onDismiss: function(){ finish(false); }});
+    });
+  }
+
+  var toastTimer = null;
+  function toast(msg){
+    var el = document.getElementById('toast');
+    if (!el || !msg) return;
+    el.textContent = msg;
+    el.classList.add('on');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.remove('on'); }, 3000);
+  }
+
+  function initChrome(){
+    var bd = document.getElementById('sheet-backdrop');
+    if (bd) bd.addEventListener('click', dismissSheet);
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && openSheetEl) dismissSheet();
+    });
+
+    // Drag the grabber (or title) down to dismiss.
+    var dragY = null, dragEl = null;
+    document.addEventListener('touchstart', function(e){
+      var handle = e.target.closest('.grabber, .sheet-title');
+      if (!handle || !openSheetEl || !openSheetEl.contains(handle)) return;
+      dragY = e.touches[0].clientY; dragEl = openSheetEl;
+      dragEl.classList.add('dragging');
+    }, {passive: true});
+    document.addEventListener('touchmove', function(e){
+      if (dragY == null || !dragEl) return;
+      var dy = Math.max(0, e.touches[0].clientY - dragY);
+      dragEl.style.transform = 'translateY(' + dy + 'px)';
+    }, {passive: true});
+    document.addEventListener('touchend', function(e){
+      if (dragY == null || !dragEl) return;
+      var dy = Math.max(0, (e.changedTouches[0].clientY) - dragY);
+      dragEl.classList.remove('dragging');
+      dragEl.style.transform = '';
+      if (dy > 80) dismissSheet();
+      dragY = null; dragEl = null;
+    });
+
+    // Compact header fades in once the large title has scrolled away.
+    var large = document.getElementById('large-title');
+    var compact = document.getElementById('compact-header');
+    if (large && compact && 'IntersectionObserver' in window){
+      new IntersectionObserver(function(entries){
+        var en = entries[0];
+        var gone = !en.isIntersecting && en.boundingClientRect.top < 0;
+        compact.classList.toggle('on', gone);
+        compact.setAttribute('aria-hidden', gone ? 'false' : 'true');
+      }, {rootMargin: '-44px 0px 0px 0px', threshold: 0}).observe(large);
+    }
+
+    if (!applyHash()) showTab(document.getElementById('tab-card'), {fromHash: true});
   }
 
   // ---------- backend wiring: a small db-capability-shaped shim over our
@@ -2809,6 +3276,7 @@
     document.getElementById('bankroll-input').value = loadBankroll();
     refreshAllRows();
     wireEvents();
+    initChrome();
     initCapabilities();
   }
 
