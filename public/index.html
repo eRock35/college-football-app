@@ -107,6 +107,17 @@
   .brand h1{font-size:1.5rem; font-weight:700; color:var(--text);}
   .brand .tag{font-size:.68rem; color:var(--accent); font-family:var(--font-mono); letter-spacing:.06em; border:1px solid var(--accent); border-radius:20px; padding:2px 8px; text-transform:uppercase;}
   .asof{font-size:.72rem; color:var(--text-faint); font-family:var(--font-mono);}
+  /* Auth lives in the header as well as at the foot of My Slip: the gated
+     actions are on Research, and a browser password box with no hint that
+     Face ID exists two tabs over is a dead end. */
+  .topbar-meta{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;}
+  .auth-chip{
+    font-size:.68rem; font-family:var(--font-mono); letter-spacing:.06em; text-transform:uppercase;
+    color:var(--accent); background:transparent; border:1px solid var(--accent); border-radius:20px;
+    padding:2px 8px; cursor:pointer;
+  }
+  .auth-chip[data-state="in"]{color:var(--text-faint); border-color:var(--border);}
+  .auth-chip[data-state="armed"]{background:var(--accent); color:#fff;}
 
   .tabs{display:flex; gap:4px; margin-top:14px; overflow-x:auto; padding:4px; background:var(--surface-2); border-radius:14px;}
   .tab{
@@ -456,7 +467,10 @@
       <h1>College Football App</h1>
       <span class="tag">CFB · Wk 3</span>
     </div>
-    <div class="asof" id="asof-line">Odds as of Sat, Sep 19, 2026 · AM ET</div>
+    <div class="topbar-meta">
+      <div class="asof" id="asof-line">Odds as of Sat, Sep 19, 2026 · AM ET</div>
+      <button class="auth-chip" id="auth-chip" type="button" hidden></button>
+    </div>
   </div>
   <div class="tabs" role="tablist" aria-label="Sections">
     <button class="tab" role="tab" aria-selected="true" aria-controls="panel-card" id="tab-card">Today's Card</button>
@@ -818,7 +832,36 @@
     var el = document.getElementById('slip-sync-status');
     if (el){ el.textContent = msg; el.className = 'copy-status' + (cls ? ' ' + cls : ''); }
   }
+  var lastAuthState = {};
+  // The header chip mirrors the My Slip buttons - same states, same handlers,
+  // just reachable from every tab. Armed beats everything: a half-finished
+  // Face ID prompt is the thing the user most needs to see.
+  function paintChip(){
+    var chip = document.getElementById('auth-chip');
+    if (!chip) return;
+    if (!passkeySupported()){ chip.hidden = true; return; }
+    chip.hidden = false;
+    if ((armedReg && armedFresh(armedRegAt)) || (armedLogin && armedFresh(armedLoginAt))){
+      chip.textContent = 'Tap again'; chip.dataset.state = 'armed'; return;
+    }
+    if (lastAuthState.signedIn){ chip.textContent = 'Signed in'; chip.dataset.state = 'in'; return; }
+    chip.textContent = lastAuthState.passkeyRegistered ? 'Sign in' : 'Set up Face ID';
+    chip.dataset.state = 'out';
+  }
+
+  // Every branch calls create()/get() directly, so the tap that reaches this
+  // handler is the same activation WebAuthn sees.
+  function authChipClick(){
+    if (armedReg && armedFresh(armedRegAt)) return createPasskeyNow();
+    if (armedLogin && armedFresh(armedLoginAt)) return getPasskeyNow();
+    if (lastAuthState.signedIn) return signOut();
+    if (lastAuthState.passkeyRegistered) return signInWithPasskey();
+    return registerPasskey();
+  }
+
   function paintAuthButtons(state){
+    lastAuthState = state || {};
+    paintChip();
     var signIn = document.getElementById('passkey-signin-btn');
     var setup = document.getElementById('passkey-setup-btn');
     var pwd = document.getElementById('slip-sync-btn');
@@ -863,10 +906,12 @@
   function disarmReg(){
     armedReg = null; armedRegAt = 0;
     setBtnLabel('passkey-setup-btn', 'Set up Face ID sign-in');
+    paintChip();
   }
   function disarmLogin(){
     armedLogin = null; armedLoginAt = 0;
     setBtnLabel('passkey-signin-btn', 'Sign in with Face ID');
+    paintChip();
   }
 
   function registerPasskey(){
@@ -890,6 +935,7 @@
         armedRegAt = Date.now();
         authBusy = false;
         setBtnLabel('passkey-setup-btn', 'Tap again for Face ID');
+        paintChip();
         setAuthStatus('Password accepted — tap again to finish with Face ID.');
       })
       .catch(function(){
@@ -938,6 +984,7 @@
         // making the user re-enter the password.
         if (err && err.name === 'NotAllowedError' && armedFresh(armedRegAt)){
           setBtnLabel('passkey-setup-btn', 'Tap again for Face ID');
+          paintChip();
           setAuthStatus('Face ID didn’t complete — tap again.', 'error');
           return;
         }
@@ -1007,6 +1054,7 @@
         authBusy = false;
         if (err && err.name === 'NotAllowedError' && armedFresh(armedLoginAt)){
           setBtnLabel('passkey-signin-btn', 'Tap again for Face ID');
+          paintChip();
           setAuthStatus('Face ID didn’t complete — tap again.', 'error');
           return;
         }
@@ -2432,6 +2480,8 @@
     if (pkSet) pkSet.addEventListener('click', registerPasskey);
     var pkOut = document.getElementById('passkey-logout-btn');
     if (pkOut) pkOut.addEventListener('click', signOut);
+    var chip = document.getElementById('auth-chip');
+    if (chip) chip.addEventListener('click', authChipClick);
 
     document.getElementById('reset-slip').addEventListener('click', function(){
       slipState = {};
