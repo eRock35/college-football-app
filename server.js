@@ -5,7 +5,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 
 const PORT = process.env.PORT || 8080;
 const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || 'metal-celerity-236019';
-const FIRESTORE_DB = process.env.FIRESTORE_DATABASE_ID || 'cover-sheet';
+const FIRESTORE_DB = process.env.FIRESTORE_DATABASE_ID || 'college-football-app';
 
 const SITE_LOGIN_USERNAME = process.env.SITE_LOGIN_USERNAME || '';
 const SITE_LOGIN_PASSWORD = process.env.SITE_LOGIN_PASSWORD || '';

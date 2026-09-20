@@ -4,14 +4,15 @@ Non-secret setup facts for deploying this app to GCP. Written so a future
 Claude Code session in this repo has this context without needing it
 re-explained. No secrets live in this file — see "Secrets" below.
 
-The app's actual title/branding is **"College Football App"**, not "Cover
-Sheet" — the file/repo name and some internal identifiers (GCP resource
-names, localStorage keys, the `erik-projects` Artifact Registry repo) still
-say "cover-sheet"/"cover sheet" in places; that's fine, they're internal
-plumbing, not user-facing. Don't reintroduce "Cover Sheet" as the page's
-displayed name or `<title>` — an earlier pass here did that by mistake (a
-hand-rebuilt frontend that didn't match the real Artifact) and it was
-corrected. `public/index.html` is now a direct port of the real Claude
+The app is **"College Football App"** everywhere — page title, Cloud Run
+service, container image, Firestore database, and the subdomain. An earlier
+pass named things "Cover Sheet" (the app's older name); that was wrong and
+has been corrected. Don't reintroduce it. Two legacy exceptions that can't
+or shouldn't change: the deployer service account is
+`cover-sheet-deployer@...` (GCP service account IDs are immutable), and the
+page's `localStorage` keys are still `cover-sheet-slip-v1` etc. — those come
+from the original Artifact and are invisible to users; renaming them would
+wipe anyone's saved slip for no visible benefit. `public/index.html` is now a direct port of the real Claude
 Artifact (`https://claude.ai/artifact/KAiaq3U2A9fFFtZwKadj6T`) — if this app
 needs updating from a newer version of that Artifact in the future, re-port
 from there rather than hand-editing further away from it.
@@ -38,25 +39,38 @@ going forward gets its own repo; this one is just College Football App.
     it). Default assumption: re-upload the key file each session.
 - Domain: `strongtechnicalconsulting.com` (existing business domain, hosted on
   GCS static website hosting). Plan:
-  - `coversheet.strongtechnicalconsulting.com` → this app (Cloud Run)
+  - `footballapp.strongtechnicalconsulting.com` → this app (Cloud Run)
   - root `strongtechnicalconsulting.com` → "Erik's Projects" landing/hub page,
-    see `eRock35/eriks-projects` (replaces the old 2019 Bootstrap template)
+    served from the `www.strongtechnicalconsulting.com` GCS bucket, source in
+    `eRock35/eriks-projects` (replaced the old 2019 Bootstrap template, whose
+    `index.html` is archived at `_archive-2019-template/index.html` in that
+    same bucket)
 
 ## Database
 
-- Firestore, **Native mode**, named database `cover-sheet` (NOT `(default)`).
+- Firestore, **Native mode**, named database `college-football-app` in
+  `us-central1` (NOT `(default)`).
 - The project's `(default)` Firestore database is legacy **Datastore mode**,
   tied to older App Engine infrastructure — do not touch it, do not point any
   new app at it.
-- Client code must pass `databaseId: 'cover-sheet'` explicitly — the
+- Client code must pass `databaseId: 'college-football-app'` explicitly — the
   `@google-cloud/firestore` client defaults to `(default)` if you don't.
-- Collections used by `server.js`:
-  - `games` — the live game board / today's card (`featured: true` marks
-    today's-card items) — **currently empty**, nothing populates it yet
-  - `asks` — custom research Q&A + refresh results
-  - `changelog` — "Updated" badge feed
-  - `uga` — My Dawgs (Georgia-fan tab) content
-  - `meta/status` — misc status doc
+- An empty, unused `cover-sheet` database (us-east4) may still exist — it was
+  the pre-rename database and holds nothing. Safe to delete in the console.
+- Collections/docs used by `server.js`. These shapes are dictated by the
+  ported frontend, not designed independently — see `GAMES_FALLBACK` and
+  `UGA_FALLBACK` in `public/index.html` for the canonical field lists:
+  - `games/<id>` — the live board (`label`, `home`, `away`, `kickoff`, `tag`,
+    `ranked`, `market`, `pick`, `pickConfidence`, `summary`, `why`,
+    `injuryNote`, `pass`, `passReason`, `lastChecked`). Seeded with the 8
+    games from the Artifact's own fallback data.
+  - `asks/<auto>` — custom research Q&A (`query`, `askedAt`, `answeredAt`,
+    `status`, `answer`, `relatedGameId`)
+  - `changelog/<auto>` — drives the "Updated" badge (`gameId`, `changedAt`,
+    `note`); only entries from the last 48h count
+  - `fan/uga` — single doc, My Dawgs tab content
+  - `control/status` — single doc, `lastRunAt` (drives the "last refreshed"
+    line in the header)
 
 ## Secrets (Secret Manager)
 
@@ -71,9 +85,10 @@ secret-env-var mechanism: `SITE_LOGIN_USERNAME`, `SITE_LOGIN_PASSWORD`,
 
 ## Auth model
 
-- Public — anyone can view games, build a slip, etc. with no login. Only
-  routes that call the Anthropic API (`/api/research/refresh`,
-  `/api/research/custom`) are gated behind HTTP Basic Auth.
+- Public — anyone can view games, build a slip, etc. with no login. Only the
+  routes that call the Anthropic API (`/api/research/custom`,
+  `/api/research/add-game`, `/api/research/refresh-board`) are gated behind
+  HTTP Basic Auth.
 - Mechanism: plain HTTP Basic Auth on specific Express routes (not a global
   gate, not cookies/sessions) — the browser's native credential caching acts
   as the "login". See `requireLogin` middleware in `server.js`.
@@ -96,14 +111,23 @@ approach, confirmed reachable through the sandbox's egress proxy:
 
 ## App layout
 
-- `server.js` — Express app. Public GET routes for game/research/changelog/
-  My-Dawgs data; gated POST routes for research
-  (`/api/research/refresh`, `/api/research/custom`).
-- `public/index.html` — frontend, **streamlined v1** scope: Today's Card, All
-  Games, My Slip (localStorage), Research tab, My Dawgs. Deliberately excludes
-  per-pick chat threads and the asks-feed↔My-Dawgs cross-linking that existed
-  in the original Claude Artifact version — deferred as a fast-follow, not
-  forgotten. Original artifact: `https://claude.ai/artifact/KAiaq3U2A9fFFtZwKadj6T`
+- `server.js` — Express app. Public GET routes (`/api/games`, `/api/asks`,
+  `/api/changelog`, `/api/uga`, `/api/status`); gated POST routes
+  (`/api/research/custom`, `/api/research/add-game`,
+  `/api/research/refresh-board`). The last two ask the model for a JSON
+  object and parse it — see `runStructuredResearch`.
+- `public/index.html` — a **direct port of the Claude Artifact**, not a
+  rewrite. Six tabs: Today's Card, All Games, Research, Futures Watch, My
+  Slip, My Dawgs. Only the Artifact-capability wiring was changed:
+  - `window.claude.use('db')` → a polling shim (`makeDbShim`) with the same
+    `.collection().onSnapshot()` / `.doc().onSnapshot()` surface, backed by
+    this app's own REST routes. That's why the rest of the file needed no
+    changes.
+  - `window.claude.use('comments')` (the original "ping a live Claude session
+    to do research" path) → direct `fetch()` calls to the gated routes above.
+  - `window.claude.use('sample')` (per-pick chat) → **intentionally left
+    unwired**. The page's own "not available in this view" fallback handles
+    it. This is the one deferred feature from the streamlined-v1 scope.
 - `Dockerfile` — `node:20-slim`, `npm install --omit=dev`, `node server.js` on
   `$PORT` (defaults 8080, matches Cloud Run's convention).
 
@@ -116,19 +140,19 @@ source (before the repo move — same code, just wasn't here yet):
   (`us-central1-docker.pkg.dev/metal-celerity-236019/erik-projects`) — shared
   across projects hosted on this domain, not renamed per-app
 - GCS bucket `metal-celerity-236019-cb-source` — Cloud Build source staging
-- Cloud Run service `cover-sheet` in `us-central1`, public
+- Cloud Run service `college-football-app` in `us-central1`, public
   (`roles/run.invoker` granted to `allUsers`), live at:
-  - `https://cover-sheet-u4h4ftn3fa-uc.a.run.app`
-  - `https://cover-sheet-717055813878.us-central1.run.app`
+  - `https://college-football-app-u4h4ftn3fa-uc.a.run.app`
+  - `https://college-football-app-717055813878.us-central1.run.app`
   - Cloud Run reports the revision `Ready`, but **this sandbox's egress proxy
     blocks `*.run.app`** the same way it blocks `strongtechnicalconsulting.com`
     — a real browser hit against these URLs has not been confirmed from
     inside a session. Ask the user to check.
-  - Env vars: `GOOGLE_CLOUD_PROJECT`, `FIRESTORE_DATABASE_ID=cover-sheet`, plus
+  - Env vars: `GOOGLE_CLOUD_PROJECT`, `FIRESTORE_DATABASE_ID=college-football-app`, plus
     the three secret refs above.
-- Service name stayed `cover-sheet` on Cloud Run even though the repo is now
-  named `college-football-app` — no need to rename the live GCP resource to
-  match; it's an internal identifier, not user-facing.
+- Container image: `us-central1-docker.pkg.dev/metal-celerity-236019/erik-projects/college-football-app`
+  (the Artifact Registry repo itself stays `erik-projects` — it's shared
+  across every project hosted on this domain, not per-app).
 
 ### Known compromise: runtime service account
 
@@ -137,27 +161,33 @@ Cloud Run's `serviceAccount` is currently set to
 same broad-privilege account used for deploys (Artifact Registry Admin, Cloud
 Build Editor, Service Usage Admin, Storage Admin, etc.), **not** a scoped-down
 runtime identity. The right fix is a dedicated `cover-sheet-runtime@...`
-service account with only `roles/datastore.user` and
+service account (name it `college-football-app-runtime`) with only
+`roles/datastore.user` and
 `roles/secretmanager.secretAccessor` on the three secrets — but the deployer
 account itself lacks `iam.serviceAccounts.create`, so this needs either (a)
 the user grants the deployer account `roles/iam.serviceAccountAdmin`, or (b)
-the user creates `cover-sheet-runtime@...` by hand and grants those two roles.
+the user creates that runtime account by hand and grants those two roles.
 Until then, a compromise of the running container has more GCP blast radius
 than it should. Fix this before the app is trusted with anything higher
 stakes than it already has.
 
 ## Still to do
 
-- **Redeploy from this repo** (the live revision was built from the
-  pre-split source, which still had vacation routes baked in — not wrong, just
-  worth a clean redeploy from this repo's actual `server.js` next time
-  anything here changes).
-- **Domain mapping**: map `coversheet.strongtechnicalconsulting.com` to the
-  `cover-sheet` Cloud Run service (Cloud Run Domain Mappings API) and hand the
-  user the DNS records it returns.
+- **Domain mapping**: `footballapp.strongtechnicalconsulting.com` →
+  `college-football-app` Cloud Run service. NOTE: a domain mapping can only be
+  created by a **verified Google user identity**, not by the deployer service
+  account — every API attempt from the service account fails with
+  "Caller is not authorized to administer the domain," even though the domain
+  is verified to the user's own account. The user must add it via the Cloud
+  Run console (Manage Custom Domains → Add Mapping), then add the DNS records
+  it returns at their registrar. Root `strongtechnicalconsulting.com` is NOT
+  a Cloud Run mapping — it serves the landing page from the
+  `www.strongtechnicalconsulting.com` GCS bucket.
 - **Runtime service account** — see "Known compromise" above.
-- Cloud Scheduler job(s) hitting `/api/research/refresh` on a cadence,
+- Cloud Scheduler job(s) hitting `/api/research/refresh-board` on a cadence,
   replicating the old CCR-trigger cadence from the Artifact version.
-- Seed the `games` Firestore collection — nothing populates it yet, so
-  Today's Card / All Games render empty until something does (manually, or
-  via the deferred Cloud Scheduler research job).
+- Per-pick chat (the unwired `sample` capability) — the one deferred feature
+  from the original Artifact.
+- The `games` data is seeded from the Artifact's Sep 2026 snapshot. It only
+  moves forward when someone hits "Refresh research" or adds a game, until
+  the Cloud Scheduler job above exists.
