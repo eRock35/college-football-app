@@ -9,6 +9,10 @@ const FIRESTORE_DB = process.env.FIRESTORE_DATABASE_ID || 'college-football-app'
 
 const SITE_LOGIN_USERNAME = process.env.SITE_LOGIN_USERNAME || '';
 const SITE_LOGIN_PASSWORD = process.env.SITE_LOGIN_PASSWORD || '';
+// Cloud Scheduler's key. Deliberately NOT the site login: a scheduler job
+// config is readable by anyone with project access, and the site password is
+// something a person types.
+const CRON_SECRET = process.env.CRON_SECRET || '';
 
 const db = new Firestore({ projectId: PROJECT_ID, databaseId: FIRESTORE_DB });
 const anthropic = new Anthropic(); // reads ANTHROPIC_API_KEY from env
@@ -67,6 +71,13 @@ function currentWeekKey() {
   const et = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
   et.setDate(et.getDate() - ((et.getDay() - 2 + 7) % 7));
   return et.toISOString().slice(0, 10);
+}
+
+// Scheduler-or-human gate: a cron key, or the normal login for manual clicks.
+function requireLoginOrCron(req, res, next) {
+  const key = req.get('X-Cron-Key');
+  if (CRON_SECRET && key && key === CRON_SECRET) return next();
+  return requireLogin(req, res, next);
 }
 
 // Hitting this with credentials is what triggers the browser's login prompt,
@@ -331,7 +342,7 @@ app.post('/api/research/add-game', requireLogin, async (req, res) => {
   }
 });
 
-app.post('/api/research/refresh-board', requireLogin, async (req, res) => {
+app.post('/api/research/refresh-board', requireLoginOrCron, async (req, res) => {
   try {
     const snap = await db.collection('games').limit(15).get();
     const games = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -368,6 +379,110 @@ app.post('/api/research/refresh-board', requireLogin, async (req, res) => {
   } catch (err) {
     console.error('POST /api/research/refresh-board', err);
     res.status(500).json({ error: 'Refresh failed.' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Batched research (weekdays). Same work as refresh-board, but submitted to
+// the Batch API at half price. Batches usually land in minutes but are
+// allowed up to 24h, so this is only used where freshness doesn't matter -
+// Saturday and the manual button both stay on the live path.
+// ---------------------------------------------------------------------------
+const BATCH_SYSTEM_PROMPT =
+  'You are a college football betting research assistant. Use web search to check the current ' +
+  'DraftKings-market line, injuries, and storylines for the ONE game described below, then respond ' +
+  'with ONLY a single JSON object (no prose, no markdown fences) using these keys: {"market": "...", ' +
+  '"pick": "... (empty string if passing)", "pickConfidence": 1-4, "summary": "1-2 sentences", ' +
+  '"why": "fuller reasoning", "injuryNote": "or empty string", "pass": true or false, ' +
+  '"passReason": "if pass, why (else empty string)", "changed": true or false}. Set "changed" to ' +
+  'false if nothing material has moved since the notes below. Never invent a score, injury, or line.';
+
+app.post('/api/research/batch-submit', requireLoginOrCron, async (req, res) => {
+  try {
+    const pending = await db.collection('control').doc('batch').get();
+    if (pending.exists && pending.data().status === 'pending') {
+      return res.json({ skipped: 'a batch is already in flight', batchId: pending.data().batchId });
+    }
+
+    const snap = await db.collection('games').limit(20).get();
+    const games = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    if (!games.length) return res.json({ skipped: 'no games tracked' });
+
+    const batch = await anthropic.messages.batches.create({
+      requests: games.map((g) => ({
+        custom_id: g.id,
+        params: {
+          model: 'claude-sonnet-5',
+          max_tokens: 2048,
+          system: BATCH_SYSTEM_PROMPT,
+          tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 4 }],
+          messages: [{ role: 'user', content: `Current notes for this game:\n${JSON.stringify(g, null, 2)}` }],
+        },
+      })),
+    });
+
+    await db.collection('control').doc('batch').set({
+      batchId: batch.id,
+      status: 'pending',
+      submittedAt: new Date().toISOString(),
+      gameCount: games.length,
+    });
+
+    res.json({ batchId: batch.id, submitted: games.length });
+  } catch (err) {
+    console.error('POST /api/research/batch-submit', err);
+    res.status(500).json({ error: 'Batch submit failed.' });
+  }
+});
+
+app.post('/api/research/batch-collect', requireLoginOrCron, async (req, res) => {
+  try {
+    const ref = db.collection('control').doc('batch');
+    const doc = await ref.get();
+    if (!doc.exists || doc.data().status !== 'pending') {
+      return res.json({ skipped: 'nothing pending' });
+    }
+    const batchId = doc.data().batchId;
+    const batch = await anthropic.messages.batches.retrieve(batchId);
+    if (batch.processing_status !== 'ended') {
+      return res.json({ batchId, status: batch.processing_status, waiting: true });
+    }
+
+    const now = new Date().toISOString();
+    const writer = db.batch();
+    let updated = 0;
+    let failed = 0;
+
+    for await (const entry of await anthropic.messages.batches.results(batchId)) {
+      if (entry.result.type !== 'succeeded') { failed += 1; continue; }
+      const text = entry.result.message.content
+        .filter((b) => b.type === 'text')
+        .map((b) => b.text)
+        .join('\n');
+      const match = text.match(/\{[\s\S]*\}/);
+      if (!match) { failed += 1; continue; }
+      let parsed;
+      try { parsed = JSON.parse(match[0]); } catch (e) { failed += 1; continue; }
+      if (parsed.changed === false) continue;
+
+      delete parsed.changed;
+      writer.set(db.collection('games').doc(entry.custom_id), { ...parsed, lastChecked: now }, { merge: true });
+      writer.set(db.collection('changelog').doc(), {
+        gameId: entry.custom_id,
+        changedAt: now,
+        note: parsed.summary || 'Batched research update',
+      });
+      updated += 1;
+    }
+
+    writer.set(db.collection('control').doc('status'), { lastRunAt: now }, { merge: true });
+    writer.set(ref, { batchId, status: 'done', collectedAt: now, updated, failed }, { merge: true });
+    await writer.commit();
+
+    res.json({ batchId, updated, failed });
+  } catch (err) {
+    console.error('POST /api/research/batch-collect', err);
+    res.status(500).json({ error: 'Batch collect failed.' });
   }
 });
 

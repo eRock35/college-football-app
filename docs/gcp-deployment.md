@@ -145,6 +145,34 @@ approach, confirmed reachable through the sandbox's egress proxy:
   prompt the page sends states the model has no live internet access, so
   handing it web search would contradict its own instructions.
 
+## Scheduled research
+
+Weekdays run through the **Batch API at 50% cost**; Saturday and the manual
+button stay on the live path. Batches usually land in minutes but are
+*allowed* up to 24 hours, so batching is only safe where freshness doesn't
+matter — which is exactly why game day is carved out.
+
+- `POST /api/research/batch-submit` — one batch request per tracked game
+  (per-game rather than one combined call: batch is built for fan-out, each
+  game gets focused research, and one bad response can't poison the rest).
+  Records the batch id in `control/batch` and refuses to submit while one is
+  already in flight.
+- `POST /api/research/batch-collect` — polls `control/batch`; no-ops unless a
+  batch is pending and ended. Applies only entries where the model set
+  `changed: true`, so a quiet week doesn't churn `lastChecked` on every game
+  or spam the changelog.
+- `POST /api/research/refresh-board` — the live path, used Saturday.
+
+**Auth:** these take `requireLoginOrCron` — either the normal login (a human
+clicking) or `X-Cron-Key` matching the `cron-secret` Secret Manager value.
+The cron key is deliberately *not* the site login: a scheduler job config is
+readable by anyone with project access, and the site password is something a
+person types into a browser prompt.
+
+Verified before building: the Batch API does accept `web_search_20260209` — a
+live test batch ran a real search and returned a cited answer in about a
+minute.
+
 ## Models
 
 Chosen by the user after pricing them out, not defaults:
@@ -228,8 +256,16 @@ stakes than it already has.
   a Cloud Run mapping — it serves the landing page from the
   `www.strongtechnicalconsulting.com` GCS bucket.
 - **Runtime service account** — see "Known compromise" above.
-- Cloud Scheduler job(s) hitting `/api/research/refresh-board` on a cadence,
-  replicating the old CCR-trigger cadence from the Artifact version.
+- **Create the Cloud Scheduler jobs** — the routes and the cron secret are
+  deployed, but the deployer service account lacks `cloudscheduler.jobs.create`
+  (needs `roles/cloudscheduler.admin`). Jobs to create, all in
+  `America/New_York` so they track game days across DST, POSTing to the Cloud
+  Run URL with header `X-Cron-Key: <cron-secret>`:
+  | Job | Schedule | Path |
+  |---|---|---|
+  | `cfb-batch-submit` | `0 8,18 * * 2-5` | `/api/research/batch-submit` |
+  | `cfb-batch-collect` | `30 * * * 2-6` | `/api/research/batch-collect` |
+  | `cfb-saturday-live` | `0 9-23 * * 6` | `/api/research/refresh-board` |
 - The `games` data is seeded from the Artifact's Sep 2026 snapshot. It only
   moves forward when someone hits "Refresh research" or adds a game, until
   the Cloud Scheduler job above exists.
