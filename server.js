@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const { Firestore } = require('@google-cloud/firestore');
 const Anthropic = require('@anthropic-ai/sdk');
+const { createPasskeyAuth } = require('./auth');
 
 const PORT = process.env.PORT || 8080;
 const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || 'metal-celerity-236019';
@@ -13,6 +14,7 @@ const SITE_LOGIN_PASSWORD = process.env.SITE_LOGIN_PASSWORD || '';
 // config is readable by anyone with project access, and the site password is
 // something a person types.
 const CRON_SECRET = process.env.CRON_SECRET || '';
+const SESSION_SECRET = process.env.SESSION_SECRET || '';
 
 const db = new Firestore({ projectId: PROJECT_ID, databaseId: FIRESTORE_DB });
 const anthropic = new Anthropic(); // reads ANTHROPIC_API_KEY from env
@@ -24,21 +26,34 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ---------------------------------------------------------------------------
 // Auth: HTTP Basic, route-scoped. Gates only routes that spend API tokens.
 // ---------------------------------------------------------------------------
+function passwordOk(req) {
+  if (!SITE_LOGIN_USERNAME || !SITE_LOGIN_PASSWORD) return false;
+  const header = req.headers.authorization || '';
+  const [scheme, encoded] = header.split(' ');
+  if (scheme !== 'Basic' || !encoded) return false;
+  const decoded = Buffer.from(encoded, 'base64').toString('utf8');
+  const sep = decoded.indexOf(':');
+  return decoded.slice(0, sep) === SITE_LOGIN_USERNAME && decoded.slice(sep + 1) === SITE_LOGIN_PASSWORD;
+}
+
+// The password alone - used to gate enrolling a NEW passkey, so that holding
+// a session isn't enough to add another one.
+function requirePassword(req, res, next) {
+  if (!SITE_LOGIN_USERNAME || !SITE_LOGIN_PASSWORD) {
+    return res.status(500).json({ error: 'Server login is not configured.' });
+  }
+  if (passwordOk(req)) return next();
+  res.set('WWW-Authenticate', 'Basic realm="College Football App"');
+  return res.status(401).send('Login required.');
+}
+
+// A passkey session OR the password. Everything that used to need the
+// password accepts either, so the password stays a working fallback.
 function requireLogin(req, res, next) {
   if (!SITE_LOGIN_USERNAME || !SITE_LOGIN_PASSWORD) {
     return res.status(500).json({ error: 'Server login is not configured.' });
   }
-  const header = req.headers.authorization || '';
-  const [scheme, encoded] = header.split(' ');
-  if (scheme === 'Basic' && encoded) {
-    const decoded = Buffer.from(encoded, 'base64').toString('utf8');
-    const sep = decoded.indexOf(':');
-    const user = decoded.slice(0, sep);
-    const pass = decoded.slice(sep + 1);
-    if (user === SITE_LOGIN_USERNAME && pass === SITE_LOGIN_PASSWORD) {
-      return next();
-    }
-  }
+  if (passkeyAuth.hasSession(req) || passwordOk(req)) return next();
   res.set('WWW-Authenticate', 'Basic realm="College Football App"');
   return res.status(401).send('Login required.');
 }
@@ -52,15 +67,7 @@ function requireLoginSilent(req, res, next) {
   if (!SITE_LOGIN_USERNAME || !SITE_LOGIN_PASSWORD) {
     return res.status(500).json({ error: 'Server login is not configured.' });
   }
-  const header = req.headers.authorization || '';
-  const [scheme, encoded] = header.split(' ');
-  if (scheme === 'Basic' && encoded) {
-    const decoded = Buffer.from(encoded, 'base64').toString('utf8');
-    const sep = decoded.indexOf(':');
-    if (decoded.slice(0, sep) === SITE_LOGIN_USERNAME && decoded.slice(sep + 1) === SITE_LOGIN_PASSWORD) {
-      return next();
-    }
-  }
+  if (passkeyAuth.hasSession(req) || passwordOk(req)) return next();
   return res.status(401).json({ error: 'not signed in' });
 }
 
@@ -72,6 +79,16 @@ function currentWeekKey() {
   et.setDate(et.getDate() - ((et.getDay() - 2 + 7) % 7));
   return et.toISOString().slice(0, 10);
 }
+
+const passkeyAuth = createPasskeyAuth({
+  db,
+  collection: 'webauthn-credentials',
+  rpName: 'College Football App',
+  sessionSecret: SESSION_SECRET,
+  userName: SITE_LOGIN_USERNAME || 'erik',
+  passwordGate: requirePassword,
+});
+passkeyAuth.mount(app);
 
 // Scheduler-or-human gate: a cron key, or the normal login for manual clicks.
 function requireLoginOrCron(req, res, next) {

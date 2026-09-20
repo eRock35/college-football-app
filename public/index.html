@@ -525,7 +525,10 @@
   <div id="slip-body"></div>
   <div id="slip-review"></div>
   <button class="reset-btn" id="reset-slip">Clear my slip</button>
-  <button class="text-toggle-btn" id="slip-sync-btn" type="button">Sign in to sync across devices</button>
+  <button class="text-toggle-btn" id="passkey-signin-btn" type="button" hidden>Sign in with Face ID</button>
+  <button class="text-toggle-btn" id="passkey-setup-btn" type="button" hidden>Set up Face ID sign-in</button>
+  <button class="text-toggle-btn" id="slip-sync-btn" type="button">Sign in with password</button>
+  <button class="text-toggle-btn" id="passkey-logout-btn" type="button" hidden>Sign out</button>
   <div class="copy-status" id="slip-sync-status"></div>
   <p class="muted" style="margin-top:10px; font-size:.78rem; color:var(--text-faint);">Your slip clears automatically each Tuesday when the new football week starts.</p>
 </section>
@@ -792,6 +795,140 @@
     }catch(e){}
   }
   expireStaleWeek();
+
+  // ---------- passkeys (Face ID / Touch ID) ----------
+  // Native WebAuthn, no library: the browser hands back ArrayBuffers and the
+  // server speaks base64url JSON, so these two helpers do the translation.
+  function b64urlToBuf(str){
+    var pad = str.length % 4 ? new Array(5 - (str.length % 4)).join('=') : '';
+    var bin = atob(str.replace(/-/g, '+').replace(/_/g, '/') + pad);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes.buffer;
+  }
+  function bufToB64url(buf){
+    var bytes = new Uint8Array(buf), str = '';
+    for (var i = 0; i < bytes.length; i++) str += String.fromCharCode(bytes[i]);
+    return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function passkeySupported(){
+    return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
+  }
+  function setAuthStatus(msg, cls){
+    var el = document.getElementById('slip-sync-status');
+    if (el){ el.textContent = msg; el.className = 'copy-status' + (cls ? ' ' + cls : ''); }
+  }
+  function paintAuthButtons(state){
+    var signIn = document.getElementById('passkey-signin-btn');
+    var setup = document.getElementById('passkey-setup-btn');
+    var pwd = document.getElementById('slip-sync-btn');
+    var out = document.getElementById('passkey-logout-btn');
+    if (!signIn) return;
+    var supported = passkeySupported();
+    signIn.hidden = !(supported && state.passkeyRegistered && !state.signedIn);
+    setup.hidden = !(supported && !state.passkeyRegistered);
+    pwd.hidden = state.signedIn;
+    out.hidden = !state.signedIn;
+  }
+  function refreshAuthStatus(){
+    return fetch('/api/auth/status').then(function(r){ return r.json(); }).then(function(state){
+      syncEnabled = !!state.signedIn || syncEnabled;
+      paintAuthButtons(state);
+      if (state.signedIn) setAuthStatus('Signed in — slip syncs across your devices');
+      return state;
+    }).catch(function(){ return {}; });
+  }
+
+  function registerPasskey(){
+    if (!passkeySupported()){ setAuthStatus('This browser doesn\u2019t support passkeys.', 'error'); return; }
+    setAuthStatus('Confirm your password, then Face ID\u2026');
+    // This route requires the password, so the browser prompts for it first -
+    // otherwise anyone who found the URL could enrol their own passkey.
+    fetch('/api/auth/passkey/register/options', {method: 'POST'})
+      .then(function(r){ if (!r.ok) throw new Error('auth'); return r.json(); })
+      .then(function(options){
+        options.challenge = b64urlToBuf(options.challenge);
+        options.user.id = b64urlToBuf(options.user.id);
+        (options.excludeCredentials || []).forEach(function(c){ c.id = b64urlToBuf(c.id); });
+        return navigator.credentials.create({publicKey: options});
+      })
+      .then(function(cred){
+        return fetch('/api/auth/passkey/register/verify', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            id: cred.id,
+            rawId: bufToB64url(cred.rawId),
+            type: cred.type,
+            clientExtensionResults: cred.getClientExtensionResults(),
+            response: {
+              clientDataJSON: bufToB64url(cred.response.clientDataJSON),
+              attestationObject: bufToB64url(cred.response.attestationObject),
+              transports: cred.response.getTransports ? cred.response.getTransports() : undefined
+            }
+          })
+        });
+      })
+      .then(function(r){ return r.json().then(function(d){ if (!r.ok) throw new Error(d.error || 'failed'); return d; }); })
+      .then(function(){
+        syncEnabled = true;
+        setAuthStatus('Face ID set up — you\u2019re signed in');
+        refreshAuthStatus();
+        initSlipSync();
+        pushSlipState();
+      })
+      .catch(function(err){
+        setAuthStatus(err && err.name === 'NotAllowedError' ? 'Cancelled.' : 'Couldn\u2019t set up Face ID \u2014 try again.', 'error');
+      });
+  }
+
+  function signInWithPasskey(){
+    if (!passkeySupported()){ setAuthStatus('This browser doesn\u2019t support passkeys.', 'error'); return; }
+    setAuthStatus('Waiting for Face ID\u2026');
+    fetch('/api/auth/passkey/login/options', {method: 'POST'})
+      .then(function(r){ return r.json().then(function(d){ if (!r.ok) throw new Error(d.error || 'failed'); return d; }); })
+      .then(function(options){
+        options.challenge = b64urlToBuf(options.challenge);
+        (options.allowCredentials || []).forEach(function(c){ c.id = b64urlToBuf(c.id); });
+        return navigator.credentials.get({publicKey: options});
+      })
+      .then(function(cred){
+        return fetch('/api/auth/passkey/login/verify', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            id: cred.id,
+            rawId: bufToB64url(cred.rawId),
+            type: cred.type,
+            clientExtensionResults: cred.getClientExtensionResults(),
+            response: {
+              clientDataJSON: bufToB64url(cred.response.clientDataJSON),
+              authenticatorData: bufToB64url(cred.response.authenticatorData),
+              signature: bufToB64url(cred.response.signature),
+              userHandle: cred.response.userHandle ? bufToB64url(cred.response.userHandle) : undefined
+            }
+          })
+        });
+      })
+      .then(function(r){ return r.json().then(function(d){ if (!r.ok) throw new Error(d.error || 'failed'); return d; }); })
+      .then(function(){
+        syncEnabled = true;
+        setAuthStatus('Signed in');
+        refreshAuthStatus();
+        initSlipSync();
+      })
+      .catch(function(err){
+        setAuthStatus(err && err.name === 'NotAllowedError' ? 'Cancelled.' : 'Face ID sign-in failed \u2014 try again.', 'error');
+      });
+  }
+
+  function signOut(){
+    fetch('/api/auth/logout', {method: 'POST'}).then(function(){
+      syncEnabled = false;
+      setAuthStatus('Signed out — slip saves on this device only');
+      refreshAuthStatus();
+    });
+  }
 
   // ---------- cross-device sync ----------
   // Slip state lives on the server too, behind the same login that gates
@@ -2196,6 +2333,12 @@
 
     var syncBtn = document.getElementById('slip-sync-btn');
     if (syncBtn) syncBtn.addEventListener('click', signInForSync);
+    var pkIn = document.getElementById('passkey-signin-btn');
+    if (pkIn) pkIn.addEventListener('click', signInWithPasskey);
+    var pkSet = document.getElementById('passkey-setup-btn');
+    if (pkSet) pkSet.addEventListener('click', registerPasskey);
+    var pkOut = document.getElementById('passkey-logout-btn');
+    if (pkOut) pkOut.addEventListener('click', signOut);
 
     document.getElementById('reset-slip').addEventListener('click', function(){
       slipState = {};
@@ -2364,6 +2507,7 @@
   }
 
   function initCapabilities(){
+    refreshAuthStatus();
     initSlipSync();
     renderGamesGrid(GAMES_FALLBACK, GAMES_FALLBACK.length + ' games tracked · connecting to live board…');
     renderUga(UGA_FALLBACK);
