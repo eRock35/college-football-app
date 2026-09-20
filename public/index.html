@@ -821,6 +821,24 @@
     <button class="text-toggle-btn" id="auth-panel-close" type="button">Cancel</button>
   </div>
   <div class="copy-status" id="auth-panel-status"></div>
+
+  <!-- Changing the site password. Shown only to an account that may spend on
+       research - this app has many accounts but ONE site password, and it is
+       the owner's. The server enforces that regardless of what shows here. -->
+  <div id="sitepw-section" hidden>
+    <div class="auth-or">Site password</div>
+    <p id="sitepw-note" style="font-size:13px; color:var(--text-faint); margin:0 0 8px;"></p>
+    <div class="form-group">
+      <div id="sitepw-current-wrap">
+        <label for="sitepw-current">Current password</label>
+        <input type="password" id="sitepw-current" autocomplete="current-password" enterkeyhint="next" placeholder="Current">
+      </div>
+      <label for="sitepw-next" style="margin-top:10px;">New password</label>
+      <input type="password" id="sitepw-next" autocomplete="new-password" enterkeyhint="done" placeholder="At least 10 characters">
+    </div>
+    <button class="auth-go" id="sitepw-change-btn" type="button" style="margin-top:10px;">Change site password</button>
+    <div class="copy-status" id="sitepw-status"></div>
+  </div>
 </div>
 
 <div class="sheet" id="more-sheet" role="dialog" aria-modal="true" aria-label="More sections" hidden>
@@ -1151,6 +1169,7 @@
   function paintAuthButtons(state){
     lastAuthState = state || {};
     paintChip();
+    paintSitePassword();
     var signIn = document.getElementById('passkey-signin-btn');
     var setup = document.getElementById('passkey-setup-btn');
     var pwd = document.getElementById('slip-sync-btn');
@@ -1215,7 +1234,68 @@
     var show = !!(passkeySupported() && lastAuthState.passkeyRegistered);
     if (signIn) signIn.hidden = !show;
     if (or) or.hidden = !show;
+    paintSitePassword();
     setAuthStatus('');
+  }
+
+  // The site password gates research spending, so only an account that may
+  // spend sees the control. A Face ID session is proof enough to replace the
+  // password; a password-proved session has to produce the current one, or a
+  // borrowed cookie could take it.
+  function paintSitePassword(){
+    var sec = document.getElementById('sitepw-section');
+    if (!sec) return;
+    var allowed = !!lastAuthState.canResearch;
+    sec.hidden = !allowed;
+    if (!allowed) return;
+    var viaPasskey = lastAuthState.via === 'passkey';
+    var wrap = document.getElementById('sitepw-current-wrap');
+    if (wrap) wrap.hidden = viaPasskey;
+    var note = document.getElementById('sitepw-note');
+    if (note) {
+      note.textContent = viaPasskey
+        ? 'You signed in with Face ID, so you can set a new one without the old one.'
+        : 'Changing it needs the current one, or a session signed in with Face ID.';
+    }
+    setSitePwStatus('');
+  }
+
+  function setSitePwStatus(msg, kind){
+    var el = document.getElementById('sitepw-status');
+    if (!el) return;
+    el.textContent = msg || '';
+    el.style.color = kind === 'error' ? 'var(--negative)' : (kind === 'ok' ? 'var(--positive)' : '');
+  }
+
+  function changeSitePassword(){
+    var btn = document.getElementById('sitepw-change-btn');
+    var curEl = document.getElementById('sitepw-current');
+    var nextEl = document.getElementById('sitepw-next');
+    var wrap = document.getElementById('sitepw-current-wrap');
+    var next = nextEl ? nextEl.value : '';
+    if (!next){ setSitePwStatus('Enter a new password.', 'error'); return; }
+    var body = {next: next};
+    if (wrap && !wrap.hidden && curEl) body.current = curEl.value;
+    if (btn) btn.disabled = true;
+    setSitePwStatus('Saving…');
+    fetch('/api/auth/password/change', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    }).then(function(r){
+      return r.json().catch(function(){ return {}; }).then(function(j){
+        if (!r.ok) throw new Error(j.error || 'That did not work.');
+        return j;
+      });
+    }).then(function(){
+      if (curEl) curEl.value = '';
+      if (nextEl) nextEl.value = '';
+      setSitePwStatus('Changed. The old one no longer works.', 'ok');
+    }).catch(function(err){
+      setSitePwStatus(err.message || 'That did not work.', 'error');
+    }).then(function(){
+      if (btn) btn.disabled = false;
+    });
   }
   function closeAuthPanel(){
     var panel = document.getElementById('auth-panel');
@@ -2856,6 +2936,8 @@
     if (pkSet) pkSet.addEventListener('click', openAuthPanel);
     var regBtn = document.getElementById('auth-register-btn');
     if (regBtn) regBtn.addEventListener('click', registerPasskey);
+    var pwChange = document.getElementById('sitepw-change-btn');
+    if (pwChange) pwChange.addEventListener('click', changeSitePassword);
     var regClose = document.getElementById('auth-panel-close');
     if (regClose) regClose.addEventListener('click', closeAuthPanel);
     var panelSignIn = document.getElementById('auth-signin-btn');

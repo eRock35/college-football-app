@@ -111,14 +111,14 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * @param opts.usersCollection        collection holding user records
  * @param opts.rpName                 display name shown in the OS prompt
  * @param opts.sessionSecret          HMAC secret for session + challenge cookies
- * @param opts.passwordOk             (req) -> bool, true if the site password was supplied
+ * @param opts.passwordOk             async (req) -> bool, true if the site password was supplied
  * @param opts.needsPasswordForEmail  (email) -> bool, true for privileged addresses
  * @param opts.isResearchEmail        (email) -> bool, reported to the page as canResearch
  */
 function createPasskeyAuth(opts) {
   const { db, collection, rpName, sessionSecret } = opts;
   const usersCollection = opts.usersCollection || 'users';
-  const passwordOk = opts.passwordOk || (() => false);
+  const passwordOk = opts.passwordOk || (async () => false);
   const needsPasswordForEmail = opts.needsPasswordForEmail || (() => false);
   const isResearchEmail = opts.isResearchEmail || (() => false);
 
@@ -135,9 +135,18 @@ function createPasskeyAuth(opts) {
     return !!currentUser(req);
   }
 
-  function issueSession(res, user) {
+  // `via` records HOW the session was proved. See the same note in
+  // santa-rosa-beach-trip/auth.js: a password-proved session must not be
+  // enough to change the password, or a stolen cookie takes the account.
+  function issueSession(res, user, via = 'password') {
     const exp = Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS;
-    setCookie(res, 'session', makeToken({ sub: user.uid, email: user.email, exp }, sessionSecret), SESSION_TTL_SECONDS);
+    setCookie(res, 'session', makeToken({ sub: user.uid, email: user.email, exp, via }, sessionSecret), SESSION_TTL_SECONDS);
+  }
+
+  function sessionVia(req) {
+    const payload = readToken(parseCookies(req).session, sessionSecret);
+    if (!payload) return null;
+    return payload.via === 'passkey' ? 'passkey' : 'password';
   }
 
   async function listCredentials() {
@@ -159,7 +168,7 @@ function createPasskeyAuth(opts) {
         }
 
         const privileged = needsPasswordForEmail(email);
-        const havePassword = passwordOk(req);
+        const havePassword = await passwordOk(req);
         // Deliberately no WWW-Authenticate: the page collects this password in
         // its own field. The browser's Basic dialog would fire at ordinary
         // visitors who have no password and never will, and opening it spends
@@ -315,7 +324,7 @@ function createPasskeyAuth(opts) {
 
         await db.collection(usersCollection).doc(email).set({ lastLoginAt: new Date().toISOString() }, { merge: true });
         clearCookie(res, 'auth_challenge');
-        issueSession(res, { uid: email, email });
+        issueSession(res, { uid: email, email }, 'passkey');
         res.json({ ok: true, email, canResearch: isResearchEmail(email) });
       } catch (err) {
         console.error('passkey login/verify', err);
@@ -341,12 +350,16 @@ function createPasskeyAuth(opts) {
         // Drives what the page offers: everyone gets a slip, research is the
         // owner's. The server enforces this regardless of what the page does.
         canResearch: !!(me && isResearchEmail(me.email)),
+        // HOW the session was proved. The page uses it to decide whether to
+        // ask for the current site password before changing it - a Face ID
+        // session is proof enough on its own, a password one is not.
+        via: me ? sessionVia(req) : null,
         passkeyRegistered: registered,
       });
     });
   }
 
-  return { mount, hasSession, currentUser, issueSession };
+  return { mount, hasSession, currentUser, issueSession, sessionVia };
 }
 
 module.exports = { createPasskeyAuth, parseCookies };

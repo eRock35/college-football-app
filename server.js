@@ -1,9 +1,9 @@
-const crypto = require('crypto');
 const express = require('express');
 const path = require('path');
 const { Firestore } = require('@google-cloud/firestore');
 const Anthropic = require('@anthropic-ai/sdk');
 const { createPasskeyAuth } = require('./auth');
+const sitepass = require('./sitepass');
 
 const PORT = process.env.PORT || 8080;
 const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || 'metal-celerity-236019';
@@ -39,35 +39,38 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ---------------------------------------------------------------------------
 // Auth: HTTP Basic, route-scoped. Gates only routes that spend API tokens.
 // ---------------------------------------------------------------------------
-function passwordOk(req) {
-  if (!SITE_LOGIN_USERNAME || !SITE_LOGIN_PASSWORD) return false;
+/** The Basic Auth header, checked against whatever the CURRENT password is.
+ *  Async because the current one may be the stored password rather than the
+ *  environment variable; comparing to the env var would leave a retired
+ *  password working here after a change. */
+async function passwordOk(req) {
+  if (!SITE_LOGIN_USERNAME) return false;
   const header = req.headers.authorization || '';
   const [scheme, encoded] = header.split(' ');
   if (scheme !== 'Basic' || !encoded) return false;
   const decoded = Buffer.from(encoded, 'base64').toString('utf8');
   const sep = decoded.indexOf(':');
-  return decoded.slice(0, sep) === SITE_LOGIN_USERNAME && decoded.slice(sep + 1) === SITE_LOGIN_PASSWORD;
+  if (decoded.slice(0, sep) !== SITE_LOGIN_USERNAME) return false;
+  return sitePassword.verify(decoded.slice(sep + 1));
 }
 
 // The registration form posts the owner password in its own field instead of
 // leaning on the browser's Basic dialog - see the note in auth.js. Scoped to
 // registration: every other gate stays header-only.
-function passwordOkForRegistration(req) {
-  if (passwordOk(req)) return true;
+async function passwordOkForRegistration(req) {
+  if (await passwordOk(req)) return true;
   const supplied = req.body && typeof req.body.password === 'string' ? req.body.password : '';
-  if (!SITE_LOGIN_PASSWORD || !supplied) return false;
-  const a = Buffer.from(supplied);
-  const b = Buffer.from(SITE_LOGIN_PASSWORD);
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+  return sitePassword.verify(supplied);
 }
 
 // Any registered account, or the password. Gates things every signed-in user
 // may do - keeping a slip - not the things that cost money.
-function requireLogin(req, res, next) {
+async function requireLogin(req, res, next) {
   if (!SITE_LOGIN_USERNAME || !SITE_LOGIN_PASSWORD) {
     return res.status(500).json({ error: 'Server login is not configured.' });
   }
-  if (passkeyAuth.hasSession(req) || passwordOk(req)) return next();
+  if (passkeyAuth.hasSession(req)) return next();
+  if (await passwordOk(req)) return next();
   res.set('WWW-Authenticate', 'Basic realm="College Football App"');
   return res.status(401).send('Login required.');
 }
@@ -77,11 +80,12 @@ function requireLogin(req, res, next) {
 // that header every anonymous visitor would get a native browser login popup
 // before they'd even seen the page. Without it the fetch just fails and the
 // page falls back to localStorage.
-function requireLoginSilent(req, res, next) {
+async function requireLoginSilent(req, res, next) {
   if (!SITE_LOGIN_USERNAME || !SITE_LOGIN_PASSWORD) {
     return res.status(500).json({ error: 'Server login is not configured.' });
   }
-  if (passkeyAuth.hasSession(req) || passwordOk(req)) return next();
+  if (passkeyAuth.hasSession(req)) return next();
+  if (await passwordOk(req)) return next();
   return res.status(401).json({ error: 'not signed in' });
 }
 
@@ -108,6 +112,31 @@ const passkeyAuth = createPasskeyAuth({
 });
 passkeyAuth.mount(app);
 
+// The site password can be changed without a deploy. The env var stays as the
+// bootstrap: it is what works on a fresh deploy, and what still works if the
+// stored password is ever cleared.
+//
+// Who may change it is narrower here than in the single-account apps. This app
+// has many accounts, but only ONE site password, and it is the owner's - it
+// gates research spending. So an ordinary user's passkey must not be able to
+// change it; the proof is the current password, or a Face ID session belonging
+// to an address that is allowed to spend.
+const sitePassword = sitepass.create({
+  store: {
+    async get(c, i) { const d = await db.collection(c).doc(i).get(); return d.exists ? d.data() : null; },
+    async set(c, i, v) { await db.collection(c).doc(i).set(v); },
+  },
+  envPassword: () => SITE_LOGIN_PASSWORD,
+  canChange: async (req) => {
+    const supplied = (req.body || {}).current;
+    if (supplied && await sitePassword.verify(supplied)) return true;
+    if (passkeyAuth.sessionVia(req) !== 'passkey') return false;
+    const me = passkeyAuth.currentUser(req);
+    return !!(me && isResearchEmail(me.email));
+  },
+});
+sitePassword.mount(app);
+
 // Anything that spends Anthropic tokens. A signed-in allowlisted account, or
 // the site password - which only the owner has, and which therefore doubles as
 // the way in if RESEARCH_ALLOWED_EMAILS was never set on the service.
@@ -115,11 +144,13 @@ passkeyAuth.mount(app);
 // A signed-in account that simply isn't allowed gets 403, deliberately: a 401
 // here would pop the browser's password box at an ordinary user who has no
 // password to type and never will.
-function requireResearch(req, res, next) {
+async function requireResearch(req, res, next) {
   if (!SITE_LOGIN_USERNAME || !SITE_LOGIN_PASSWORD) {
     return res.status(500).json({ error: 'Server login is not configured.' });
   }
-  if (passwordOk(req)) return next();
+  // MUST be awaited. This is the gate on everything that spends Anthropic
+  // tokens, and `if (promise)` is always true.
+  if (await passwordOk(req)) return next();
   const me = passkeyAuth.currentUser(req);
   if (me && isResearchEmail(me.email)) return next();
   if (!me) {
