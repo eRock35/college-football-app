@@ -71,27 +71,64 @@ going forward gets its own repo; this one is just College Football App.
   - `fan/uga` — single doc, My Dawgs tab content
   - `control/status` — single doc, `lastRunAt` (drives the "last refreshed"
     line in the header)
-  - `user-state/slip` — single doc: the cross-device slip (`slip`,
-    `customPicks`, `bankroll`, `weekKey`, `updatedAt`)
+  - `user-state/<email>` — one slip document per account (`slip`,
+    `customPicks`, `bankroll`, `weekKey`, `updatedAt`). The bare
+    `user-state/slip` document predates accounts; an allowlisted user still
+    reads it as a fallback so the current week survived the change, and
+    nothing writes to it any more.
+  - `users/<email>` — one per account (`email`, `createdAt`, `lastLoginAt`)
+  - `webauthn-credentials/<credentialId>` — passkeys (`uid` = the account's
+    email, `publicKey`, `counter`, `transports`, `rpID`, `label`)
 
 ## Secrets (Secret Manager)
 
 Stored in Secret Manager, **not** in git, **not** in this file:
-- `site-login-username`, `site-login-password` — HTTP Basic Auth credentials
-  gating any route that spends Anthropic API tokens.
+- `site-login-username`, `site-login-password` — the owner password. Claims the
+  owner's account at registration, and stays a break-glass credential for the
+  research routes.
+- `cfb-session-secret` — HMAC key for the session and challenge cookies.
+- `cron-secret` — the Cloud Scheduler key.
 - `anthropic-api-key` — the Anthropic API key.
 
 Injected into Cloud Run as env vars via the Cloud Run Admin API's
 secret-env-var mechanism: `SITE_LOGIN_USERNAME`, `SITE_LOGIN_PASSWORD`,
-`ANTHROPIC_API_KEY`.
+`SESSION_SECRET`, `CRON_SECRET`, `ANTHROPIC_API_KEY`.
+
+**Plain (non-secret) env var, and the service will not behave correctly
+without it:** `RESEARCH_ALLOWED_EMAILS` — comma-separated list of the
+addresses permitted to spend Anthropic tokens. Unset means no email
+qualifies; that fails closed (nobody gets research) rather than open, and the
+owner password still works, but it should be set to the owner's address.
 
 ## Auth model
 
-- Public — anyone can view games, build a slip, etc. with no login. Gated
-  behind HTTP Basic Auth: the routes that call the Anthropic API
-  (`/api/chat`, `/api/research/custom`, `/api/research/add-game`,
-  `/api/research/refresh-board`) plus the slip-sync routes (`/api/slip`
-  GET/PUT, `/api/login`).
+Three tiers, not two:
+
+1. **Anonymous** — the whole board, every tab, no account. This is most of the
+   app.
+2. **Any registered account** — cross-device slip sync (`/api/slip` GET/PUT,
+   `/api/login`). Anyone may register; an account buys you a slip that follows
+   you between devices, nothing else.
+3. **Allowlisted accounts only** — everything that spends Anthropic tokens
+   (`/api/chat`, `/api/research/*`). Enforced by `requireResearch` in
+   `server.js` against `RESEARCH_ALLOWED_EMAILS`, or the owner password.
+
+Accounts are keyed by email, one passkey-backed account per address, and
+**registering an allowlisted address additionally requires the owner
+password**. Without that gate, self-asserted email would mean nothing and
+anyone could register the owner's address and hand themselves the API budget.
+Adding a second device to an existing ordinary account needs a live session
+for that same account, for the same reason.
+
+That password is collected by the page's own field, not the browser's Basic
+dialog. The dialog would fire at ordinary visitors who have no password, and
+opening it spends the user activation the WebAuthn call still needs — see
+"Passkeys and the user gesture" below.
+
+A signed-in account that simply isn't allowlisted gets **403** from the
+research routes, deliberately not 401: a 401 would pop the browser's password
+box at someone who has no password to type and never will.
+
 - **Two gate middlewares, deliberately.** `requireLogin` sends a
   `WWW-Authenticate` header, so a 401 makes the browser show its native login
   prompt — right for an action the user just clicked. `requireLoginSilent`
@@ -104,7 +141,7 @@ secret-env-var mechanism: `SITE_LOGIN_USERNAME`, `SITE_LOGIN_PASSWORD`,
 ## Slip state
 
 The slip, custom picks and bankroll live in `localStorage` **and**, when
-signed in, in `user-state/slip`. Not signed in, everything still works
+signed in, in that account's `user-state/<email>` document. Not signed in, everything still works
 locally — sync is additive, never a prerequisite.
 
 Both layers expire weekly. A college football week is treated as
@@ -114,9 +151,27 @@ shown. The client computes the key in local time and the server in US
 Eastern, so they can disagree for a few hours around the rollover — harmless
 at week granularity, but don't tighten this to day granularity without
 reconciling the two.
-- Mechanism: plain HTTP Basic Auth on specific Express routes (not a global
-  gate, not cookies/sessions) — the browser's native credential caching acts
-  as the "login". See `requireLogin` middleware in `server.js`.
+### Passkeys and the user gesture
+
+WebAuthn must be called from a live user activation. iOS Safari's window is a
+few seconds, and a native password dialog spends it outright — so fetching the
+challenge and then calling `create()` in the `.then` fails on a phone with
+`NotAllowedError`, which the user reads as "Cancelled" having cancelled
+nothing. The page therefore keeps `create()`/`get()` on a tap of their own:
+registration takes a second tap once the challenge is in hand, sign-in takes
+one and arms a retry if the prompt is refused. A refused prompt keeps the
+armed challenge for four minutes (the server holds it five), so recovering
+costs one tap and no password re-entry. Don't collapse these back into a
+single promise chain.
+
+Passkeys are **discoverable** (`residentKey: 'required'`) and sign-in sends no
+`allowCredentials`, so the platform offers the right passkey and the returned
+credential names the account. Listing credentials there would hand every
+visitor the full set of credential ids and a count of the accounts.
+
+A passkey is bound to the host it was registered on and the RP ID is derived
+from `req.hostname`, so an account registered on the `run.app` URL does **not**
+carry over to the custom domain — you register once per host.
 
 ## How the deploy pipeline works (no `gcloud` CLI, no local Docker)
 
@@ -270,6 +325,8 @@ stakes than it already has.
 
 ## Still to do
 
+- ~~**Domain mapping**~~ — done; the certificate is issued and the custom
+  domain serves the app. Kept below for the "why it needed a human" note.
 - **Domain mapping**: `footballapp.strongtechnicalconsulting.com` →
   `college-football-app` Cloud Run service. NOTE: a domain mapping can only be
   created by a **verified Google user identity**, not by the deployer service

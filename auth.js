@@ -8,8 +8,15 @@
 //    footballapp.strongtechnicalconsulting.com. Deriving it means a passkey
 //    registered on either host keeps working on that host; hardcoding one
 //    would have broken the other.
-// 2. Registering a passkey REQUIRES the password first. Otherwise anyone who
-//    found the URL could enrol their own passkey and walk in.
+// 2. Accounts are per-email and anyone may register one, but claiming a
+//    PRIVILEGED address (one the app treats as an owner) additionally
+//    requires the site password. Self-asserted email proves nothing on its
+//    own - without that gate, registering the owner's address would hand you
+//    the owner's access. Adding a second device to an existing ordinary
+//    account needs a live session for that same account, for the same reason.
+//
+// This file diverged from the single-account copy shared with the other apps
+// on this domain when this app went multi-user. Don't sync it back wholesale.
 
 const crypto = require('crypto');
 const {
@@ -89,30 +96,48 @@ function rpInfo(req) {
   return { rpID, origin: `https://${rpID}` };
 }
 
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+// Deliberately loose - this is a sanity check on a self-asserted label, not
+// proof of anything. The password gate below is what actually protects the
+// addresses that matter.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 /**
- * @param opts.db           Firestore instance
- * @param opts.collection   collection holding credentials
- * @param opts.rpName       display name shown in the OS prompt
- * @param opts.sessionSecret HMAC secret for session + challenge cookies
- * @param opts.userName     label for the single account this app has
- * @param opts.passwordGate express middleware enforcing the password
+ * @param opts.db                     Firestore instance
+ * @param opts.collection             collection holding credentials
+ * @param opts.usersCollection        collection holding user records
+ * @param opts.rpName                 display name shown in the OS prompt
+ * @param opts.sessionSecret          HMAC secret for session + challenge cookies
+ * @param opts.passwordOk             (req) -> bool, true if the site password was supplied
+ * @param opts.needsPasswordForEmail  (email) -> bool, true for privileged addresses
+ * @param opts.isResearchEmail        (email) -> bool, reported to the page as canResearch
  */
 function createPasskeyAuth(opts) {
-  const { db, collection, rpName, sessionSecret, userName, passwordGate } = opts;
-  // The verify step can't carry the password - its body is the WebAuthn
-  // credential. The options step already demanded the password, and the
-  // signed 5-minute challenge cookie proves this is the same flow, so verify
-  // can accept a looser gate where an app needs one.
-  const verifyGate = opts.verifyGate || passwordGate;
+  const { db, collection, rpName, sessionSecret } = opts;
+  const usersCollection = opts.usersCollection || 'users';
+  const passwordOk = opts.passwordOk || (() => false);
+  const needsPasswordForEmail = opts.needsPasswordForEmail || (() => false);
+  const isResearchEmail = opts.isResearchEmail || (() => false);
 
-  function hasSession(req) {
-    if (!sessionSecret) return false;
-    return !!readToken(parseCookies(req).session, sessionSecret);
+  // The signed-in user, or null. The uid IS the normalized email - one
+  // account per address, and it reads plainly in Firestore.
+  function currentUser(req) {
+    if (!sessionSecret) return null;
+    const payload = readToken(parseCookies(req).session, sessionSecret);
+    if (!payload || !payload.sub) return null;
+    return { uid: payload.sub, email: payload.email || payload.sub };
   }
 
-  function issueSession(res) {
+  function hasSession(req) {
+    return !!currentUser(req);
+  }
+
+  function issueSession(res, user) {
     const exp = Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS;
-    setCookie(res, 'session', makeToken({ sub: userName, exp }, sessionSecret), SESSION_TTL_SECONDS);
+    setCookie(res, 'session', makeToken({ sub: user.uid, email: user.email, exp }, sessionSecret), SESSION_TTL_SECONDS);
   }
 
   async function listCredentials() {
@@ -121,27 +146,61 @@ function createPasskeyAuth(opts) {
   }
 
   function mount(app) {
-    // --- registration (password required) ---
-    app.post('/api/auth/passkey/register/options', passwordGate, async (req, res) => {
+    // --- registration -------------------------------------------------
+    // Open to anyone for a new, ordinary address. Two cases need proof:
+    // a privileged address (site password), and an address that already
+    // exists (a session for that same account, i.e. "add this device").
+    app.post('/api/auth/passkey/register/options', async (req, res) => {
       try {
         const { rpID } = rpInfo(req);
+        const email = normalizeEmail(req.body && req.body.email);
+        if (!EMAIL_RE.test(email)) {
+          return res.status(400).json({ error: 'Enter a valid email address.' });
+        }
+
+        const privileged = needsPasswordForEmail(email);
+        const havePassword = passwordOk(req);
+        // Deliberately no WWW-Authenticate: the page collects this password in
+        // its own field. The browser's Basic dialog would fire at ordinary
+        // visitors who have no password and never will, and opening it spends
+        // the user activation the WebAuthn call still needs.
+        if (privileged && !havePassword) {
+          return res.status(401).json({
+            error: 'That address is the owner\u2019s - enter the site password to claim it.',
+            needsPassword: true,
+          });
+        }
+
+        const userDoc = await db.collection(usersCollection).doc(email).get();
+        if (userDoc.exists && !privileged) {
+          const me = currentUser(req);
+          if (!me || me.uid !== email) {
+            return res.status(409).json({
+              error: 'That email is already registered. Sign in with its passkey on this device first, then add another.',
+            });
+          }
+        }
+
         const existing = await listCredentials();
         const options = await generateRegistrationOptions({
           rpName,
           rpID,
-          userName,
-          userDisplayName: userName,
+          userName: email,
+          userDisplayName: email,
           attestationType: 'none',
           excludeCredentials: existing
-            .filter((c) => c.rpID === rpID)
+            .filter((c) => c.rpID === rpID && c.uid === email)
             .map((c) => ({ id: c.id, transports: c.transports || undefined })),
           authenticatorSelection: {
-            residentKey: 'preferred',
+            // Discoverable, so signing in needs no email typed back in - the
+            // platform offers the right passkey and the credential tells us
+            // which account it is.
+            residentKey: 'required',
             userVerification: 'preferred', // Face ID / Touch ID when available
           },
         });
         const exp = Math.floor(Date.now() / 1000) + CHALLENGE_TTL_SECONDS;
-        setCookie(res, 'reg_challenge', makeToken({ c: options.challenge, exp }, sessionSecret), CHALLENGE_TTL_SECONDS);
+        setCookie(res, 'reg_challenge', makeToken({ c: options.challenge, u: email, exp }, sessionSecret), CHALLENGE_TTL_SECONDS);
         res.json(options);
       } catch (err) {
         console.error('passkey register/options', err);
@@ -149,11 +208,16 @@ function createPasskeyAuth(opts) {
       }
     });
 
-    app.post('/api/auth/passkey/register/verify', verifyGate, async (req, res) => {
+    // The verify step can't carry the password - its body is the WebAuthn
+    // credential. The options step already demanded whatever proof this
+    // address needed, and the signed 5-minute challenge cookie (which names
+    // the account) proves this is that same flow.
+    app.post('/api/auth/passkey/register/verify', async (req, res) => {
       try {
         const { rpID, origin } = rpInfo(req);
         const stashed = readToken(parseCookies(req).reg_challenge, sessionSecret);
-        if (!stashed) return res.status(400).json({ error: 'Registration expired — try again.' });
+        if (!stashed || !stashed.u) return res.status(400).json({ error: 'Registration expired - try again.' });
+        const email = normalizeEmail(stashed.u);
 
         const verification = await verifyRegistrationResponse({
           response: req.body,
@@ -164,18 +228,21 @@ function createPasskeyAuth(opts) {
         if (!verification.verified) return res.status(400).json({ error: 'Passkey could not be verified.' });
 
         const cred = verification.registrationInfo.credential;
+        const now = new Date().toISOString();
         await db.collection(collection).doc(cred.id).set({
+          uid: email,
           publicKey: Buffer.from(cred.publicKey).toString('base64'),
           counter: cred.counter,
           transports: cred.transports || [],
           rpID,
           label: (req.body && req.body.label) || 'Passkey',
-          createdAt: new Date().toISOString(),
+          createdAt: now,
         });
+        await db.collection(usersCollection).doc(email).set({ email, createdAt: now, lastLoginAt: now }, { merge: true });
 
         clearCookie(res, 'reg_challenge');
-        issueSession(res);
-        res.json({ ok: true });
+        issueSession(res, { uid: email, email });
+        res.json({ ok: true, email, canResearch: isResearchEmail(email) });
       } catch (err) {
         console.error('passkey register/verify', err);
         res.status(500).json({ error: 'Passkey registration failed.' });
@@ -189,9 +256,12 @@ function createPasskeyAuth(opts) {
         const creds = (await listCredentials()).filter((c) => c.rpID === rpID);
         if (!creds.length) return res.status(404).json({ error: 'No passkey registered on this domain yet.' });
 
+        // No allowCredentials: the passkeys are discoverable, so the platform
+        // offers the ones it holds and the credential it returns tells us the
+        // account. Listing them here would hand every visitor the full set of
+        // credential ids, and a count of how many accounts exist.
         const options = await generateAuthenticationOptions({
           rpID,
-          allowCredentials: creds.map((c) => ({ id: c.id, transports: c.transports || undefined })),
           userVerification: 'preferred',
         });
         const exp = Math.floor(Date.now() / 1000) + CHALLENGE_TTL_SECONDS;
@@ -214,6 +284,11 @@ function createPasskeyAuth(opts) {
         const doc = await db.collection(collection).doc(id).get();
         if (!doc.exists) return res.status(404).json({ error: 'Unknown passkey.' });
         const stored = doc.data();
+        // A passkey is bound to the host it was registered on; one registered
+        // elsewhere must not authenticate here.
+        if (stored.rpID !== rpID) return res.status(404).json({ error: 'Unknown passkey.' });
+        const email = normalizeEmail(stored.uid);
+        if (!email) return res.status(409).json({ error: 'That passkey predates accounts - register again.' });
 
         const verification = await verifyAuthenticationResponse({
           response: req.body,
@@ -238,9 +313,10 @@ function createPasskeyAuth(opts) {
           await doc.ref.update({ lastUsedAt: new Date().toISOString() });
         }
 
+        await db.collection(usersCollection).doc(email).set({ lastLoginAt: new Date().toISOString() }, { merge: true });
         clearCookie(res, 'auth_challenge');
-        issueSession(res);
-        res.json({ ok: true });
+        issueSession(res, { uid: email, email });
+        res.json({ ok: true, email, canResearch: isResearchEmail(email) });
       } catch (err) {
         console.error('passkey login/verify', err);
         res.status(500).json({ error: 'Passkey sign-in failed.' });
@@ -258,11 +334,19 @@ function createPasskeyAuth(opts) {
       try {
         registered = (await listCredentials()).some((c) => c.rpID === rpID);
       } catch (e) { /* treat as none */ }
-      res.json({ signedIn: hasSession(req), passkeyRegistered: registered });
+      const me = currentUser(req);
+      res.json({
+        signedIn: !!me,
+        email: me ? me.email : null,
+        // Drives what the page offers: everyone gets a slip, research is the
+        // owner's. The server enforces this regardless of what the page does.
+        canResearch: !!(me && isResearchEmail(me.email)),
+        passkeyRegistered: registered,
+      });
     });
   }
 
-  return { mount, hasSession, issueSession };
+  return { mount, hasSession, currentUser, issueSession };
 }
 
 module.exports = { createPasskeyAuth, parseCookies };

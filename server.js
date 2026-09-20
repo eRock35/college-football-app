@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const express = require('express');
 const path = require('path');
 const { Firestore } = require('@google-cloud/firestore');
@@ -15,6 +16,18 @@ const SITE_LOGIN_PASSWORD = process.env.SITE_LOGIN_PASSWORD || '';
 // something a person types.
 const CRON_SECRET = process.env.CRON_SECRET || '';
 const SESSION_SECRET = process.env.SESSION_SECRET || '';
+// Who may spend Anthropic tokens. Anyone can register an account and keep a
+// slip; research and chat are the owner's. Comma-separated, matched on the
+// normalized email. Unset means nobody qualifies by email - which fails
+// CLOSED, and the site password below still works as the owner's way in.
+const RESEARCH_ALLOWED_EMAILS = (process.env.RESEARCH_ALLOWED_EMAILS || '')
+  .split(',')
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
+
+function isResearchEmail(email) {
+  return RESEARCH_ALLOWED_EMAILS.indexOf(String(email || '').trim().toLowerCase()) !== -1;
+}
 
 const db = new Firestore({ projectId: PROJECT_ID, databaseId: FIRESTORE_DB });
 const anthropic = new Anthropic(); // reads ANTHROPIC_API_KEY from env
@@ -36,19 +49,20 @@ function passwordOk(req) {
   return decoded.slice(0, sep) === SITE_LOGIN_USERNAME && decoded.slice(sep + 1) === SITE_LOGIN_PASSWORD;
 }
 
-// The password alone - used to gate enrolling a NEW passkey, so that holding
-// a session isn't enough to add another one.
-function requirePassword(req, res, next) {
-  if (!SITE_LOGIN_USERNAME || !SITE_LOGIN_PASSWORD) {
-    return res.status(500).json({ error: 'Server login is not configured.' });
-  }
-  if (passwordOk(req)) return next();
-  res.set('WWW-Authenticate', 'Basic realm="College Football App"');
-  return res.status(401).send('Login required.');
+// The registration form posts the owner password in its own field instead of
+// leaning on the browser's Basic dialog - see the note in auth.js. Scoped to
+// registration: every other gate stays header-only.
+function passwordOkForRegistration(req) {
+  if (passwordOk(req)) return true;
+  const supplied = req.body && typeof req.body.password === 'string' ? req.body.password : '';
+  if (!SITE_LOGIN_PASSWORD || !supplied) return false;
+  const a = Buffer.from(supplied);
+  const b = Buffer.from(SITE_LOGIN_PASSWORD);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-// A passkey session OR the password. Everything that used to need the
-// password accepts either, so the password stays a working fallback.
+// Any registered account, or the password. Gates things every signed-in user
+// may do - keeping a slip - not the things that cost money.
 function requireLogin(req, res, next) {
   if (!SITE_LOGIN_USERNAME || !SITE_LOGIN_PASSWORD) {
     return res.status(500).json({ error: 'Server login is not configured.' });
@@ -83,18 +97,43 @@ function currentWeekKey() {
 const passkeyAuth = createPasskeyAuth({
   db,
   collection: 'webauthn-credentials',
+  usersCollection: 'users',
   rpName: 'College Football App',
   sessionSecret: SESSION_SECRET,
-  userName: SITE_LOGIN_USERNAME || 'erik',
-  passwordGate: requirePassword,
+  passwordOk: passwordOkForRegistration,
+  // Claiming an allowlisted address needs the site password. Without that,
+  // anyone could register the owner's email and hand themselves research.
+  needsPasswordForEmail: isResearchEmail,
+  isResearchEmail,
 });
 passkeyAuth.mount(app);
 
-// Scheduler-or-human gate: a cron key, or the normal login for manual clicks.
+// Anything that spends Anthropic tokens. A signed-in allowlisted account, or
+// the site password - which only the owner has, and which therefore doubles as
+// the way in if RESEARCH_ALLOWED_EMAILS was never set on the service.
+//
+// A signed-in account that simply isn't allowed gets 403, deliberately: a 401
+// here would pop the browser's password box at an ordinary user who has no
+// password to type and never will.
+function requireResearch(req, res, next) {
+  if (!SITE_LOGIN_USERNAME || !SITE_LOGIN_PASSWORD) {
+    return res.status(500).json({ error: 'Server login is not configured.' });
+  }
+  if (passwordOk(req)) return next();
+  const me = passkeyAuth.currentUser(req);
+  if (me && isResearchEmail(me.email)) return next();
+  if (!me) {
+    res.set('WWW-Authenticate', 'Basic realm="College Football App"');
+    return res.status(401).send('Login required.');
+  }
+  return res.status(403).json({ error: 'not_permitted' });
+}
+
+// Scheduler-or-human gate: a cron key, or a research-permitted human.
 function requireLoginOrCron(req, res, next) {
   const key = req.get('X-Cron-Key');
   if (CRON_SECRET && key && key === CRON_SECRET) return next();
-  return requireLogin(req, res, next);
+  return requireResearch(req, res, next);
 }
 
 // Hitting this with credentials is what triggers the browser's login prompt,
@@ -103,12 +142,29 @@ app.get('/api/login', requireLogin, (req, res) => {
   res.json({ ok: true, weekKey: currentWeekKey() });
 });
 
+// One slip document per account. Before accounts there was a single shared
+// 'slip' document; without this every signed-in visitor would write over the
+// owner's.
+function slipDocId(req) {
+  const me = passkeyAuth.currentUser(req);
+  return me ? me.uid : 'slip';
+}
+
 // Cross-device slip state. Gated: this app is public, and an ungated write
 // route would let any visitor scribble on the slip.
 app.get('/api/slip', requireLoginSilent, async (req, res) => {
   try {
-    const doc = await db.collection('user-state').doc('slip').get();
     const week = currentWeekKey();
+    const id = slipDocId(req);
+    let doc = await db.collection('user-state').doc(id).get();
+    // The owner's pre-accounts slip lived under 'slip'. Read it once as a
+    // fallback so the current week survives the migration; the next save
+    // writes to their own document and this stops mattering.
+    const me = passkeyAuth.currentUser(req);
+    if ((!doc.exists || doc.data().weekKey !== week) && id !== 'slip' && me && isResearchEmail(me.email)) {
+      const legacy = await db.collection('user-state').doc('slip').get();
+      if (legacy.exists && legacy.data().weekKey === week) doc = legacy;
+    }
     const data = doc.exists ? doc.data() : null;
     // Last week's slip is stale by definition - don't hand it back.
     if (!data || data.weekKey !== week) {
@@ -131,7 +187,7 @@ app.put('/api/slip', requireLoginSilent, async (req, res) => {
   try {
     const { slip, customPicks, bankroll } = req.body || {};
     const week = currentWeekKey();
-    await db.collection('user-state').doc('slip').set({
+    await db.collection('user-state').doc(slipDocId(req)).set({
       slip: slip && typeof slip === 'object' ? slip : {},
       customPicks: customPicks && typeof customPicks === 'object' ? customPicks : {},
       bankroll: typeof bankroll === 'string' ? bankroll.slice(0, 32) : '',
@@ -254,7 +310,7 @@ async function runStructuredResearch({ prompt, systemPrompt }) {
 // sends tells the model it has no live internet and to say so rather than
 // guess at anything that may have moved. Giving it search here would
 // contradict its own instructions.
-app.post('/api/chat', requireLogin, async (req, res) => {
+app.post('/api/chat', requireResearch, async (req, res) => {
   try {
     const { messages } = req.body || {};
     if (!Array.isArray(messages) || !messages.length) {
@@ -290,7 +346,7 @@ app.post('/api/chat', requireLogin, async (req, res) => {
   }
 });
 
-app.post('/api/research/custom', requireLogin, async (req, res) => {
+app.post('/api/research/custom', requireResearch, async (req, res) => {
   try {
     const { question } = req.body || {};
     if (!question) {
@@ -322,7 +378,7 @@ app.post('/api/research/custom', requireLogin, async (req, res) => {
   }
 });
 
-app.post('/api/research/add-game', requireLogin, async (req, res) => {
+app.post('/api/research/add-game', requireResearch, async (req, res) => {
   try {
     const { query } = req.body || {};
     if (!query) {

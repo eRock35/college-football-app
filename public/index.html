@@ -118,6 +118,28 @@
   }
   .auth-chip[data-state="in"]{color:var(--text-faint); border-color:var(--border);}
   .auth-chip[data-state="armed"]{background:var(--accent); color:#fff;}
+  .auth-panel{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:14px; margin-top:14px; box-shadow:var(--shadow);
+  }
+  .auth-panel p{font-size:.82rem; color:var(--text-dim); line-height:1.5; margin:0 0 10px; max-width:52ch;}
+  .auth-panel label{
+    display:block; font-size:.72rem; font-family:var(--font-ui); font-weight:600;
+    text-transform:uppercase; letter-spacing:.03em; color:var(--text-dim); margin-bottom:4px;
+  }
+  .auth-panel input{
+    width:100%; padding:10px 12px; font-size:1rem; font-family:var(--font-ui);
+    color:var(--text); background:var(--bg); border:1px solid var(--border); border-radius:10px;
+  }
+  .auth-panel-actions{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:10px;}
+  .auth-or{
+    font-size:.72rem; color:var(--text-faint); font-family:var(--font-mono);
+    text-transform:uppercase; letter-spacing:.06em; margin:12px 0 10px;
+  }
+  .auth-go{
+    font-family:var(--font-ui); font-weight:600; font-size:.82rem; padding:9px 16px;
+    border:none; border-radius:11px; background:var(--accent); color:#fff; cursor:pointer;
+  }
 
   .tabs{display:flex; gap:4px; margin-top:14px; overflow-x:auto; padding:4px; background:var(--surface-2); border-radius:14px;}
   .tab{
@@ -482,6 +504,23 @@
   </div>
 </div>
 
+<div class="auth-panel" id="auth-panel" hidden>
+  <p>Keep your slip, picks and bankroll in sync across your devices. Browsing the board needs no account, and research stays with the site owner.</p>
+  <button class="auth-go" id="auth-signin-btn" type="button" hidden>Sign in with Face ID</button>
+  <div class="auth-or" id="auth-or" hidden>or register a new account</div>
+  <label for="auth-email">Email</label>
+  <input type="email" id="auth-email" inputmode="email" autocomplete="username webauthn" placeholder="you@example.com">
+  <div id="auth-password-wrap" hidden>
+    <label for="auth-password" style="margin-top:10px;">Site password</label>
+    <input type="password" id="auth-password" autocomplete="current-password" placeholder="Owner password">
+  </div>
+  <div class="auth-panel-actions">
+    <button class="auth-go" id="auth-register-btn" type="button">Continue</button>
+    <button class="text-toggle-btn" id="auth-panel-close" type="button" style="margin-top:0;">Cancel</button>
+  </div>
+  <div class="copy-status" id="auth-panel-status"></div>
+</div>
+
 <section role="tabpanel" id="panel-card" aria-labelledby="tab-card">
   <div class="intro">
     <p>Plays off Saturday's board — straight bets and 3-leg parlays — built from DraftKings-market lines and this week's injury and personnel notes. Confidence dots reflect how much the number, not just the winner, is in our favor.</p>
@@ -540,7 +579,7 @@
   <div id="slip-review"></div>
   <button class="reset-btn" id="reset-slip">Clear my slip</button>
   <button class="text-toggle-btn" id="passkey-signin-btn" type="button" hidden>Sign in with Face ID</button>
-  <button class="text-toggle-btn" id="passkey-setup-btn" type="button" hidden>Set up Face ID sign-in</button>
+  <button class="text-toggle-btn" id="passkey-setup-btn" type="button" hidden>Register an account</button>
   <button class="text-toggle-btn" id="slip-sync-btn" type="button">Sign in with password</button>
   <button class="text-toggle-btn" id="passkey-logout-btn" type="button" hidden>Sign out</button>
   <div class="copy-status" id="slip-sync-status"></div>
@@ -829,8 +868,10 @@
     return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
   }
   function setAuthStatus(msg, cls){
-    var el = document.getElementById('slip-sync-status');
-    if (el){ el.textContent = msg; el.className = 'copy-status' + (cls ? ' ' + cls : ''); }
+    ['slip-sync-status', 'auth-panel-status'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el){ el.textContent = msg; el.className = 'copy-status' + (cls ? ' ' + cls : ''); }
+    });
   }
   var lastAuthState = {};
   // The header chip mirrors the My Slip buttons - same states, same handlers,
@@ -845,7 +886,7 @@
       chip.textContent = 'Tap again'; chip.dataset.state = 'armed'; return;
     }
     if (lastAuthState.signedIn){ chip.textContent = 'Signed in'; chip.dataset.state = 'in'; return; }
-    chip.textContent = lastAuthState.passkeyRegistered ? 'Sign in' : 'Set up Face ID';
+    chip.textContent = lastAuthState.passkeyRegistered ? 'Sign in' : 'Register';
     chip.dataset.state = 'out';
   }
 
@@ -855,8 +896,7 @@
     if (armedReg && armedFresh(armedRegAt)) return createPasskeyNow();
     if (armedLogin && armedFresh(armedLoginAt)) return getPasskeyNow();
     if (lastAuthState.signedIn) return signOut();
-    if (lastAuthState.passkeyRegistered) return signInWithPasskey();
-    return registerPasskey();
+    return openAuthPanel();
   }
 
   function paintAuthButtons(state){
@@ -869,7 +909,7 @@
     if (!signIn) return;
     var supported = passkeySupported();
     signIn.hidden = !(supported && state.passkeyRegistered && !state.signedIn);
-    setup.hidden = !(supported && !state.passkeyRegistered);
+    setup.hidden = !(supported && !state.signedIn);
     pwd.hidden = state.signedIn;
     out.hidden = !state.signedIn;
   }
@@ -905,7 +945,7 @@
   }
   function disarmReg(){
     armedReg = null; armedRegAt = 0;
-    setBtnLabel('passkey-setup-btn', 'Set up Face ID sign-in');
+    setBtnLabel('auth-register-btn', 'Continue');
     paintChip();
   }
   function disarmLogin(){
@@ -914,19 +954,60 @@
     paintChip();
   }
 
+  function openAuthPanel(){
+    var panel = document.getElementById('auth-panel');
+    if (!panel) return;
+    panel.hidden = false;
+    // Offer sign-in only where this host actually holds a passkey; the email
+    // form is always there, since a passkey existing says nothing about
+    // whether it is THIS person's.
+    var signIn = document.getElementById('auth-signin-btn');
+    var or = document.getElementById('auth-or');
+    var show = !!(passkeySupported() && lastAuthState.passkeyRegistered);
+    if (signIn) signIn.hidden = !show;
+    if (or) or.hidden = !show;
+    setAuthStatus('');
+  }
+  function closeAuthPanel(){
+    var panel = document.getElementById('auth-panel');
+    if (panel) panel.hidden = true;
+    var wrap = document.getElementById('auth-password-wrap');
+    if (wrap) wrap.hidden = true;
+    var pwd = document.getElementById('auth-password');
+    if (pwd) pwd.value = '';
+    disarmReg();
+    setAuthStatus('');
+  }
+
   function registerPasskey(){
     if (!passkeySupported()){ setAuthStatus('This browser doesn’t support passkeys.', 'error'); return; }
     // Second tap: the challenge is already here, so create() runs on this
     // gesture rather than on one the password dialog already spent.
     if (armedReg && armedFresh(armedRegAt)) return createPasskeyNow();
     if (authBusy) return;
+    var input = document.getElementById('auth-email');
+    var email = input ? input.value.trim() : '';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+      setAuthStatus('Enter a valid email address.', 'error');
+      if (input) input.focus();
+      return;
+    }
+    var pwdEl = document.getElementById('auth-password');
+    var password = pwdEl && !document.getElementById('auth-password-wrap').hidden ? pwdEl.value : '';
     authBusy = true;
     disarmReg();
-    setAuthStatus('Confirm your password…');
-    // This route requires the password, so the browser prompts for it first -
-    // otherwise anyone who found the URL could enrol their own passkey.
-    fetch('/api/auth/passkey/register/options', {method: 'POST'})
-      .then(function(r){ if (!r.ok) throw new Error('auth'); return r.json(); })
+    setAuthStatus('Setting up…');
+    // An owner address additionally demands the site password, so the browser
+    // may prompt here. An ordinary address goes straight through.
+    fetch('/api/auth/passkey/register/options', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(password ? {email: email, password: password} : {email: email})
+    })
+      .then(function(r){ return r.json().then(function(d){
+        if (!r.ok){ var e = new Error(d.error || 'auth'); e.needsPassword = !!d.needsPassword; throw e; }
+        return d;
+      }); })
       .then(function(options){
         options.challenge = b64urlToBuf(options.challenge);
         options.user.id = b64urlToBuf(options.user.id);
@@ -934,14 +1015,22 @@
         armedReg = options;
         armedRegAt = Date.now();
         authBusy = false;
-        setBtnLabel('passkey-setup-btn', 'Tap again for Face ID');
+        setBtnLabel('auth-register-btn', 'Tap again for Face ID');
         paintChip();
-        setAuthStatus('Password accepted — tap again to finish with Face ID.');
+        setAuthStatus('Ready — tap again to finish with Face ID.');
       })
-      .catch(function(){
+      .catch(function(err){
         authBusy = false;
         disarmReg();
-        setAuthStatus('Couldn’t start Face ID setup — check your password and try again.', 'error');
+        // An owner address asks for the site password; reveal the field and
+        // let them finish in the form rather than bouncing them anywhere.
+        if (err && err.needsPassword){
+          var wrap = document.getElementById('auth-password-wrap');
+          if (wrap) wrap.hidden = false;
+          var el = document.getElementById('auth-password');
+          if (el) el.focus();
+        }
+        setAuthStatus((err && err.message) || 'Couldn’t start registration — try again.', 'error');
       });
   }
 
@@ -970,7 +1059,7 @@
       .then(function(r){ return r.json().then(function(d){ if (!r.ok) throw new Error(d.error || 'failed'); return d; }); })
       .then(function(){
         authBusy = false;
-        disarmReg();
+        closeAuthPanel();
         syncEnabled = true;
         setAuthStatus('Face ID set up — you’re signed in');
         refreshAuthStatus();
@@ -983,7 +1072,7 @@
         // for a few more minutes, so another tap retries Face ID without
         // making the user re-enter the password.
         if (err && err.name === 'NotAllowedError' && armedFresh(armedRegAt)){
-          setBtnLabel('passkey-setup-btn', 'Tap again for Face ID');
+          setBtnLabel('auth-register-btn', 'Tap again for Face ID');
           paintChip();
           setAuthStatus('Face ID didn’t complete — tap again.', 'error');
           return;
@@ -1012,9 +1101,16 @@
         authBusy = false;
         return getPasskeyNow();
       })
-      .catch(function(){
+      .catch(function(err){
         authBusy = false;
         disarmLogin();
+        // Nothing registered on this host yet - send them to the form rather
+        // than leaving them tapping a button that cannot work.
+        if (err && /no passkey/i.test(err.message || '')){
+          openAuthPanel();
+          setAuthStatus('No account here yet — register below.');
+          return;
+        }
         setAuthStatus('Face ID sign-in failed — try again.', 'error');
       });
   }
@@ -1045,6 +1141,8 @@
       .then(function(){
         authBusy = false;
         disarmLogin();
+        var panel = document.getElementById('auth-panel');
+        if (panel) panel.hidden = true;
         syncEnabled = true;
         setAuthStatus('Signed in');
         refreshAuthStatus();
@@ -1400,6 +1498,7 @@
       body: JSON.stringify({query: q})
     }).then(function(r){
       if (r.status === 401){ var e = new Error('auth'); e.code = 'not_granted'; throw e; }
+      if (r.status === 403){ var e403 = new Error('perm'); e403.code = 'not_permitted'; throw e403; }
       return r.json().then(function(d){
         if (!r.ok){ var e2 = new Error(d.error || 'failed'); e2.code = 'error'; throw e2; }
         return d;
@@ -2068,6 +2167,7 @@
     if (code === 'consent_required') return 'Allow page comments when prompted, then try again.';
     if (code === 'forbidden') return 'Commenting from this page is off for this view.';
     if (code === 'claude_unavailable') return 'No Claude session is currently watching this artifact.';
+    if (code === 'not_permitted') return 'Research is the site owner’s — your account keeps a slip, not the Claude pulls.';
     if (code === 'rate_limited') return 'Slow down a bit — try again shortly.';
     if (code === 'not_granted' || code === 'capability_disabled' || code === 'capability_removed') return 'Refresh-by-comment isn’t available in this view.';
     return 'Couldn’t send the refresh request — try again in a moment.';
@@ -2124,6 +2224,7 @@
     if (statusEl) statusEl.textContent = '';
     fetch('/api/research/refresh-board', { method: 'POST' }).then(function(r){
       if (r.status === 401){ var e = new Error('auth'); e.code = 'not_granted'; throw e; }
+      if (r.status === 403){ var e403 = new Error('perm'); e403.code = 'not_permitted'; throw e403; }
       return r.json().then(function(d){
         if (!r.ok){ var e2 = new Error(d.error || 'failed'); e2.code = 'error'; throw e2; }
         return d;
@@ -2164,6 +2265,7 @@
       body: JSON.stringify({question: query})
     }).then(function(r){
       if (r.status === 401){ var e = new Error('auth'); e.code = 'not_granted'; throw e; }
+      if (r.status === 403){ var e403 = new Error('perm'); e403.code = 'not_permitted'; throw e403; }
       return r.json().then(function(d){
         if (!r.ok){ var e2 = new Error(d.error || 'failed'); e2.code = 'error'; throw e2; }
         return d;
@@ -2178,7 +2280,9 @@
     }).catch(function(err){
       btn.disabled = false;
       btn.textContent = originalLabel;
-      if (statusEl) statusEl.textContent = err.code === 'not_granted' ? 'Log in to use custom research.' : 'Couldn’t research that — try again in a moment.';
+      if (statusEl) statusEl.textContent = err.code === 'not_permitted'
+        ? 'Research is the site owner’s — your account keeps a slip, not the Claude pulls.'
+        : (err.code === 'not_granted' ? 'Log in to use custom research.' : 'Couldn’t research that — try again in a moment.');
     });
     if (input) input.value = '';
   }
@@ -2341,6 +2445,7 @@
       body: JSON.stringify({query: query})
     }).then(function(r){
       if (r.status === 401){ var e = new Error('auth'); e.code = 'not_granted'; throw e; }
+      if (r.status === 403){ var e403 = new Error('perm'); e403.code = 'not_permitted'; throw e403; }
       return r.json().then(function(d){
         if (!r.ok){ var e2 = new Error(d.error || 'failed'); e2.code = 'error'; throw e2; }
         return d;
@@ -2477,7 +2582,13 @@
     var pkIn = document.getElementById('passkey-signin-btn');
     if (pkIn) pkIn.addEventListener('click', signInWithPasskey);
     var pkSet = document.getElementById('passkey-setup-btn');
-    if (pkSet) pkSet.addEventListener('click', registerPasskey);
+    if (pkSet) pkSet.addEventListener('click', openAuthPanel);
+    var regBtn = document.getElementById('auth-register-btn');
+    if (regBtn) regBtn.addEventListener('click', registerPasskey);
+    var regClose = document.getElementById('auth-panel-close');
+    if (regClose) regClose.addEventListener('click', closeAuthPanel);
+    var panelSignIn = document.getElementById('auth-signin-btn');
+    if (panelSignIn) panelSignIn.addEventListener('click', signInWithPasskey);
     var pkOut = document.getElementById('passkey-logout-btn');
     if (pkOut) pkOut.addEventListener('click', signOut);
     var chip = document.getElementById('auth-chip');
@@ -2675,6 +2786,7 @@
         body: JSON.stringify({messages: messages})
       }).then(function(r){
         if (r.status === 401){ var e = new Error('login'); e.code = 'not_granted'; throw e; }
+        if (r.status === 403){ var e403 = new Error('perm'); e403.code = 'not_permitted'; throw e403; }
         if (r.status === 429){ var e429 = new Error('rate'); e429.code = 'rate_limited'; throw e429; }
         return r.json().then(function(d){
           if (r.status === 422 || d.error === 'refused'){ var e422 = new Error('refused'); e422.code = 'refused'; throw e422; }
