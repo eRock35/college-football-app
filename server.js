@@ -131,6 +131,8 @@ const identity = identityLib.create({
   rpName: 'College Football App',
 });
 identity.mount(app);
+// Every Anthropic call through this client is now priced and recorded.
+identity.meter(anthropic);
 
 /** Whoever is signed in, by either door. The shared account wins when both
  *  are present, since it is the one that means something across the domain.
