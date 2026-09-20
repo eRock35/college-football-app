@@ -1,15 +1,27 @@
-# Cover Sheet — GCP deployment notes
+# College Football App — GCP deployment notes
 
 Non-secret setup facts for deploying this app to GCP. Written so a future
 Claude Code session in this repo has this context without needing it
 re-explained. No secrets live in this file — see "Secrets" below.
+
+The app's actual title/branding is **"College Football App"**, not "Cover
+Sheet" — the file/repo name and some internal identifiers (GCP resource
+names, localStorage keys, the `erik-projects` Artifact Registry repo) still
+say "cover-sheet"/"cover sheet" in places; that's fine, they're internal
+plumbing, not user-facing. Don't reintroduce "Cover Sheet" as the page's
+displayed name or `<title>` — an earlier pass here did that by mistake (a
+hand-rebuilt frontend that didn't match the real Artifact) and it was
+corrected. `public/index.html` is now a direct port of the real Claude
+Artifact (`https://claude.ai/artifact/KAiaq3U2A9fFFtZwKadj6T`) — if this app
+needs updating from a newer version of that Artifact in the future, re-port
+from there rather than hand-editing further away from it.
 
 This app used to live inside `eRock35/COVID19-Vaccine-Spotter-Extension-Python`
 (wrong home, unrelated project) — it moved here, to its own repo, along with
 the vacation app moving to its own **private** repo
 (`eRock35/santa-rosa-beach-trip`, contains real family PII) and a separate
 `eRock35/eriks-projects` repo for the landing/hub page. Each thing Erik builds
-going forward gets its own repo; this one is just Cover Sheet.
+going forward gets its own repo; this one is just College Football App.
 
 ## Project
 
