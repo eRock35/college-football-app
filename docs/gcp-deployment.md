@@ -325,8 +325,10 @@ stakes than it already has.
 
 ## Still to do
 
-- ~~**Domain mapping**~~ — done; the certificate is issued and the custom
-  domain serves the app. Kept below for the "why it needed a human" note.
+- ~~**Domain mapping**~~ — done. All four hostnames are live over HTTPS:
+  `footballapp.`, `trip.` (trip planner), and the apex + `www.` (landing page).
+  Kept below because the note explains how mappings are created now, and
+  corrects what this doc used to claim about needing a human.
 - **Domain mapping**: `footballapp.strongtechnicalconsulting.com` →
   `college-football-app` Cloud Run service.
 
