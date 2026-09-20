@@ -328,15 +328,38 @@ stakes than it already has.
 - ~~**Domain mapping**~~ — done; the certificate is issued and the custom
   domain serves the app. Kept below for the "why it needed a human" note.
 - **Domain mapping**: `footballapp.strongtechnicalconsulting.com` →
-  `college-football-app` Cloud Run service. NOTE: a domain mapping can only be
-  created by a **verified Google user identity**, not by the deployer service
-  account — every API attempt from the service account fails with
-  "Caller is not authorized to administer the domain," even though the domain
-  is verified to the user's own account. The user must add it via the Cloud
-  Run console (Manage Custom Domains → Add Mapping), then add the DNS records
-  it returns at their registrar. Root `strongtechnicalconsulting.com` is NOT
-  a Cloud Run mapping — it serves the landing page from the
-  `www.strongtechnicalconsulting.com` GCS bucket.
+  `college-football-app` Cloud Run service.
+
+  **The service account CAN now create mappings** (changed 2026-09-20). This
+  note used to say it couldn't, and that a human had to use the Cloud Run
+  console. That was true, but the cause was misdiagnosed: it was never about
+  needing "a verified Google *user* identity". Cloud Run checks whether the
+  *calling identity* is a verified owner of the domain, and only Erik's own
+  account was. Adding `cover-sheet-deployer@` as an **Owner** of the
+  `strongtechnicalconsulting.com` property in Google Search Console fixed it —
+  the very next API call succeeded, with no propagation wait.
+
+  So mappings are now a normal deploy-agent step:
+
+  ```
+  POST us-central1-run.googleapis.com/apis/domains.cloudrun.com/v1/namespaces/$P/domainmappings
+  {"apiVersion":"domains.cloudrun.com/v1","kind":"DomainMapping",
+   "metadata":{"name":"<host>","namespace":"<project>"},
+   "spec":{"routeName":"<service>"}}
+  ```
+
+  Note the **regional** host (`us-central1-run.googleapis.com`). The global
+  endpoint lists mappings but returns 404 when fetching one.
+
+  Adding the DNS records at the registrar is still Erik's step. The mapping is
+  inert until DNS points at Google, so creating one changes nothing for
+  visitors on its own.
+
+  Root `strongtechnicalconsulting.com` and `www.` are now Cloud Run mappings to
+  the `landing-page` service. They previously served from the
+  `www.strongtechnicalconsulting.com` GCS bucket, which cannot do HTTPS on a
+  custom domain at all — that is why the root read "Not Secure". The bucket is
+  kept as the rollback and still holds the archived 2019 template.
 - **Runtime service account** — see "Known compromise" above.
 - Nothing blocking. (Scheduler jobs are live — see below.)
 - The `games` data is seeded from the Artifact's Sep 2026 snapshot. It only
