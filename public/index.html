@@ -1,236 +1,2194 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Cover Sheet</title>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>College Football App</title>
 <style>
-  :root {
-    --bg: #0b0f14; --card: #131a22; --border: #223; --text: #e8edf2; --muted: #8a97a5;
-    --accent: #dc2626; --accent2: #f59e0b; --good: #16a34a;
+  :root{
+    --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --bg:#F5F5F7;
+    --surface:#FFFFFF;
+    --surface-2:#FAFAFA;
+    --border:#E3E3E8;
+    --text:#1D1D1F;
+    --text-dim:#6E6E73;
+    --text-faint:#8E8E93;
+    --accent:#0071E3;
+    --accent-soft:#E8F1FE;
+    --positive:#1D8A3B;
+    --positive-soft:#E5F7EA;
+    --negative:#D70015;
+    --negative-soft:#FDEAEA;
+    --warning:#C93400;
+    --warning-soft:#FFEFDF;
+    --parlay:#8944AB;
+    --parlay-soft:#F4E9FB;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 10px 24px -16px rgba(0,0,0,.12);
+    --radius: 18px;
+    color-scheme: light;
   }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  header { padding: 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 5; }
-  header h1 { margin: 0 0 10px; font-size: 20px; }
-  nav { display: flex; gap: 6px; overflow-x: auto; }
-  nav button { flex: none; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 13px; cursor: pointer; }
-  nav button.active { background: var(--accent); border-color: var(--accent); }
-  main { padding: 16px; max-width: 760px; margin: 0 auto; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
-  .card h3 { margin: 0 0 6px; font-size: 16px; }
-  .muted { color: var(--muted); font-size: 13px; }
-  .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
-  button.action { background: var(--accent); border: none; color: #fff; padding: 7px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; }
-  button.action.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
-  button.action:disabled { opacity: 0.5; cursor: default; }
-  input[type=text] { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: #0f151c; color: var(--text); }
-  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--accent2); color: #111; font-weight: 600; }
-  .empty { color: var(--muted); text-align: center; padding: 30px 0; }
-  .answer { white-space: pre-wrap; font-size: 13px; margin-top: 8px; border-top: 1px solid var(--border); padding-top: 8px; }
-  section { display: none; }
-  section.active { display: block; }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#000000;
+      --surface:#1C1C1E;
+      --surface-2:#2C2C2E;
+      --border:#38383A;
+      --text:#F5F5F7;
+      --text-dim:#AEAEB2;
+      --text-faint:#8E8E93;
+      --accent:#0A84FF;
+      --accent-soft:#0F2E4F;
+      --positive:#30D158;
+      --positive-soft:#103A1E;
+      --negative:#FF453A;
+      --negative-soft:#3D1210;
+      --warning:#FF9F0A;
+      --warning-soft:#3D2600;
+      --parlay:#BF5AF2;
+      --parlay-soft:#341A47;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#000000;
+    --surface:#1C1C1E;
+    --surface-2:#2C2C2E;
+    --border:#38383A;
+    --text:#F5F5F7;
+    --text-dim:#AEAEB2;
+    --text-faint:#8E8E93;
+    --accent:#0A84FF;
+    --accent-soft:#0F2E4F;
+    --positive:#30D158;
+    --positive-soft:#103A1E;
+    --negative:#FF453A;
+    --negative-soft:#3D1210;
+    --warning:#FF9F0A;
+    --warning-soft:#3D2600;
+    --parlay:#BF5AF2;
+    --parlay-soft:#341A47;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-ui);
+    padding-inline:16px;
+    padding-block:0 32px;
+    max-width:840px;
+    margin-inline:auto;
+    -webkit-font-smoothing:antialiased;
+    font-weight:400;
+  }
+  h1,h2,h3,.display{
+    font-family:var(--font-ui);
+    font-weight:700;
+    letter-spacing:-.01em;
+    text-wrap:balance;
+    margin:0;
+  }
+  .mono{ font-family:var(--font-mono); font-variant-numeric: tabular-nums; }
+  a{color:var(--accent);}
+  button{font-family:inherit;}
+
+  /* ---- Header ---- */
+  .topbar{
+    position:sticky;
+    top:env(safe-area-inset-top,0px);
+    z-index:20;
+    background:var(--bg);
+    padding-block:14px 10px;
+    border-bottom:1px solid var(--border);
+    margin-inline:-16px;
+    padding-inline:16px;
+  }
+  .topbar-row{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:baseline; gap:10px;}
+  .brand h1{font-size:1.5rem; font-weight:700; color:var(--text);}
+  .brand .tag{font-size:.68rem; color:var(--accent); font-family:var(--font-mono); letter-spacing:.06em; border:1px solid var(--accent); border-radius:20px; padding:2px 8px; text-transform:uppercase;}
+  .asof{font-size:.72rem; color:var(--text-faint); font-family:var(--font-mono);}
+
+  .tabs{display:flex; gap:4px; margin-top:14px; overflow-x:auto; padding:4px; background:var(--surface-2); border-radius:14px;}
+  .tab{
+    flex:0 0 auto;
+    font-family:var(--font-ui); font-weight:600;
+    font-size:.82rem;
+    letter-spacing:0;
+    padding:8px 14px;
+    border-radius:11px;
+    border:none;
+    background:transparent;
+    color:var(--text-dim);
+    cursor:pointer;
+  }
+  .tab[aria-selected="true"]{background:var(--accent); color:#fff;}
+
+  section[role="tabpanel"][hidden]{display:none!important;}
+
+  /* ---- Intro strip ---- */
+  .intro{padding-block:18px 8px;}
+  .intro p{color:var(--text-dim); font-size:.95rem; max-width:60ch; line-height:1.5; margin:0 0 10px;}
+  .slate-strip{display:flex; gap:8px; overflow-x:auto; padding-block:4px 2px; margin:0 -16px; padding-inline:16px;}
+  .slate-chip{
+    flex:0 0 auto; background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:7px 10px; font-family:var(--font-mono); font-size:.7rem; color:var(--text-dim); white-space:nowrap;
+  }
+  .slate-chip b{color:var(--text); font-weight:600;}
+
+  /* ---- Add card row ---- */
+  .add-card-block{margin-top:14px;}
+  .add-card-label{font-family:var(--font-ui); font-weight:700; font-size:.78rem; color:var(--text-dim); margin-bottom:8px;}
+  .add-card-row{display:flex; gap:8px; align-items:stretch; margin-top:8px;}
+  .add-card-row:first-of-type{margin-top:0;}
+  .add-card-row select, .add-card-row input{
+    flex:1; min-width:0; padding:11px 14px; border-radius:12px; border:1px solid var(--border); background:var(--surface);
+    color:var(--text); font-family:var(--font-ui); font-size:.9rem;
+  }
+  .add-card-row select:disabled{color:var(--text-faint);}
+  .remove-card-btn{
+    border:none; background:transparent; color:var(--negative); font-family:var(--font-ui); font-weight:600;
+    font-size:.78rem; padding:6px 4px; cursor:pointer;
+  }
+
+  /* ---- Pick cards ---- */
+  .card-list{display:flex; flex-direction:column; gap:12px; margin-top:14px;}
+  .pick{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  .pick-head{
+    display:flex; justify-content:space-between; align-items:flex-start; gap:12px;
+    padding:14px 16px 10px;
+  }
+  .pick-kind{
+    font-family:var(--font-mono); font-size:.64rem; letter-spacing:.08em; text-transform:uppercase;
+    padding:3px 8px; border-radius:6px; display:inline-block; margin-bottom:6px;
+  }
+  .pick-kind.straight{ background:var(--accent-soft); color:var(--accent); }
+  .pick-kind.parlay{ background:var(--parlay-soft); color:var(--parlay); }
+  .pick-title{font-size:1.15rem; font-weight:600; color:var(--text);}
+  .pick-sub{font-size:.82rem; color:var(--text-dim); margin-top:2px;}
+  .pick-time{font-size:.7rem; color:var(--text-faint); font-family:var(--font-mono); margin-top:2px;}
+
+  .confidence{display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex:0 0 auto;}
+  .confidence .lbl{font-size:.62rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:.06em; font-family:var(--font-mono);}
+  .dots{display:flex; gap:3px;}
+  .dots i{width:7px; height:7px; border-radius:50%; background:var(--border); display:block;}
+  .dots i.on{background:var(--accent);}
+
+  .pick-legs{border-top:1px dashed var(--border); padding:10px 16px; display:flex; flex-direction:column; gap:8px;}
+  .leg{display:flex; justify-content:space-between; gap:10px; font-size:.85rem; align-items:baseline;}
+  .leg .g{color:var(--text);}
+  .leg .m{color:var(--text-dim); font-family:var(--font-mono); font-size:.8rem; white-space:nowrap;}
+
+  .pick-thesis{padding:0 16px 12px; color:var(--text-dim); font-size:.88rem; line-height:1.45;}
+
+  .why-toggle{
+    width:100%; text-align:left; background:var(--surface-2); border:none; border-top:1px solid var(--border);
+    padding:10px 16px; font-family:var(--font-ui); font-weight:600; text-transform:uppercase; font-size:.72rem; letter-spacing:.05em;
+    color:var(--accent); cursor:pointer; display:flex; justify-content:space-between; align-items:center;
+  }
+  .why-toggle .arrow{transition:transform .18s ease;}
+  .why-toggle[aria-expanded="true"] .arrow{transform:rotate(180deg);}
+  .why-body{padding:14px 16px 4px; color:var(--text-dim); font-size:.88rem; line-height:1.55; background:var(--surface-2);}
+  .why-body[hidden]{display:none;}
+  .risk-line{margin-top:10px; padding:8px 10px; border-radius:8px; background:var(--warning-soft); color:var(--warning); font-size:.8rem; line-height:1.4;}
+  .slip-live{margin-top:10px; padding:8px 10px; border-radius:8px; background:var(--accent-soft); font-size:.8rem; line-height:1.45;}
+  .slip-live-label{font-family:var(--font-ui); font-weight:700; font-size:.64rem; text-transform:uppercase; letter-spacing:.05em; color:var(--accent); margin-bottom:3px;}
+  .slip-live-row{color:var(--text); margin-bottom:3px;}
+  .slip-live-row:last-child{margin-bottom:0;}
+  .slip-live-time{color:var(--text-faint); font-family:var(--font-mono); font-size:.72rem;}
+
+  .slip-row{
+    display:flex; align-items:center; gap:10px; padding:10px 16px 16px; background:var(--surface-2);
+    flex-wrap:wrap;
+  }
+  .slip-row label{display:flex; align-items:center; gap:6px; font-size:.8rem; color:var(--text-dim); cursor:pointer;}
+  .slip-row input[type="checkbox"]{width:16px; height:16px; accent-color:var(--accent);}
+  .stake-field{display:flex; align-items:center; gap:6px; margin-left:auto;}
+  .stake-field span{font-size:.78rem; color:var(--text-faint); font-family:var(--font-mono);}
+  .stake-field input{
+    width:76px; padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:var(--surface);
+    color:var(--text); font-family:var(--font-mono); font-size:.85rem;
+  }
+  .payout{font-family:var(--font-mono); font-size:.8rem; color:var(--positive); white-space:nowrap;}
+
+  /* ---- Research tab ---- */
+  .research-game{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:16px; margin-top:14px;
+  }
+  .research-game.has-update{border-color:var(--warning);}
+  .research-game h3{font-size:1.05rem; color:var(--text); margin-bottom:2px;}
+  .research-meta{font-size:.74rem; color:var(--text-faint); font-family:var(--font-mono); margin-bottom:10px;}
+  .research-game p{color:var(--text-dim); font-size:.9rem; line-height:1.55; margin:0 0 10px;}
+  .research-game p:last-child{margin-bottom:0;}
+  .flag{display:inline-block; font-size:.66rem; text-transform:uppercase; letter-spacing:.06em; font-family:var(--font-mono); padding:2px 7px; border-radius:5px; margin-right:6px; margin-bottom:8px;}
+  .flag.injury{background:var(--warning-soft); color:var(--warning);}
+
+  /* ---- Futures tab ---- */
+  .futures-block{margin-top:16px;}
+  .futures-block h2{font-size:1rem; margin-bottom:2px;}
+  .futures-note{font-size:.78rem; color:var(--text-faint); font-family:var(--font-mono); margin-bottom:10px;}
+  .futures-table{width:100%; border-collapse:collapse; font-size:.86rem;}
+  .futures-table th{
+    text-align:left; font-family:var(--font-ui); font-weight:600; text-transform:uppercase; font-size:.68rem; letter-spacing:.05em;
+    color:var(--text-faint); border-bottom:1px solid var(--border); padding:6px 8px;
+  }
+  .futures-table td{padding:7px 8px; border-bottom:1px solid var(--border); color:var(--text-dim);}
+  .futures-table td:first-child{color:var(--text); font-weight:600;}
+  .futures-table td.odds{font-family:var(--font-mono); color:var(--text); text-align:right;}
+  .futures-table tr.value td:first-child{color:var(--accent);}
+  .value-tag{font-family:var(--font-mono); font-size:.6rem; color:var(--accent); border:1px solid var(--accent); border-radius:4px; padding:1px 4px; margin-left:6px;}
+  .futures-why{font-size:.85rem; color:var(--text-dim); line-height:1.5; margin-top:10px; padding:10px 12px; background:var(--surface-2); border-radius:10px;}
+
+  /* ---- Slip tab ---- */
+  .slip-summary{
+    display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;
+  }
+  .stat-tile{
+    flex:1 1 140px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:12px 14px; box-shadow:var(--shadow);
+  }
+  .stat-tile .k{font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint); font-family:var(--font-mono);}
+  .stat-tile .v{font-family:var(--font-mono); font-size:1.3rem; font-weight:600; margin-top:2px;}
+  .stat-tile .v.win{color:var(--positive);}
+  .empty-slip{margin-top:16px; color:var(--text-faint); font-size:.88rem; text-align:center; padding:30px 16px; border:1px dashed var(--border); border-radius:var(--radius);}
+  .reset-btn{
+    margin-top:14px; background:none; border:1px solid var(--border); color:var(--text-dim); font-size:.84rem;
+    padding:8px 14px; border-radius:10px; cursor:pointer; font-family:var(--font-ui); font-weight:600;
+  }
+  .text-toggle-btn{
+    margin-top:14px; background:none; border:none; color:var(--accent); font-size:.82rem;
+    padding:8px 4px; cursor:pointer; font-family:var(--font-ui); font-weight:600;
+  }
+  .reset-btn:hover{border-color:var(--negative); color:var(--negative);}
+
+  /* ---- Bankroll + review ---- */
+  .bankroll-row{
+    display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:10px 14px; box-shadow:var(--shadow);
+  }
+  .bankroll-row label{font-size:.78rem; color:var(--text-dim); font-family:var(--font-ui); font-weight:600; text-transform:uppercase; letter-spacing:.03em;}
+  .bankroll-hint{font-family:var(--font-ui); text-transform:none; letter-spacing:0; color:var(--text-faint); font-size:.72rem; display:block; margin-top:2px;}
+  .bankroll-input-wrap{display:flex; align-items:center; gap:4px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:5px 10px;}
+  .bankroll-input-wrap span{color:var(--text-faint); font-family:var(--font-mono); font-size:.85rem;}
+  .bankroll-input-wrap input{border:none; background:transparent; width:88px; font-family:var(--font-mono); font-size:.9rem; color:var(--text);}
+  .bankroll-input-wrap input:focus{outline:none;}
+
+  .review-heading{font-size:1rem; margin-top:20px; margin-bottom:8px; color:var(--text);}
+  .review-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  .review-col{border-radius:var(--radius); padding:12px 14px; border:1px solid var(--border); border-top-width:3px; background:var(--surface); box-shadow:var(--shadow);}
+  .review-col h3{font-size:.7rem; letter-spacing:.07em; margin-bottom:8px; font-family:var(--font-ui); font-weight:600; text-transform:uppercase;}
+  .review-col ul{margin:0; padding-left:16px; display:flex; flex-direction:column; gap:8px;}
+  .review-col li{font-size:.81rem; color:var(--text-dim); line-height:1.45;}
+  .review-col.good{border-top-color:var(--positive);}
+  .review-col.good h3{color:var(--positive);}
+  .review-col.bad{border-top-color:var(--negative);}
+  .review-col.bad h3{color:var(--negative);}
+  .review-col.diff{border-top-color:var(--parlay);}
+  .review-col.diff h3{color:var(--parlay);}
+  @media (max-width:640px){ .review-grid{grid-template-columns:1fr;} }
+
+  /* ---- Full summary ---- */
+  .summary-lead{color:var(--text-dim); font-size:.9rem; line-height:1.5; margin:0 0 12px;}
+  .summary-copy-wrap{display:flex; align-items:center; gap:10px; margin-top:10px; flex-wrap:wrap;}
+  .copy-status{font-size:.75rem; color:var(--positive); font-family:var(--font-mono); min-height:1em;}
+  .summary-text{
+    width:100%; margin-top:10px; font-family:var(--font-ui); font-size:.84rem; line-height:1.6;
+    background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:14px; color:var(--text-dim);
+    resize:vertical;
+  }
+  .summary-text:focus{outline:2px solid var(--accent); outline-offset:1px;}
+
+  /* ---- All Games tab ---- */
+  .games-search-row{margin-top:14px; display:flex; gap:8px; align-items:stretch;}
+  .games-search-row input{
+    flex:1; min-width:0; padding:11px 14px; border-radius:12px; border:1px solid var(--border); background:var(--surface);
+    color:var(--text); font-family:var(--font-ui); font-size:.92rem;
+  }
+  .games-search-row input::placeholder{color:var(--text-faint);}
+  .refresh-btn{
+    flex:0 0 auto; border:none; background:var(--accent); color:#fff; font-family:var(--font-ui); font-weight:600;
+    font-size:.86rem; padding:0 16px; border-radius:12px; cursor:pointer; white-space:nowrap;
+  }
+  .refresh-btn:disabled{opacity:.5; cursor:default;}
+  .games-status{font-size:.74rem; color:var(--text-faint); font-family:var(--font-mono); margin-top:8px; min-height:1em;}
+  .refresh-meta{font-size:.74rem; color:var(--text-faint); font-family:var(--font-mono); margin-top:2px; min-height:1em;}
+  .custom-research{margin-top:16px; padding-top:14px; border-top:1px dashed var(--border);}
+  .custom-research-label{font-family:var(--font-ui); font-weight:700; font-size:.78rem; color:var(--text-dim); margin-bottom:8px;}
+  .custom-research .games-search-row{margin-top:0;}
+  .asks-feed{margin-top:14px; display:flex; flex-direction:column; gap:8px;}
+  .asks-heading{font-family:var(--font-ui); font-weight:700; font-size:.78rem; color:var(--text-dim); margin-bottom:2px;}
+  .ask-item{padding:10px 12px; background:var(--surface); border:1px solid var(--border); border-radius:11px;}
+  .ask-item-head{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+  .ask-q{font-size:.86rem; color:var(--text); font-style:italic; flex:1;}
+  .ask-badge{flex:0 0 auto; font-family:var(--font-ui); font-weight:700; font-size:.6rem; text-transform:uppercase; letter-spacing:.04em; padding:2px 7px; border-radius:6px; white-space:nowrap;}
+  .ask-badge.pending{background:var(--warning-soft); color:var(--warning);}
+  .ask-badge.answered{background:var(--positive-soft); color:var(--positive);}
+  .ask-time{font-family:var(--font-mono); font-size:.66rem; color:var(--text-faint); margin-top:3px;}
+  .ask-answer{font-size:.83rem; color:var(--text); margin-top:6px; line-height:1.45;}
+  .ask-waiting{font-size:.8rem; color:var(--text-faint); margin-top:6px;}
+  .games-grid{display:flex; flex-direction:column; gap:10px; margin-top:10px;}
+  .game-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;}
+  .game-card.has-update{border-color:var(--warning);}
+  .updated-badge{
+    display:inline-block; font-family:var(--font-ui); font-weight:700; font-size:.6rem; text-transform:uppercase; letter-spacing:.04em;
+    background:var(--warning); color:#fff; padding:2px 7px; border-radius:6px; margin-left:6px; vertical-align:middle;
+  }
+  .game-card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:12px 14px 8px;}
+  .game-tag{font-family:var(--font-mono); font-size:.62rem; letter-spacing:.07em; text-transform:uppercase; padding:2px 7px; border-radius:6px; display:inline-block; margin-bottom:5px;}
+  .game-tag.top25{background:var(--accent-soft); color:var(--accent);}
+  .game-tag.interesting{background:var(--parlay-soft); color:var(--parlay);}
+  .game-title{font-size:1rem; font-weight:600; color:var(--text);}
+  .game-meta{font-size:.76rem; color:var(--text-dim); margin-top:2px;}
+  .game-market{font-family:var(--font-mono); font-size:.78rem; color:var(--text); margin-top:4px;}
+  .game-updated{font-size:.66rem; color:var(--text-faint); font-family:var(--font-mono); white-space:nowrap; text-align:right;}
+  .game-lean{display:flex; align-items:center; gap:9px; margin:0 14px 10px; padding:9px 12px; background:var(--accent-soft); border-radius:11px;}
+  .lean-label{font-family:var(--font-ui); font-weight:700; font-size:.66rem; text-transform:uppercase; letter-spacing:.04em; color:var(--accent); flex:0 0 auto;}
+  .lean-pick{font-family:var(--font-mono); font-weight:600; font-size:.86rem; color:var(--text); flex:1;}
+  .game-pass{margin:0 14px 10px; padding:9px 12px; background:var(--surface-2); border-radius:11px; font-size:.8rem; color:var(--text-faint); font-style:italic;}
+  .add-slip-row{margin:0 14px 10px;}
+  .add-slip-btn{
+    border:1px solid var(--accent); background:transparent; color:var(--accent); font-family:var(--font-ui); font-weight:600;
+    font-size:.78rem; padding:6px 12px; border-radius:10px; cursor:pointer;
+  }
+  .add-slip-btn.on-slip{border-color:var(--positive); color:var(--positive);}
+  .game-detail{border-top:1px solid var(--border); padding:12px 14px; background:var(--surface-2); display:flex; flex-direction:column; gap:10px;}
+  .game-detail p{margin:0; color:var(--text-dim); font-size:.86rem; line-height:1.5;}
+  .games-empty{margin-top:14px; padding:24px 16px; text-align:center; border:1px dashed var(--border); border-radius:var(--radius); color:var(--text-dim); font-size:.88rem;}
+  .games-empty p{margin:0 0 10px;}
+
+  /* ---- Chat ---- */
+  .chat-block{border-top:1px dashed var(--border); padding-top:10px; margin-top:2px;}
+  .chat-label{font-family:var(--font-ui); font-weight:600; text-transform:uppercase; font-size:.68rem; letter-spacing:.05em; color:var(--text-faint); margin-bottom:6px;}
+  .chat-log{display:flex; flex-direction:column; gap:6px; max-height:220px; overflow-y:auto; margin-bottom:8px;}
+  .chat-empty{font-size:.8rem; color:var(--text-faint); font-style:italic;}
+  .chat-msg{font-size:.84rem; line-height:1.45; padding:7px 10px; border-radius:10px; max-width:88%;}
+  .chat-msg.me{align-self:flex-end; background:var(--accent-soft); color:var(--text);}
+  .chat-msg.ai{align-self:flex-start; background:var(--surface); border:1px solid var(--border); color:var(--text-dim);}
+  .chat-msg.ai.pending{color:var(--text-faint); font-style:italic;}
+  .chat-input-row{display:flex; gap:8px;}
+  .chat-input{
+    flex:1; padding:9px 12px; border-radius:10px; border:1px solid var(--border); background:var(--surface);
+    color:var(--text); font-family:var(--font-ui); font-size:.86rem;
+  }
+  .chat-send{
+    border:none; background:var(--accent); color:#fff; font-family:var(--font-ui); font-weight:600;
+    font-size:.82rem; padding:0 18px; border-radius:10px; cursor:pointer;
+  }
+  .chat-send:disabled{opacity:.5; cursor:default;}
+  .chat-hint{font-size:.72rem; color:var(--warning); font-family:var(--font-mono); margin-top:6px; min-height:1em;}
+
+  /* ---- My Dawgs (UGA) ---- */
+  :root{ --uga-red:#BA0C2F; --uga-red-soft:#FBE4E8; }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --uga-red:#FF4B5C; --uga-red-soft:#3A1319; } }
+  :root[data-theme="dark"]{ --uga-red:#FF4B5C; --uga-red-soft:#3A1319; }
+
+  .uga-hero{background:linear-gradient(135deg, var(--uga-red), #7A0A1F); color:#fff; border-radius:20px; padding:22px 20px; margin-top:14px; box-shadow:var(--shadow);}
+  .uga-hero .eyebrow{font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; font-weight:700; opacity:.85;}
+  .uga-hero h2{font-size:1.6rem; font-weight:800; margin:2px 0 14px; color:#fff;}
+  .uga-stats{display:flex; gap:22px; flex-wrap:wrap;}
+  .uga-stat .v{font-family:var(--font-mono); font-size:1.3rem; font-weight:700;}
+  .uga-stat .k{font-size:.66rem; opacity:.85; text-transform:uppercase; letter-spacing:.05em; margin-top:2px;}
+
+  .uga-next{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; margin-top:14px;}
+  .uga-next h3{font-size:.95rem; margin-bottom:2px;}
+  .uga-next .meta{font-size:.78rem; color:var(--text-faint); font-family:var(--font-mono); margin-bottom:8px;}
+  .uga-countdown{font-family:var(--font-mono); font-size:1.5rem; font-weight:700; color:var(--uga-red); margin:4px 0;}
+  .uga-line{font-size:.84rem; color:var(--text-dim);}
+
+  .uga-schedule{margin-top:14px; display:flex; flex-direction:column; gap:6px;}
+  .uga-game{display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:12px; background:var(--surface); border:1px solid var(--border);}
+  .uga-game.played{opacity:.65;}
+  .uga-game.current{border-color:var(--uga-red); background:var(--uga-red-soft);}
+  .uga-game .wk{font-family:var(--font-mono); font-size:.7rem; color:var(--text-faint); width:60px; flex:0 0 auto;}
+  .uga-game .opp{flex:1; font-size:.86rem; color:var(--text); font-weight:500;}
+  .uga-game .badge{font-size:.6rem; font-family:var(--font-ui); font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:2px 7px; border-radius:6px; flex:0 0 auto;}
+  .uga-game .badge.rivalry{background:var(--uga-red-soft); color:var(--uga-red);}
+  .uga-game .badge.ranked{background:var(--accent-soft); color:var(--accent);}
+  .uga-game .result{font-family:var(--font-mono); font-size:.76rem; color:var(--positive); font-weight:600; flex:0 0 auto;}
+
+  .uga-story{margin-top:14px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px;}
+  .uga-story h3{font-size:.95rem; margin-bottom:8px;}
+  .uga-story p{color:var(--text-dim); font-size:.88rem; line-height:1.55; margin:0 0 10px;}
+  .uga-story p:last-child{margin-bottom:0;}
+
+  .uga-research{margin-top:14px; background:var(--surface); border:1px solid var(--uga-red); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px;}
+  .uga-research h3{font-size:.95rem; margin-bottom:10px;}
+  .uga-research p{color:var(--text-dim); font-size:.88rem; line-height:1.55; margin:0 0 10px;}
+  .uga-research p:last-child{margin-bottom:0;}
+  .uga-research .game-lean, .uga-research .game-pass{margin:0 0 10px;}
+
+  /* ---- Footer ---- */
+  footer{margin-top:32px; padding-top:16px; border-top:1px solid var(--border);}
+  .disclaimer{font-size:.74rem; color:var(--text-faint); line-height:1.55; max-width:66ch;}
+  .disclaimer strong{color:var(--text-dim);}
+  .sources{font-size:.68rem; color:var(--text-faint); font-family:var(--font-mono); margin-top:10px; line-height:1.6;}
+
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  @media (max-width:460px){
+    .brand h1{font-size:1.25rem;}
+    .stake-field{margin-left:0;}
+    .pick-head{flex-direction:column;}
+    .confidence{flex-direction:row; align-items:center;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none!important;}
+  }
 </style>
-</head>
-<body>
-<header>
-  <h1>🏈 Cover Sheet</h1>
-  <nav>
-    <button data-tab="today" class="active">Today's Card</button>
-    <button data-tab="games">All Games</button>
-    <button data-tab="slip">My Slip</button>
-    <button data-tab="research">Research</button>
-    <button data-tab="dawgs">My Dawgs</button>
-  </nav>
-</header>
-<main>
-  <section id="today" class="active">
-    <div id="todayList" class="empty">Loading today's card…</div>
-  </section>
 
-  <section id="games">
-    <div id="gamesList" class="empty">Loading games…</div>
-  </section>
-
-  <section id="slip">
-    <div id="slipList" class="empty">Your slip is empty. Add games from Today's Card or All Games.</div>
-  </section>
-
-  <section id="research">
-    <div class="card">
-      <h3>Ask about any matchup</h3>
-      <p class="muted">Requires login (uses Claude + live web search).</p>
-      <input type="text" id="customQuestion" placeholder="e.g. Any injury news for Georgia vs Alabama?" />
-      <div style="margin-top:8px;"><button class="action" id="askBtn">Ask Claude</button></div>
-      <div id="askResult"></div>
+<div class="topbar">
+  <div class="topbar-row">
+    <div class="brand">
+      <h1>College Football App</h1>
+      <span class="tag">CFB · Wk 3</span>
     </div>
-    <div id="researchList" class="empty">No research yet.</div>
-  </section>
+    <div class="asof" id="asof-line">Odds as of Sat, Sep 19, 2026 · AM ET</div>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" aria-selected="true" aria-controls="panel-card" id="tab-card">Today's Card</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-games" id="tab-games">All Games</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-research" id="tab-research">Research</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-futures" id="tab-futures">Futures Watch</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-slip" id="tab-slip">My Slip</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-uga" id="tab-uga">My Dawgs</button>
+  </div>
+</div>
 
-  <section id="dawgs">
-    <div id="dawgsList" class="empty">Loading My Dawgs…</div>
-  </section>
-</main>
+<section role="tabpanel" id="panel-card" aria-labelledby="tab-card">
+  <div class="intro">
+    <p>Plays off Saturday's board — straight bets and 3-leg parlays — built from DraftKings-market lines and this week's injury and personnel notes. Confidence dots reflect how much the number, not just the winner, is in our favor.</p>
+    <div class="slate-strip" id="slate-strip"></div>
+  </div>
+  <div class="add-card-block">
+    <div class="add-card-label">Add a game</div>
+    <div class="add-card-row">
+      <input type="text" id="card-search-input" placeholder="Search any team or matchup…" maxlength="120">
+      <button class="refresh-btn" id="card-search-btn" type="button">Find</button>
+    </div>
+    <div class="refresh-meta" id="card-search-status"></div>
+    <div class="add-card-row">
+      <select id="card-add-select"><option value="">…or pick from what's already tracked</option></select>
+      <button class="refresh-btn" id="card-add-btn" type="button">Add card</button>
+    </div>
+  </div>
+  <div class="card-list" id="card-list"></div>
+</section>
+
+<section role="tabpanel" id="panel-games" aria-labelledby="tab-games" hidden>
+  <div class="intro"><p>Every Top 25 and notable game we're tracking, refreshed from a research pass roughly hourly Thursday through Saturday. Click a game to see the full detail and ask about it directly.</p></div>
+  <div class="games-search-row">
+    <input type="search" id="games-search" placeholder="Search a team or matchup…" aria-label="Search tracked games">
+    <button class="refresh-btn" id="refresh-research-btn" type="button">Refresh research</button>
+  </div>
+  <div class="games-status" id="games-status">Loading the live board…</div>
+  <div class="refresh-meta" id="refresh-action-status"></div>
+  <div class="games-grid" id="games-grid"></div>
+  <div class="games-empty" id="games-empty" hidden></div>
+</section>
+
+<section role="tabpanel" id="panel-research" aria-labelledby="tab-research" hidden>
+  <div class="intro"><p>Game-by-game notes behind today's card, including the injury situation driving the LSU–Ole Miss number and the usage rates behind the two blowout-adjacent plays.</p></div>
+  <div class="custom-research">
+    <div class="custom-research-label">Custom research</div>
+    <div class="games-search-row">
+      <input type="text" id="custom-research-input" placeholder="e.g. &quot;find me a bet I should make&quot; or &quot;research the Alabama-Florida State game&quot;" maxlength="300">
+      <button class="refresh-btn" id="custom-research-btn" type="button">Research this</button>
+    </div>
+    <div class="refresh-meta" id="custom-research-status"></div>
+    <div class="asks-feed" id="asks-feed"></div>
+  </div>
+  <div id="research-list"></div>
+</section>
+
+<section role="tabpanel" id="panel-futures" aria-labelledby="tab-futures" hidden>
+  <div class="intro"><p>Season-long DraftKings futures, tracked separately from the daily card. These are watch-list positions, not part of the 3–5 daily plays.</p></div>
+  <div id="futures-list"></div>
+</section>
+
+<section role="tabpanel" id="panel-slip" aria-labelledby="tab-slip" hidden>
+  <div class="intro"><p>Check off what you actually place and set a stake. You'll get a full summary of your week below — every pick, the full "why," and your payout — plus a Good / Bad / Different read on the slip you've built. Everything here stays in your browser only; nothing connects to DraftKings or anywhere else.</p></div>
+  <div class="bankroll-row">
+    <label for="bankroll-input">Bankroll for this slate<span class="bankroll-hint">Optional — powers the risk-% notes below</span></label>
+    <div class="bankroll-input-wrap"><span>$</span><input type="number" min="0" step="25" id="bankroll-input" placeholder="e.g. 500" inputmode="decimal"></div>
+  </div>
+  <div class="slip-summary" id="slip-summary"></div>
+  <div id="slip-body"></div>
+  <div id="slip-review"></div>
+  <button class="reset-btn" id="reset-slip">Clear my slip</button>
+</section>
+
+<section role="tabpanel" id="panel-uga" aria-labelledby="tab-uga" hidden>
+  <div id="uga-root"></div>
+</section>
+
+<footer>
+  <p class="disclaimer">
+    <strong>Independent analysis, not a guarantee.</strong> This page is research and commentary compiled from public reporting — it is not affiliated with, endorsed by, or operated by DraftKings or any sportsbook. Lines move constantly; confirm the current number on your own bet slip before wagering, and shop for the best price. Nothing here predicts an outcome, and past coverage rates don't guarantee future ones. Bet only what you can afford to lose. Must be 21+ and physically located where sports wagering is legal.
+    If gambling stops being fun, call or text <strong>1-800-GAMBLER</strong> (US) or visit <strong>ncpgambling.org</strong>.
+  </p>
+  <p class="sources">Sources: DraftKings Sportsbook &amp; DK Network, CBS Sports, Covers.com, FanDuel Research, Action Network, TheSpread.com, SportsGrid, SI.com, RotoWire — compiled Sep 19, 2026.</p>
+</footer>
 
 <script>
-const $ = (sel) => document.querySelector(sel);
-const tabs = document.querySelectorAll('nav button');
-const sections = document.querySelectorAll('main section');
-tabs.forEach((btn) => {
-  btn.addEventListener('click', () => {
-    tabs.forEach((b) => b.classList.remove('active'));
-    sections.forEach((s) => s.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 'slip') renderSlip();
-  });
-});
+(function(){
+  "use strict";
 
-function getSlip() {
-  try { return JSON.parse(localStorage.getItem('coverSheetSlip') || '[]'); } catch { return []; }
-}
-function saveSlip(slip) { localStorage.setItem('coverSheetSlip', JSON.stringify(slip)); }
-function addToSlip(game) {
-  const slip = getSlip();
-  if (!slip.find((g) => g.id === game.id)) {
-    slip.push(game);
-    saveSlip(slip);
-    alert(`Added ${game.matchup || game.id} to your slip.`);
-  } else {
-    alert('Already in your slip.');
+  var GAMES = [
+    {id:'uga-ark', label:'Georgia at Arkansas', time:'Sat 12:00p ET · ABC', kicker:'#2 Georgia (-24.5) at Arkansas'},
+    {id:'unc-clem', label:'North Carolina at Clemson', time:'Sat 12:00p ET · ESPN', kicker:'North Carolina at Clemson (-3.5)'},
+    {id:'lsu-om', label:'LSU at Ole Miss', time:'Sat 7:30p ET', kicker:'#7 LSU (-2.5) at #8 Ole Miss'},
+    {id:'fsu-bama', label:'Florida State at Alabama', time:'Sat 3:30p ET · ABC', kicker:'Florida State at #10 Alabama (-20)'},
+    {id:'msu-nd', label:'Michigan State at Notre Dame', time:'Sat 7:30p ET', kicker:'Michigan State at Notre Dame (-29.5)'},
+    {id:'nm-ou', label:'New Mexico at Oklahoma', time:'Sat 7:30p ET · ESPN2', kicker:'New Mexico at #24 Oklahoma (-22.5)'},
+    {id:'ks-osu', label:'Kent State at Ohio State', time:'Sat 12:00p ET', kicker:'Kent State at #6 Ohio State (-52.5)'},
+    {id:'msst-sc', label:'Mississippi State at South Carolina', time:'Sat 7:00p ET · ESPN', kicker:'Mississippi State at South Carolina (-4)'},
+    {id:'fla-aub', label:'Florida at Auburn', time:'Sat 7:00p ET · ESPN', kicker:'Florida (-2.5) at Auburn'}
+  ];
+
+  var PICKS = [
+    {
+      id:'georgia-spread', type:'straight',
+      title:'Georgia -24.5', matchup:'Georgia at Arkansas', time:'Sat 12:00p ET · ABC',
+      market:'Spread · Georgia -24.5', odds:-115, confidence:4,
+      thesis:'Georgia is unbeaten against the number as a 24.5+ point favorite this year; Arkansas hasn’t covered a single line yet.',
+      why:'Georgia is 2-0 against the spread as a favorite of 24.5 points or more this season, while Arkansas is 0-for-the-year against the number — the Razorbacks haven’t covered once. This is the widest roster gap on the ranked-vs-unranked slate: Kirby Smart’s defensive front against a Razorback offensive line still finding itself under a rebuilt staff. Georgia has also gone over its own total in every game so far, a sign Smart isn’t dialing back the offense once the score gets lopsided.',
+      risk:'If Georgia is up 35-plus by the third quarter, backups could see extended run and shave the final margin below the number on a backdoor cover.'
+    },
+    {
+      id:'clemson-spread', type:'straight',
+      title:'Clemson -3.5', matchup:'North Carolina at Clemson', time:'Sat 12:00p ET · ESPN',
+      market:'Spread · Clemson -3.5', odds:-110, confidence:3,
+      thesis:'A 3.5-point home number for a blue blood says the market still isn’t sure what Clemson looks like without Cade Klubnik — we think the Tigers’ talent gap clears it anyway.',
+      why:'North Carolina opened 2-0, but that start came against a light non-conference slate, and this is the Tar Heels’ first real road test. Clemson is 1-1 and still working out life without Klubnik at quarterback, which is exactly why the number sits at only 3.5 instead of the double digits a healthy Clemson team would usually lay at home. We’re backing the Tigers’ defensive talent and home-field structure to be enough of an edge to cover a number this modest, even in a transition year.',
+      risk:'If Clemson’s new starter turns the ball over early, this is the kind of number that flips fast — treat it as the moderate-confidence play of the day, not a lock.'
+    },
+    {
+      id:'lsu-om-under', type:'straight',
+      title:'Under 58.5', matchup:'LSU at Ole Miss', time:'Sat 7:30p ET',
+      market:'Total · Under 58.5', odds:-110, confidence:3,
+      thesis:'LSU QB Sam Leavitt went doubtful-to-questionable on a sore throwing shoulder and the total hasn’t come down to match the uncertainty.',
+      why:'LSU’s Sam Leavitt was listed doubtful mid-week with soreness in his throwing shoulder, was limited in practice, then upgraded to questionable after Friday’s walkthrough. The spread whipsawed on the news — LSU eased from around -3 to -1 the moment the report broke, then climbed back to roughly -2.5 as books decided the market had overreacted on the point spread. The total, though, is still sitting at a number that assumes a full-strength LSU passing game. If Leavitt plays hurt, or hands off to Elon transfer Landen Clark, LSU’s offense is far more likely to lean on the run and control the clock than to trade scores with Lane Kiffin’s Ole Miss attack the way a healthy Leavitt would.',
+      risk:'If Leavitt is a full go and LSU’s offense looks normal in warmups, this number loses its edge — check the final injury report before kickoff.'
+    },
+    {
+      id:'fla-aub-dog', type:'straight',
+      title:'Auburn +2.5', matchup:'Florida at Auburn', time:'Sat 7:00p ET · ESPN',
+      market:'Spread · Auburn +2.5 (or ML +115)', odds:115, confidence:2,
+      thesis:'A true coinflip getting bet one-sided — Florida is drawing roughly 70% of spread tickets, but the number hasn’t moved off -2.5 all week, and Florida enters banged up.',
+      why:'Florida carries real injury uncertainty into Jordan-Hare: WR Eric Singleton Jr. and DE Emmanuel Oyebadejo are both questionable with ankle injuries and were “very, very limited” in practice. Auburn (2-0) has its own weapon in dual-threat QB Byrum Brown, productive both throwing and running. A line that hasn’t budged despite Florida taking roughly 70% of tickets usually means the money on the other side is bigger per bet than its ticket count suggests — the book isn’t worried about the public lean.',
+      risk:'This is a genuine coinflip, not a screaming value play — a moderate-confidence single-possession lean, not a lock. Confirm Florida’s injury report is unchanged before kickoff.'
+    },
+    {
+      id:'notre-dame-spread', type:'straight',
+      title:'Notre Dame -29.5', matchup:'Michigan State at Notre Dame', time:'Sat 7:30p ET',
+      market:'Spread · Notre Dame -29.5', odds:-110, confidence:4,
+      thesis:'The number hasn’t moved a point all week despite the public splitting tickets close to 50/50 — a sign the book, not the crowd, has this one right.',
+      why:'Notre Dame opened around -29.5/-30 and it hasn’t budged, even with spread tickets reportedly running close to even. Books rarely hold a number that steady against balanced public money unless they’re confident in it. Michigan State is a respectable program but overmatched here on both sides of the ball.',
+      risk:'If Notre Dame is up 40-plus by the third quarter, backups could see extended run and shave the final margin on a backdoor cover.'
+    },
+    {
+      id:'oklahoma-spread', type:'straight',
+      title:'Oklahoma -22.5', matchup:'New Mexico at Oklahoma', time:'Sat 7:30p ET · ESPN2',
+      market:'Spread · Oklahoma -22.5', odds:-110, confidence:4,
+      thesis:'A get-right spot for QB John Mateer after a rough outing against Michigan, against a defense several levels below what he just faced.',
+      why:'Mateer threw for 414 yards and 4 TDs in his first two games before managing just 189 yards with an interception against Michigan. New Mexico’s defense is a significant step down in class from a Big Ten opponent, setting up a bounce-back game for Oklahoma’s passing attack.',
+      risk:'If Oklahoma’s offense sputters again the way it did against Michigan, this number could tighten — check pregame warmup reports on Mateer before locking this in.'
+    },
+    {
+      id:'msst-sc-over', type:'straight',
+      title:'Over 58.5', matchup:'Mississippi State at South Carolina', time:'Sat 7:00p ET · ESPN',
+      market:'Total · Over 58.5', odds:-110, confidence:3,
+      thesis:'The tightest spread on tonight’s board (South Carolina -4) paired with a 58.5 total says the market expects a track meet, not a defensive struggle.',
+      why:'A 4-point home number combined with a 58.5 total suggests both offenses are expected to move the ball — this isn’t a game where one side is projected to dominate defensively. Both teams have shown they’ll trade scores rather than play it close to the vest.',
+      risk:'If either defense forces a couple of early turnovers and shortens the game, the total can dry up fast — this is a moderate-confidence total, not a lock.'
+    }
+  ];
+
+  var PARLAYS = [
+    {
+      id:'blowout-board', title:'Blowout Board', confidence:4,
+      thesis:'Three ranked home teams against overmatched or rebuilding visitors — each number is closer to “expect it” than “hope for it.”',
+      legs:[
+        {game:'Florida State at Alabama', market:'Alabama -20', odds:-110},
+        {game:'New Mexico at Oklahoma', market:'Oklahoma -22.5', odds:-110},
+        {game:'Michigan State at Notre Dame', market:'Notre Dame -29.5', odds:-110}
+      ],
+      why:'Alabama is a -2000 moneyline favorite against a Florida State front it should control from the opening snap. Oklahoma gets a bounce-back spot for John Mateer (414 yards, 4 TDs through two games) after he was held to 189 yards with a pick against Michigan — New Mexico’s defense isn’t in that class. And Notre Dame’s -29.5 hasn’t moved a point since it opened despite the betting public splitting tickets roughly 50/50, which usually means the book — not the crowd — has this number right.',
+      risk:'All three favorites are laying huge numbers, so this parlay’s biggest risk is correlated: if one starter is pulled early for a lopsided score, that leg’s cover gets shaky late. Treat this as the higher-conviction, lower-payout of the two parlays.'
+    },
+    {
+      id:'scoreboard-overs', title:'Scoreboard Overs', confidence:3,
+      thesis:'Three mismatches where the favorite’s starters stay in and stay productive — stacked totals instead of stacked spreads.',
+      legs:[
+        {game:'Georgia at Arkansas', market:'Over 54.5', odds:-105},
+        {game:'Kent State at Ohio State', market:'Over 59.5', odds:-110},
+        {game:'Mississippi State at South Carolina', market:'Over 58.5', odds:-110}
+      ],
+      why:'Georgia has gone over its own total in every game this season. Ohio State’s Jeremiah Smith is averaging over 150 receiving yards a game through two weeks and has climbed to the No. 2 spot on the Heisman board (+700) — Kent State’s defense isn’t built to keep Columbus under 60. South Carolina-Mississippi State carries the same 58.5 total as the LSU-Ole Miss game we’re fading on the under, but this one pairs two offenses that have both shown they’ll trade scores rather than a passing game in doubt.',
+      risk:'If any one favorite is comfortably ahead by halftime, running clock in the fourth quarter can cap a total that looked good on paper. This is the more speculative of the two parlays.'
+    },
+    {
+      id:'night-slate-mix', title:'Night Slate Mix', confidence:3,
+      thesis:'Two blowout favorites you can trust plus one real underdog-value lean — all from games that hadn’t kicked off when this was built.',
+      legs:[
+        {game:'Michigan State at Notre Dame', market:'Notre Dame -29.5', odds:-110},
+        {game:'New Mexico at Oklahoma', market:'Oklahoma -22.5', odds:-110},
+        {game:'Florida at Auburn', market:'Auburn +2.5', odds:115}
+      ],
+      why:'Notre Dame’s -29.5 hasn’t moved a point all week despite the betting public splitting tickets close to 50/50 — a sign the book, not the crowd, has this number right. Oklahoma is a get-right spot for QB John Mateer after a rough outing against Michigan, against a New Mexico defense that’s a big step down in class. The wrinkle is Auburn +2.5: Florida is drawing roughly 70% of the tickets on a line that hasn’t budged, and Florida has real injury uncertainty (WR Eric Singleton Jr. and DE Emmanuel Oyebadejo both questionable) — the kind of split that usually means the sharper money is on the other side.',
+      risk:'Mixing two big favorites with a true coinflip means this parlay lives or dies on Auburn — the blowout legs should be safe, but a single missed leg kills the whole ticket. Treat this as the speculative one, not the safe one.'
+    }
+  ];
+
+  var FUTURES_NC = [
+    {team:'Ohio State', odds:'+550'},
+    {team:'Notre Dame', odds:'+610'},
+    {team:'Texas', odds:'+650'},
+    {team:'Georgia', odds:'+720', value:true},
+    {team:'Miami', odds:'+950'},
+    {team:'Indiana', odds:'+950'},
+    {team:'Oregon', odds:'+950'},
+    {team:'LSU', odds:'+1400'},
+    {team:'Texas Tech', odds:'+2200'},
+    {team:'Alabama', odds:'+2500'},
+    {team:'Texas A&M', odds:'+2500'},
+    {team:'Ole Miss', odds:'+2700'},
+    {team:'Oklahoma', odds:'+2800'}
+  ];
+
+  var FUTURES_HEISMAN = [
+    {team:'Darian Mensah, QB Miami', odds:'+480'},
+    {team:'Jeremiah Smith, WR Ohio State', odds:'+700', value:true},
+    {team:'Arch Manning, QB Texas', odds:'+950'},
+    {team:'CJ Carr, QB Notre Dame', odds:'+1100'},
+    {team:'Malachi Toney, WR Florida', odds:'+1250'},
+    {team:'Dante Moore, QB Oregon', odds:'+1300'},
+    {team:'Julian Sayin, QB Ohio State', odds:'+1400'},
+    {team:'Sam Leavitt, QB LSU', odds:'+1500'},
+    {team:'Jayden Maiava, QB USC', odds:'+1750'},
+    {team:'Josh Hoover, QB TCU', odds:'+1900'}
+  ];
+
+  var PICK_GAMES = {
+    'georgia-spread': ['uga-ark'],
+    'clemson-spread': ['unc-clem'],
+    'lsu-om-under': ['lsu-om'],
+    'fla-aub-dog': ['fla-aub'],
+    'blowout-board': ['fsu-bama','nm-ou','msu-nd'],
+    'scoreboard-overs': ['uga-ark','ks-osu','msst-sc'],
+    'night-slate-mix': ['msu-nd','nm-ou','fla-aub'],
+    'notre-dame-spread': ['msu-nd'],
+    'oklahoma-spread': ['nm-ou'],
+    'msst-sc-over': ['msst-sc']
+  };
+
+  // ---------- capability state ----------
+  var dbCap = null, sampleCap = null, commentsCap = null;
+  var recentChangeMap = {};
+  var lastAsksDocs = [];
+  var gamesUnsub = null;
+  var lastGamesDocs = [];
+  var openGameIds = {};
+  var chatHistories = {};
+  var chatPending = {};
+
+  var CHAT_INSTRUCTIONS = 'You are a sharp, honest college football betting analyst inside "College Football App," a page the viewer built to track their own DraftKings-market bets. Answer from the research notes below, which were compiled from public reporting as of the "last updated" time given — you have no live internet access in this chat, so if asked about anything that may have moved since then (a new injury, a line change, a lineup swap), say plainly you cannot check live and suggest confirming on DraftKings before betting. Be direct about risk and uncertainty, never promise an outcome, and keep answers conversational — a few sentences unless asked for more. Here is what we know about this game:\n\n';
+
+  // Used only when the live "All Games" board (the db capability) is unavailable in this view.
+  var GAMES_FALLBACK = [
+    {id:'uga-ark', label:'Georgia at Arkansas', home:'Arkansas', away:'Georgia', kickoff:'Sat 12:00p ET · ABC', tag:'top25', ranked:'#2 Georgia', market:'Georgia -24.5 (-115) · O/U 54.5', pick:'Georgia -24.5', pickConfidence:4, summary:'Georgia is unbeaten ATS as a 24.5+ favorite this year; Arkansas hasn’t covered a line yet.', why:'Georgia is 2-0 against the spread as a favorite of 24.5+ this season, while Arkansas is 0-for-the-year against the number. Georgia has also gone over its own total in every game so far.', lastChecked:'Sep 19, 2026'},
+    {id:'unc-clem', label:'North Carolina at Clemson', home:'Clemson', away:'North Carolina', kickoff:'Sat 12:00p ET · ESPN', tag:'interesting', ranked:'', market:'Clemson -3.5 (-110) · O/U 43.5', pick:'Clemson -3.5', pickConfidence:3, summary:'A modest home number for a blue blood — Clemson is still replacing Cade Klubnik at quarterback.', why:'North Carolina is 2-0 but hasn’t faced a real road test yet. Clemson (1-1) is favored but only by 3.5, reflecting the market’s uncertainty post-Klubnik.', lastChecked:'Sep 19, 2026'},
+    {id:'lsu-om', label:'LSU at Ole Miss', home:'Ole Miss', away:'LSU', kickoff:'Sat 7:30p ET', tag:'top25', ranked:'#7 LSU at #8 Ole Miss', market:'LSU -2.5 (-110) · O/U 58.5', pick:'Under 58.5', pickConfidence:3, summary:'LSU QB Sam Leavitt went doubtful-to-questionable on a sore throwing shoulder this week.', why:'Leavitt was limited in practice and the spread whipsawed on the news before settling back near -2.5. If he’s limited, backup Landen Clark takes over a run-heavier approach.', injuryNote:'Sam Leavitt (LSU QB) — questionable, throwing shoulder.', lastChecked:'Sep 19, 2026'},
+    {id:'fsu-bama', label:'Florida State at Alabama', home:'Alabama', away:'Florida State', kickoff:'Sat 3:30p ET · ABC', tag:'top25', ranked:'#10 Alabama', market:'Alabama -20 (-110) · O/U 48.5', pick:'Alabama -20', pickConfidence:4, summary:'Alabama is a -2000 moneyline favorite at home against a rebuilding FSU front.', why:'Alabama’s front seven profiles as one of the most talented in the country through three weeks — a big mismatch up front against Florida State.', lastChecked:'Sep 19, 2026'},
+    {id:'msu-nd', label:'Michigan State at Notre Dame', home:'Notre Dame', away:'Michigan State', kickoff:'Sat 7:30p ET', tag:'top25', ranked:'#3 Notre Dame', market:'Notre Dame -29.5 (-110) · O/U 52.5', pick:'Notre Dame -29.5', pickConfidence:4, summary:'The number hasn’t moved all week despite tickets running close to even.', why:'Notre Dame opened -29.5/-30 and it hasn’t budged, even with the public split roughly 50/50 — usually a sign the book likes where the line sits.', lastChecked:'Sep 19, 2026'},
+    {id:'nm-ou', label:'New Mexico at Oklahoma', home:'Oklahoma', away:'New Mexico', kickoff:'Sat 7:30p ET · ESPN2', tag:'top25', ranked:'#24 Oklahoma', market:'Oklahoma -22.5 (-110) · O/U 46.5', pick:'Oklahoma -22.5', pickConfidence:4, summary:'A get-right spot for QB John Mateer after a rough outing against Michigan.', why:'Mateer threw for 414 yards and 4 TDs in his first two games before managing just 189 yards with a pick against Michigan. New Mexico’s defense is a big step down in class.', lastChecked:'Sep 19, 2026'},
+    {id:'ks-osu', label:'Kent State at Ohio State', home:'Ohio State', away:'Kent State', kickoff:'Sat 12:00p ET', tag:'top25', ranked:'#6 Ohio State', market:'Ohio State -52.5 (-110) · O/U 59.5', pick:'Over 59.5', pickConfidence:3, summary:'WR Jeremiah Smith is now the No. 2 Heisman price (+700) off a huge two-game start.', why:'Smith has 16 catches, 315 yards and 3 TDs through two games. Kent State’s defense isn’t built to slow him or keep this under 60 combined.', lastChecked:'Sep 19, 2026'},
+    {id:'msst-sc', label:'Mississippi State at South Carolina', home:'South Carolina', away:'Mississippi State', kickoff:'Sat 7:00p ET · ESPN', tag:'interesting', ranked:'', market:'South Carolina -4 · O/U 58.5', pick:'Over 58.5', pickConfidence:3, summary:'The tightest number on the marquee slate, with a total that says both offenses will move the ball.', why:'A 4-point home number with a 58.5 total suggests the market expects a track meet more than a defensive struggle.', lastChecked:'Sep 19, 2026'}
+  ];
+
+  function gamesSource(){
+    return lastGamesDocs.length ? lastGamesDocs : GAMES_FALLBACK;
   }
-}
-function removeFromSlip(id) {
-  saveSlip(getSlip().filter((g) => g.id !== id));
-  renderSlip();
-}
-function renderSlip() {
-  const slip = getSlip();
-  const el = $('#slipList');
-  if (!slip.length) {
-    el.className = 'empty';
-    el.textContent = 'Your slip is empty. Add games from Today\'s Card or All Games.';
-    return;
+
+  // Used only when the live db doc for "My Dawgs" is unavailable.
+  var UGA_FALLBACK = {
+    rank: '#2', record: '2-0', secRecord: '0-0 SEC',
+    nextGame: {opponent: 'at Arkansas', kickoffISO: '2026-09-19T16:00:00Z', tv: 'ABC', line: 'Georgia -24.5', gameId: 'uga-ark'},
+    schedule: [
+      {wk: 'Sep 5', opp: 'Tennessee State', loc: 'home', result: 'W 63–03'},
+      {wk: 'Sep 12', opp: 'Western Kentucky', loc: 'home', result: 'W 70–20'},
+      {wk: 'Sep 19', opp: 'at Arkansas', loc: 'away', current: true},
+      {wk: 'Sep 26', opp: 'Oklahoma', loc: 'home', ranked: true},
+      {wk: 'Oct 3', opp: 'Vanderbilt', loc: 'home'},
+      {wk: 'Oct 10', opp: 'at Alabama', loc: 'away', ranked: true},
+      {wk: 'Oct 17', opp: 'Auburn', loc: 'home'},
+      {wk: 'Oct 24', opp: 'Open date', loc: 'bye'},
+      {wk: 'Oct 31', opp: 'vs Florida (Atlanta)', loc: 'neutral', rivalry: true},
+      {wk: 'Nov 7', opp: 'at Ole Miss', loc: 'away', ranked: true},
+      {wk: 'Nov 14', opp: 'Missouri', loc: 'home'},
+      {wk: 'Nov 21', opp: 'at South Carolina', loc: 'away'},
+      {wk: 'Nov 28', opp: 'Georgia Tech', loc: 'home', rivalry: true}
+    ],
+    storyline: [
+      'Gunner Stockton has been sharp through two games — 28-of-32 for 436 yards and 8 touchdowns combined against Tennessee State and Western Kentucky — and is drawing real Heisman buzz in his second year as the starter. Oddly, the market knocked him down the board after the opener (an unranked FCS opponent on a game that wasn’t even televised didn’t help); a big showing against Arkansas or Oklahoma would put him right back in the mix.',
+      'The bigger question mark is receiver depth: Georgia lost its top three wideouts from a year ago (Zachariah Branch to the draft, Colbie Young and Dillon Bell to graduation), leaving wide receiver as the thinnest room on the roster. The rest of the roster is loaded, though — Georgia kept nine players who’ve been in Athens three-plus years and lost the fewest players to the transfer portal of any Power Four program this offseason.',
+      'Circle Oct. 31 and Nov. 28: Florida moves to Atlanta this year while Everbank Stadium is renovated (first time since 1995 the rivalry hasn’t been in Jacksonville), and Clean, Old-Fashioned Hate closes the regular season at home against Georgia Tech.'
+    ],
+    lastChecked: '2026-09-19T15:30:00Z'
+  };
+
+  var ugaCountdownTimer = null;
+  var lastUgaDoc = null;
+
+  // ---------- odds helpers ----------
+  function americanToDecimal(a){
+    a = Number(a);
+    return a > 0 ? 1 + a/100 : 1 + 100/Math.abs(a);
   }
-  el.className = '';
-  el.innerHTML = slip.map((g) => `
-    <div class="card">
-      <div class="row">
-        <div>
-          <h3>${escapeHtml(g.matchup || g.id)}</h3>
-          <div class="muted">${escapeHtml(g.pick || '')}</div>
-        </div>
-        <button class="action secondary" onclick="removeFromSlip('${g.id}')">Remove</button>
-      </div>
-    </div>`).join('');
-}
-
-function escapeHtml(str) {
-  return String(str || '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-function gameCard(g, { showPick } = {}) {
-  return `
-    <div class="card">
-      <div class="row">
-        <div>
-          <h3>${escapeHtml(g.matchup || g.id)}</h3>
-          <div class="muted">${escapeHtml(g.kickoff || '')} ${g.line ? '· ' + escapeHtml(g.line) : ''}</div>
-          ${showPick && g.pick ? `<div style="margin-top:6px;"><span class="badge">PICK</span> ${escapeHtml(g.pick)}</div>` : ''}
-        </div>
-        <button class="action" onclick='addToSlip(${JSON.stringify(g).replace(/'/g, "&#39;")})'>Add to Slip</button>
-      </div>
-    </div>`;
-}
-
-async function loadGames() {
-  try {
-    const res = await fetch('/api/games');
-    const games = await res.json();
-
-    const today = games.filter((g) => g.featured);
-    $('#todayList').className = today.length ? '' : 'empty';
-    $('#todayList').innerHTML = today.length
-      ? today.map((g) => gameCard(g, { showPick: true })).join('')
-      : 'No featured picks yet — check back soon.';
-
-    $('#gamesList').className = games.length ? '' : 'empty';
-    $('#gamesList').innerHTML = games.length
-      ? games.map((g) => gameCard(g)).join('')
-      : 'No games loaded yet.';
-  } catch (err) {
-    console.error(err);
-    $('#todayList').textContent = 'Failed to load games.';
-    $('#gamesList').textContent = 'Failed to load games.';
+  function decimalToAmerican(d){
+    if (d >= 2) return '+' + Math.round((d-1)*100);
+    return String(Math.round(-100/(d-1)));
   }
-}
-
-async function loadResearch() {
-  try {
-    const res = await fetch('/api/asks');
-    const asks = await res.json();
-    $('#researchList').className = asks.length ? '' : 'empty';
-    $('#researchList').innerHTML = asks.length
-      ? asks.map((a) => `
-        <div class="card">
-          <h3>${escapeHtml(a.matchup || a.question || 'Research')}</h3>
-          ${a.question ? `<div class="muted">${escapeHtml(a.question)}</div>` : ''}
-          <div class="answer">${escapeHtml(a.answer || '')}</div>
-        </div>`).join('')
-      : 'No research yet.';
-  } catch (err) {
-    console.error(err);
+  function fmtAmerican(a){
+    return a > 0 ? '+' + a : String(a);
   }
-}
-
-async function loadDawgs() {
-  try {
-    const res = await fetch('/api/uga');
-    const items = await res.json();
-    $('#dawgsList').className = items.length ? '' : 'empty';
-    $('#dawgsList').innerHTML = items.length
-      ? items.map((i) => `<div class="card"><h3>${escapeHtml(i.title || 'Update')}</h3><div class="answer">${escapeHtml(i.body || i.answer || '')}</div></div>`).join('')
-      : 'Nothing on the Dawgs yet.';
-  } catch (err) {
-    console.error(err);
+  function fmtMoney(n){
+    return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
   }
-}
 
-$('#askBtn').addEventListener('click', async () => {
-  const question = $('#customQuestion').value.trim();
-  if (!question) return;
-  const btn = $('#askBtn');
-  btn.disabled = true;
-  btn.textContent = 'Asking…';
-  $('#askResult').innerHTML = '';
-  try {
-    const res = await fetch('/api/research/custom', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question }),
+  // ---------- storage ----------
+  var STORE_KEY = 'cover-sheet-slip-v1';
+  function loadSlip(){
+    try{
+      var raw = localStorage.getItem(STORE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+  function saveSlip(state){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+  var slipState = loadSlip();
+
+  // Games added to the slip straight from All Games (not one of the fixed Today's Card picks).
+  var CUSTOM_PICKS_KEY = 'cover-sheet-custom-picks-v1';
+  function loadCustomPicks(){
+    try{
+      var raw = localStorage.getItem(CUSTOM_PICKS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+  function saveCustomPicks(){
+    try{ localStorage.setItem(CUSTOM_PICKS_KEY, JSON.stringify(customPicks)); }catch(e){}
+  }
+  var customPicks = loadCustomPicks();
+
+  function customPickId(gameId){ return 'game-' + gameId; }
+
+  function customPicksList(){
+    return Object.keys(customPicks).map(function(gid){
+      return Object.assign({id: customPickId(gid)}, customPicks[gid]);
     });
-    if (res.status === 401) {
-      $('#askResult').innerHTML = '<p class="muted">Login required for custom research. Reload and sign in when prompted.</p>';
-      location.reload();
+  }
+
+  function isGameOnSlip(gameId){
+    var id = customPickId(gameId);
+    return !!(slipState[id] && slipState[id].placed);
+  }
+
+  function addGameToSlip(gameId){
+    var g = gamesSource().filter(function(x){ return x.id === gameId; })[0];
+    if (!g || !g.pick) return;
+    customPicks[gameId] = {
+      title: g.pick,
+      matchup: g.label,
+      time: g.kickoff || '',
+      market: g.market || g.pick,
+      odds: -110,
+      thesis: g.summary || g.pick,
+      why: (g.summary ? g.summary + ' ' : '') + (g.why || ''),
+      risk: g.risk || 'Standard game risk — confirm the current line at your sportsbook before betting; odds assumed at -110.',
+      confidence: g.pickConfidence || 3
+    };
+    saveCustomPicks();
+    var id = customPickId(gameId);
+    slipState[id] = {stake: (slipState[id] && slipState[id].stake) || 25, placed: true};
+    saveSlip(slipState);
+    renderCards();
+    refreshAllRows();
+    applyGamesFilter();
+    renderResearchList();
+    renderAsksFeed(lastAsksDocs);
+    renderUga(lastUgaDoc || UGA_FALLBACK);
+  }
+
+  function removeGameFromSlip(gameId){
+    delete customPicks[gameId];
+    saveCustomPicks();
+    delete slipState[customPickId(gameId)];
+    saveSlip(slipState);
+    renderCards();
+    refreshAllRows();
+    applyGamesFilter();
+    renderResearchList();
+    renderAsksFeed(lastAsksDocs);
+    renderUga(lastUgaDoc || UGA_FALLBACK);
+  }
+
+  function pickGameIds(id){
+    if (PICK_GAMES[id]) return PICK_GAMES[id];
+    if (id.indexOf('game-') === 0) return [id.slice(5)];
+    return [];
+  }
+
+  var BANKROLL_KEY = 'cover-sheet-bankroll-v1';
+  function loadBankroll(){
+    try{ return localStorage.getItem(BANKROLL_KEY) || ''; }catch(e){ return ''; }
+  }
+  function saveBankrollValue(v){
+    try{ localStorage.setItem(BANKROLL_KEY, v); }catch(e){}
+  }
+  function getBankroll(){
+    var input = document.getElementById('bankroll-input');
+    if (!input) return null;
+    var v = Number(input.value);
+    return v > 0 ? v : null;
+  }
+
+  function allPicks(){
+    return PICKS.map(function(p){ return {kind:'straight', data:p}; })
+      .concat(PARLAYS.map(function(p){ return {kind:'parlay', data:p}; }))
+      .concat(customPicksList().map(function(p){ return {kind:'straight', data:p}; }));
+  }
+
+  function parlayDecimal(legs){
+    return legs.reduce(function(acc,l){ return acc * americanToDecimal(l.odds); }, 1);
+  }
+
+  // ---------- render: slate strip ----------
+  function renderSlate(){
+    var el = document.getElementById('slate-strip');
+    el.innerHTML = GAMES.map(function(g){
+      return '<div class="slate-chip"><b>' + g.time.split(' · ')[0] + '</b> · ' + g.label + '</div>';
+    }).join('');
+  }
+
+  // ---------- render: pick cards ----------
+  function dotsHtml(n){
+    var out = '';
+    for (var i=1;i<=5;i++){ out += '<i class="' + (i<=n?'on':'') + '"></i>'; }
+    return out;
+  }
+
+  function stakeInputHtml(id){
+    var saved = slipState[id] && slipState[id].stake != null ? slipState[id].stake : 25;
+    return '<div class="stake-field"><span>Stake</span><input type="number" min="0" step="5" value="' + saved + '" data-stake-for="' + id + '" id="stake-' + id + '"></div>';
+  }
+
+  function checkedFor(id){
+    return slipState[id] && slipState[id].placed ? 'checked' : '';
+  }
+
+  function renderCards(){
+    var list = document.getElementById('card-list');
+    var html = '';
+
+    PICKS.forEach(function(p){
+      var dec = americanToDecimal(p.odds);
+      html += '' +
+      '<article class="pick" data-pick="' + p.id + '">' +
+        '<div class="pick-head">' +
+          '<div>' +
+            '<span class="pick-kind straight">Straight bet</span>' +
+            '<div class="pick-title">' + p.title + '</div>' +
+            '<div class="pick-sub">' + p.matchup + '</div>' +
+            '<div class="pick-time">' + p.time + ' &middot; ' + p.market + ' (' + fmtAmerican(p.odds) + ')</div>' +
+          '</div>' +
+          '<div class="confidence"><span class="lbl">Conviction</span><span class="dots">' + dotsHtml(p.confidence) + '</span></div>' +
+        '</div>' +
+        '<div class="pick-thesis">' + p.thesis + '</div>' +
+        '<button class="why-toggle" aria-expanded="false" data-why="' + p.id + '">Why this number <span class="arrow">&#9662;</span></button>' +
+        '<div class="why-body" id="why-' + p.id + '" hidden><p>' + p.why + '</p><div class="risk-line">Risk: ' + p.risk + '</div>' + chatBlockHtml(p.id) + '</div>' +
+        '<div class="slip-row">' +
+          '<label><input type="checkbox" data-placed-for="' + p.id + '" ' + checkedFor(p.id) + '> On my slip</label>' +
+          stakeInputHtml(p.id) +
+          '<span class="payout" data-payout-for="' + p.id + '"></span>' +
+        '</div>' +
+      '</article>';
+    });
+
+    PARLAYS.forEach(function(p){
+      var legsHtml = p.legs.map(function(l){
+        return '<div class="leg"><span class="g">' + l.game + '</span><span class="m">' + l.market + ' (' + fmtAmerican(l.odds) + ')</span></div>';
+      }).join('');
+      var dec = parlayDecimal(p.legs);
+      html += '' +
+      '<article class="pick" data-pick="' + p.id + '">' +
+        '<div class="pick-head">' +
+          '<div>' +
+            '<span class="pick-kind parlay">3-leg parlay</span>' +
+            '<div class="pick-title">' + p.title + '</div>' +
+            '<div class="pick-sub">3 selections &middot; combined ' + fmtAmerican(decimalToAmerican(dec)) + '</div>' +
+          '</div>' +
+          '<div class="confidence"><span class="lbl">Conviction</span><span class="dots">' + dotsHtml(p.confidence) + '</span></div>' +
+        '</div>' +
+        '<div class="pick-legs">' + legsHtml + '</div>' +
+        '<div class="pick-thesis">' + p.thesis + '</div>' +
+        '<button class="why-toggle" aria-expanded="false" data-why="' + p.id + '">Why this parlay <span class="arrow">&#9662;</span></button>' +
+        '<div class="why-body" id="why-' + p.id + '" hidden><p>' + p.why + '</p><div class="risk-line">Risk: ' + p.risk + '</div>' + chatBlockHtml(p.id) + '</div>' +
+        '<div class="slip-row">' +
+          '<label><input type="checkbox" data-placed-for="' + p.id + '" ' + checkedFor(p.id) + '> On my slip</label>' +
+          stakeInputHtml(p.id) +
+          '<span class="payout" data-payout-for="' + p.id + '"></span>' +
+        '</div>' +
+      '</article>';
+    });
+
+    customPicksList().forEach(function(p){
+      html += '' +
+      '<article class="pick" data-pick="' + p.id + '">' +
+        '<div class="pick-head">' +
+          '<div>' +
+            '<span class="pick-kind straight">Straight bet · added by you</span>' +
+            '<div class="pick-title">' + p.title + '</div>' +
+            '<div class="pick-sub">' + p.matchup + '</div>' +
+            '<div class="pick-time">' + p.time + ' &middot; ' + p.market + ' (' + fmtAmerican(p.odds) + ')</div>' +
+          '</div>' +
+          '<div class="confidence"><span class="lbl">Conviction</span><span class="dots">' + dotsHtml(p.confidence) + '</span></div>' +
+        '</div>' +
+        '<div class="pick-thesis">' + p.thesis + '</div>' +
+        '<button class="why-toggle" aria-expanded="false" data-why="' + p.id + '">Why this number <span class="arrow">&#9662;</span></button>' +
+        '<div class="why-body" id="why-' + p.id + '" hidden><p>' + p.why + '</p><div class="risk-line">Risk: ' + p.risk + '</div>' + chatBlockHtml(p.id) + '</div>' +
+        '<div class="slip-row">' +
+          '<label><input type="checkbox" data-placed-for="' + p.id + '" ' + checkedFor(p.id) + '> On my slip</label>' +
+          stakeInputHtml(p.id) +
+          '<span class="payout" data-payout-for="' + p.id + '"></span>' +
+          '<button class="remove-card-btn" data-remove-card="' + p.id.slice(5) + '" type="button">Remove card</button>' +
+        '</div>' +
+      '</article>';
+    });
+
+    list.innerHTML = html;
+    populateCardAddSelect();
+  }
+
+  function alreadyCoveredGameIds(){
+    var set = {};
+    PICKS.forEach(function(p){ (PICK_GAMES[p.id] || []).forEach(function(gid){ set[gid] = true; }); });
+    Object.keys(customPicks).forEach(function(gid){ set[gid] = true; });
+    return set;
+  }
+
+  function populateCardAddSelect(){
+    var sel = document.getElementById('card-add-select');
+    if (!sel) return;
+    var covered = alreadyCoveredGameIds();
+    var options = gamesSource().filter(function(g){ return g.pick && !covered[g.id]; })
+      .sort(function(a, b){ return (a.label || '').localeCompare(b.label || ''); });
+    var current = sel.value;
+    sel.innerHTML = '<option value="">…or pick from what’s already tracked</option>' +
+      options.map(function(g){ return '<option value="' + g.id + '">' + g.label + ' — ' + g.pick + '</option>'; }).join('');
+    sel.disabled = !options.length;
+    if (options.some(function(g){ return g.id === current; })) sel.value = current;
+  }
+
+  function searchAndAddCard(){
+    var input = document.getElementById('card-search-input');
+    var statusEl = document.getElementById('card-search-status');
+    var q = input ? input.value.trim() : '';
+    if (!q){
+      if (statusEl) statusEl.textContent = 'Type a team or matchup first.';
       return;
     }
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Request failed');
-    $('#askResult').innerHTML = `<div class="answer">${escapeHtml(data.answer)}</div>`;
-    $('#customQuestion').value = '';
-    loadResearch();
-  } catch (err) {
-    $('#askResult').innerHTML = `<p class="muted">Error: ${escapeHtml(err.message)}</p>`;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Ask Claude';
+    var ql = q.toLowerCase();
+    var matches = gamesSource().filter(function(g){
+      return (g.label + ' ' + (g.home || '') + ' ' + (g.away || '')).toLowerCase().indexOf(ql) !== -1;
+    });
+    if (matches.length === 1){
+      var g = matches[0];
+      if (g.pick){
+        addGameToSlip(g.id);
+        if (statusEl) statusEl.textContent = 'Added ' + g.label + ' to your cards.';
+        if (input) input.value = '';
+      } else if (g.pass){
+        if (statusEl) statusEl.textContent = g.label + ' is tracked but currently a pass — ' + (g.passReason || 'no real edge either side') + '. Nothing to add.';
+      } else {
+        if (statusEl) statusEl.textContent = g.label + ' is tracked but doesn’t have a pick yet — check back after the next research pass.';
+      }
+      return;
+    }
+    if (matches.length > 1){
+      if (statusEl) statusEl.textContent = matches.length + ' tracked games match “' + q + '” — be more specific, or use the dropdown below.';
+      return;
+    }
+    var btn = document.getElementById('card-search-btn');
+    var originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Researching…';
+    if (statusEl) statusEl.textContent = '';
+    fetch('/api/research/add-game', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({query: q})
+    }).then(function(r){
+      if (r.status === 401){ var e = new Error('auth'); e.code = 'not_granted'; throw e; }
+      return r.json().then(function(d){
+        if (!r.ok){ var e2 = new Error(d.error || 'failed'); e2.code = 'error'; throw e2; }
+        return d;
+      });
+    }).then(function(d){
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+      if (statusEl) statusEl.textContent = 'Added ' + (d.game && d.game.label ? d.game.label : q) + ' — check All Games.';
+      if (input) input.value = '';
+      if (dbCap) subscribeGames();
+    }).catch(function(err){
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+      if (statusEl) statusEl.textContent = err.code === 'not_granted' ? 'Log in to research and add a new game.' : 'Couldn’t research that — try again in a moment.';
+    });
   }
-});
 
-loadGames();
-loadResearch();
-loadDawgs();
-renderSlip();
+  // ---------- render: research ----------
+  function researchGameCardHtml(g){
+    var recent = recentChangeMap[g.id];
+    var flag = g.injuryNote ? '<span class="flag injury">Injury watch</span>' : '';
+    return '<div class="research-game' + (recent ? ' has-update' : '') + '">' +
+      (recent ? '<span class="updated-badge">Updated</span>' : '') + flag +
+      '<h3>' + g.label + '</h3>' +
+      '<div class="research-meta">' + (g.ranked ? g.ranked + ' · ' : '') + (g.kickoff || '') + (g.market ? ' · ' + g.market : '') + '</div>' +
+      (g.summary ? '<p>' + g.summary + '</p>' : '') +
+      (g.why ? '<p>' + g.why + '</p>' : '') +
+      (g.injuryNote ? '<div class="risk-line">' + g.injuryNote + '</div>' : '') +
+      (g.pick ?
+        '<div class="game-lean"><span class="lean-label">Best bet</span><span class="lean-pick">' + g.pick + '</span><span class="dots">' + dotsHtml(g.pickConfidence || 3) + '</span></div>' +
+        '<div class="add-slip-row"><button class="add-slip-btn' + (isGameOnSlip(g.id) ? ' on-slip' : '') + '" data-add-slip="' + g.id + '" type="button">' + (isGameOnSlip(g.id) ? '✓ On my slip — remove' : '+ Add to my slip') + '</button></div>' :
+        g.pass ? '<div class="game-pass">No lean — ' + (g.passReason || 'no real edge either side.') + '</div>' : ''
+      ) +
+      '<div class="games-status" style="margin-top:8px;">Updated ' + relativeTime(g.lastChecked) + '</div>' +
+    '</div>';
+  }
+
+  function renderResearchList(){
+    var el = document.getElementById('research-list');
+    if (!el) return;
+    var docs = gamesSource().slice().sort(function(a, b){ return (a.label || '').localeCompare(b.label || ''); });
+    el.innerHTML = docs.map(researchGameCardHtml).join('');
+  }
+
+  // ---------- render: futures ----------
+  function futuresRows(rows){
+    return rows.map(function(r){
+      return '<tr class="' + (r.value?'value':'') + '"><td>' + r.team + (r.value?'<span class="value-tag">Value</span>':'') + '</td><td class="odds">' + r.odds + '</td></tr>';
+    }).join('');
+  }
+  function renderFutures(){
+    var el = document.getElementById('futures-list');
+    el.innerHTML = '' +
+      '<div class="futures-block">' +
+        '<h2>National Championship</h2>' +
+        '<div class="futures-note">DraftKings, tracked as of Sep 10, 2026</div>' +
+        '<table class="futures-table"><thead><tr><th>Team</th><th style="text-align:right">Odds</th></tr></thead><tbody>' + futuresRows(FUTURES_NC) + '</tbody></table>' +
+        '<div class="futures-why">Georgia at +720 looks like the sharpest number relative to the top three. Through three weeks the Bulldogs have been the most complete team on either side of the ball — unbeaten against the spread as a heavy favorite, and yet to let a game stay under its total — while still pricing behind three teams Georgia would be favored against on a neutral field.</div>' +
+      '</div>' +
+      '<div class="futures-block">' +
+        '<h2>Heisman Trophy</h2>' +
+        '<div class="futures-note">DraftKings, tracked mid-September 2026 — moves weekly</div>' +
+        '<table class="futures-table"><thead><tr><th>Player</th><th style="text-align:right">Odds</th></tr></thead><tbody>' + futuresRows(FUTURES_HEISMAN) + '</tbody></table>' +
+        '<div class="futures-why">Jeremiah Smith moved from +1000 to +700 in a single week off a 16-catch, 315-yard, 3-touchdown start. A dominant receiver still has more garbage-time upside than a starting quarterback who gets pulled once a game is decided — worth watching if Ohio State stays unbeaten.</div>' +
+      '</div>';
+  }
+
+  // ---------- slip logic ----------
+  function computeRow(id, odds){
+    var row = slipState[id] || {};
+    var stakeInput = document.getElementById('stake-' + id);
+    var stake = stakeInput ? Number(stakeInput.value) || 0 : (row.stake || 0);
+    var placedBox = document.querySelector('[data-placed-for="' + id + '"]');
+    var placed = placedBox ? placedBox.checked : !!row.placed;
+    var dec = americanToDecimal(odds);
+    var toWin = stake * (dec - 1);
+    var payoutEl = document.querySelector('[data-payout-for="' + id + '"]');
+    if (payoutEl){
+      payoutEl.textContent = placed ? ('To win ' + fmtMoney(toWin)) : '';
+    }
+    slipState[id] = {stake:stake, placed:placed};
+    return {stake:stake, placed:placed, toWin:toWin};
+  }
+
+  function refreshAllRows(){
+    PICKS.forEach(function(p){ computeRow(p.id, p.odds); });
+    PARLAYS.forEach(function(p){ computeRow(p.id, decimalToAmerican(parlayDecimal(p.legs)).replace('+','')); });
+    customPicksList().forEach(function(p){ computeRow(p.id, p.odds); });
+    saveSlip(slipState);
+    renderSlipTab();
+  }
+
+  function renderSlipTab(){
+    var picks = allPicks();
+    var placedOnes = picks.filter(function(x){ return slipState[x.data.id] && slipState[x.data.id].placed; });
+
+    var summaryEl = document.getElementById('slip-summary');
+    var bodyEl = document.getElementById('slip-body');
+
+    if (placedOnes.length === 0){
+      summaryEl.innerHTML = '';
+      bodyEl.innerHTML = '<div class="empty-slip">Nothing on your slip yet. Check “On my slip” on any play in Today’s Card to track it here.</div>';
+      renderReview(placedOnes);
+      return;
+    }
+
+    var summary = buildSummary(placedOnes);
+
+    summaryEl.innerHTML =
+      '<div class="stat-tile"><div class="k">At risk</div><div class="v">' + fmtMoney(summary.totalRisk) + '</div></div>' +
+      '<div class="stat-tile"><div class="k">Plays on slip</div><div class="v">' + placedOnes.length + '</div></div>' +
+      '<div class="stat-tile"><div class="k">If everything hits</div><div class="v win">' + fmtMoney(summary.totalRisk + summary.totalToWin) + '</div></div>';
+
+    bodyEl.innerHTML = '' +
+      '<h2 class="review-heading">Full Summary</h2>' +
+      '<p class="summary-lead">' + summary.lead + '</p>' +
+      summary.itemsHtml +
+      '<div class="summary-copy-wrap">' +
+        '<button class="reset-btn" id="copy-summary-btn" type="button">Copy summary</button>' +
+        '<button class="text-toggle-btn" id="toggle-summary-text" type="button" aria-expanded="false">View as text</button>' +
+        '<span class="copy-status" id="copy-status"></span>' +
+      '</div>' +
+      '<textarea class="summary-text" id="summary-text" readonly rows="8" hidden>' + escapeHtml(summary.text) + '</textarea>';
+
+    renderReview(placedOnes);
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function slipLiveHtml(pickId){
+    var gameIds = pickGameIds(pickId);
+    var liveGames = gameIds.map(function(gid){
+      return gamesSource().filter(function(g){ return g.id === gid; })[0];
+    }).filter(Boolean);
+    if (!liveGames.length) return '';
+    return '<div class="slip-live">' +
+      '<div class="slip-live-label">Live</div>' +
+      liveGames.map(function(g){
+        return '<div class="slip-live-row"><b>' + g.label + ':</b> ' + (g.summary || 'No live update yet') + ' <span class="slip-live-time">(' + relativeTime(g.lastChecked) + ')</span></div>';
+      }).join('') +
+    '</div>';
+  }
+
+  function buildSummary(placedOnes){
+    var totalRisk = 0, totalToWin = 0;
+    var textLines = ['COVER SHEET — WEEKLY SUMMARY', 'Generated ' + new Date().toLocaleString(), ''];
+    var itemsHtml = '';
+
+    placedOnes.forEach(function(x){
+      var id = x.data.id;
+      var s = slipState[id] || {stake:0, placed:true};
+      var odds = x.kind === 'straight' ? x.data.odds : Number(decimalToAmerican(parlayDecimal(x.data.legs)).replace('+',''));
+      var dec = americanToDecimal(odds);
+      var toWin = s.stake * (dec - 1);
+      totalRisk += s.stake;
+      totalToWin += toWin;
+
+      var kindLabel = x.kind === 'parlay' ? 'Parlay' : 'Straight';
+      var metaHtml, metaText;
+      if (x.kind === 'straight'){
+        metaHtml = x.data.matchup + ' &middot; ' + x.data.time + ' &middot; ' + x.data.market + ' (' + fmtAmerican(x.data.odds) + ')';
+        metaText = x.data.matchup + ' — ' + x.data.market + ' (' + fmtAmerican(x.data.odds) + ')';
+      } else {
+        metaHtml = x.data.legs.map(function(l){ return l.game + ': ' + l.market + ' (' + fmtAmerican(l.odds) + ')'; }).join(' &middot; ');
+        metaText = x.data.legs.map(function(l){ return '  leg — ' + l.game + ': ' + l.market + ' (' + fmtAmerican(l.odds) + ')'; }).join('\n');
+      }
+
+      itemsHtml += '<div class="research-game">' +
+        '<h3>' + x.data.title + ' <span class="pick-kind ' + (x.kind === 'parlay' ? 'parlay' : 'straight') + '" style="margin-left:8px; vertical-align:middle;">' + kindLabel + '</span></h3>' +
+        '<div class="research-meta">' + metaHtml + '</div>' +
+        '<p>' + x.data.why + '</p>' +
+        '<div class="risk-line">Stake ' + fmtMoney(s.stake) + ' &rarr; to win ' + fmtMoney(toWin) + ' (returns ' + fmtMoney(s.stake + toWin) + '). Risk: ' + x.data.risk + '</div>' +
+        slipLiveHtml(id) +
+        (id.indexOf('game-') === 0 ? '<button class="text-toggle-btn" data-remove-slip="' + id.slice(5) + '" type="button">Remove from slip</button>' : '') +
+      '</div>';
+
+      textLines.push(x.data.title + ' (' + kindLabel + ')');
+      textLines.push(x.kind === 'straight' ? '  ' + metaText : metaText);
+      textLines.push('  Stake ' + fmtMoney(s.stake) + ' -> to win ' + fmtMoney(toWin) + ' (returns ' + fmtMoney(s.stake + toWin) + ')');
+      textLines.push('  Why: ' + x.data.why.replace(/<[^>]+>/g, ''));
+      textLines.push('  Risk: ' + x.data.risk.replace(/<[^>]+>/g, ''));
+      textLines.push('');
+    });
+
+    textLines.push('Total at risk: ' + fmtMoney(totalRisk) + ' | If everything hits: ' + fmtMoney(totalRisk + totalToWin));
+
+    var straightCount = placedOnes.filter(function(x){ return x.kind === 'straight'; }).length;
+    var parlayCount = placedOnes.length - straightCount;
+    var lead = 'You’re on ' + placedOnes.length + ' play' + (placedOnes.length === 1 ? '' : 's') + ' this week' +
+      (straightCount && parlayCount ? ' (' + straightCount + ' straight, ' + parlayCount + ' parlay' + (parlayCount === 1 ? '' : 's') + ')' : '') +
+      ', risking ' + fmtMoney(totalRisk) + ' total for a possible ' + fmtMoney(totalRisk + totalToWin) + ' back if everything hits.';
+
+    return {totalRisk: totalRisk, totalToWin: totalToWin, itemsHtml: itemsHtml, text: textLines.join('\n'), lead: lead};
+  }
+
+  // ---------- slip review: good / bad / different ----------
+  function reviewSlip(placedOnes, bankroll){
+    if (!placedOnes.length) return null;
+    var good = [], bad = [], diff = [];
+
+    // 1) same-game exposure across separate bets
+    var gameMap = {};
+    placedOnes.forEach(function(x){
+      pickGameIds(x.data.id).forEach(function(gid){
+        gameMap[gid] = gameMap[gid] || [];
+        gameMap[gid].push(x.data.title);
+      });
+    });
+    var overlaps = Object.keys(gameMap).filter(function(gid){ return gameMap[gid].length > 1; });
+    if (overlaps.length){
+      overlaps.forEach(function(gid){
+        var g = GAMES.filter(function(x){ return x.id === gid; })[0] || gamesSource().filter(function(x){ return x.id === gid; })[0];
+        bad.push('<strong>' + (g ? g.label : gid) + '</strong> shows up in ' + gameMap[gid].length + ' of your plays (' + gameMap[gid].join(' + ') + '). Those aren’t independent bets — they live or die on the same game script.');
+      });
+    } else if (placedOnes.length > 1){
+      good.push('No two plays lean on the same game — one bad bounce can’t take out more than one bet at a time.');
+    }
+
+    // 2) stake sizing vs. conviction
+    var ranked = placedOnes.slice().sort(function(a,b){ return b.data.confidence - a.data.confidence; });
+    var inversion = null;
+    for (var i = 0; i < ranked.length && !inversion; i++){
+      for (var j = i + 1; j < ranked.length; j++){
+        var hi = ranked[i], lo = ranked[j];
+        var hiStake = (slipState[hi.data.id] || {}).stake || 0;
+        var loStake = (slipState[lo.data.id] || {}).stake || 0;
+        if (hi.data.confidence > lo.data.confidence && loStake > hiStake){
+          inversion = {hi: hi, lo: lo};
+          break;
+        }
+      }
+    }
+    if (inversion){
+      bad.push('You’re staking more on <strong>' + inversion.lo.data.title + '</strong> (' + inversion.lo.data.confidence + '-dot conviction) than on <strong>' + inversion.hi.data.title + '</strong> (' + inversion.hi.data.confidence + '-dot). Worth checking that’s on purpose and not just a leftover number.');
+    } else if (placedOnes.length > 1){
+      good.push('Your stakes roughly track conviction — more dollars on the plays you’re more sure about, not a flat amount across the board.');
+    }
+
+    // 3) mix of straight bets vs. parlays
+    var kinds = {};
+    placedOnes.forEach(function(x){ kinds[x.kind] = true; });
+    if (kinds.straight && kinds.parlay){
+      good.push('You’re mixing straight bets and parlays, so a missed leg only costs you the parlay it’s in, not the whole day.');
+    } else if (kinds.parlay && !kinds.straight){
+      diff.push('Everything on your slip right now is parlay legs. Try peeling your highest-conviction leg off into its own straight bet — same read on the game, less all-or-nothing.');
+    }
+
+    // 4) how much of the risk sits in parlays
+    var totalStake = 0, parlayStake = 0;
+    placedOnes.forEach(function(x){
+      var s = (slipState[x.data.id] || {}).stake || 0;
+      totalStake += s;
+      if (x.kind === 'parlay') parlayStake += s;
+    });
+    if (totalStake > 0 && parlayStake / totalStake > 0.6){
+      bad.push('About ' + Math.round(parlayStake / totalStake * 100) + '% of today’s risk sits in parlays, which need every leg to hit. That’s a lot of the day riding on all-or-nothing outcomes.');
+      diff.push('Shift some stake off the parlays and onto your highest-conviction straight bet — same idea, a payout that doesn’t evaporate on one bad leg.');
+    }
+
+    // 5) bankroll-relative sizing
+    if (bankroll){
+      var pct = totalStake / bankroll * 100;
+      if (pct > 15){
+        bad.push('You’re risking ' + pct.toFixed(1) + '% of your bankroll on one day’s card. Most staking plans keep a single slate under 5–10%, so one bad Saturday doesn’t do lasting damage.');
+      } else if (pct > 0){
+        good.push('You’re risking ' + pct.toFixed(1) + '% of your bankroll today — a reasonable slice for a single slate.');
+      }
+    } else {
+      diff.push('Add a bankroll above and this panel will flag it if you’re over-risking a single Saturday.');
+    }
+
+    if (!good.length) good.push('Every play here started at 3-dot conviction or better — you’re not just filling out the card for volume.');
+    if (!bad.length) bad.push('Nothing obviously off in this mix. Keep an eye on the Research tab as injury reports and lines firm up closer to kickoff.');
+    if (!diff.length) diff.push('Try sizing stakes in units tied to conviction dots (e.g. 1 unit per dot) instead of flat dollars, so your best reads naturally carry more weight.');
+
+    return {good: good, bad: bad, diff: diff};
+  }
+
+  function renderReview(placedOnes){
+    var el = document.getElementById('slip-review');
+    if (!el) return;
+    var r = reviewSlip(placedOnes, getBankroll());
+    if (!r){ el.innerHTML = ''; return; }
+    function col(title, cls, items){
+      return '<div class="review-col ' + cls + '"><h3>' + title + '</h3><ul>' +
+        items.map(function(t){ return '<li>' + t + '</li>'; }).join('') + '</ul></div>';
+    }
+    el.innerHTML = '<h2 class="review-heading">Slip Review</h2>' +
+      '<div class="review-grid">' +
+        col('Good', 'good', r.good) +
+        col('Bad', 'bad', r.bad) +
+        col('Different', 'diff', r.diff) +
+      '</div>';
+  }
+
+  // ---------- chat (sample capability) ----------
+  function chatBlockHtml(gameId){
+    return '<div class="chat-block" data-chat-for="' + gameId + '">' +
+      '<div class="chat-label">Ask about this game</div>' +
+      '<div class="chat-log" id="chat-log-' + gameId + '"></div>' +
+      '<div class="chat-input-row">' +
+        '<input type="text" class="chat-input" id="chat-input-' + gameId + '" placeholder="e.g. how worried should I be about the QB?">' +
+        '<button class="chat-send" type="button" data-chat-send="' + gameId + '">Ask</button>' +
+      '</div>' +
+      '<div class="chat-hint" id="chat-hint-' + gameId + '"></div>' +
+    '</div>';
+  }
+
+  function chatKey(id){ return 'cover-sheet-chat-' + id; }
+  function loadChatTurns(id){
+    try{
+      var raw = localStorage.getItem(chatKey(id));
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function saveChatTurns(id, turns){
+    try{ localStorage.setItem(chatKey(id), JSON.stringify(turns)); }catch(e){}
+  }
+
+  function renderChatLog(gameId){
+    var el = document.getElementById('chat-log-' + gameId);
+    if (!el) return;
+    var turns = (chatHistories[gameId] || []).slice(1);
+    var html = turns.map(function(t){
+      return '<div class="chat-msg ' + (t.role === 'user' ? 'me' : 'ai') + '">' + escapeHtml(t.content) + '</div>';
+    }).join('');
+    if (chatPending[gameId] != null){
+      html += '<div class="chat-msg ai pending">' + escapeHtml(chatPending[gameId] || 'Thinking…') + '</div>';
+    }
+    el.innerHTML = html || '<div class="chat-empty">Ask a question about this game — injuries, the number, anything.</div>';
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function chatErrorMessage(err){
+    var code = err && err.code;
+    if (code === 'not_granted') return 'Chat access was declined for this page — reload and allow it to ask again.';
+    if (code === 'rate_limited') return 'Too many questions at once — wait a moment and try again.';
+    if (code === 'refused') return 'Claude declined to answer that one — try rephrasing.';
+    if (code === 'cancelled') return '';
+    return 'Couldn’t get an answer just now — try again in a moment.';
+  }
+
+  function sendChat(gameId, contextText){
+    var input = document.getElementById('chat-input-' + gameId);
+    var hint = document.getElementById('chat-hint-' + gameId);
+    var btn = document.querySelector('[data-chat-send="' + gameId + '"]');
+    if (!sampleCap){
+      if (hint) hint.textContent = 'Chat isn’t available in this view.';
+      return;
+    }
+    var question = input ? input.value.trim() : '';
+    if (!question) return;
+    if (!chatHistories[gameId]) chatHistories[gameId] = loadChatTurns(gameId);
+    if (chatHistories[gameId].length === 0){
+      chatHistories[gameId].push({role: 'user', content: CHAT_INSTRUCTIONS + contextText});
+    }
+    chatHistories[gameId].push({role: 'user', content: question});
+    if (input) input.value = '';
+    if (btn) btn.disabled = true;
+    chatPending[gameId] = '';
+    if (hint) hint.textContent = '';
+    renderChatLog(gameId);
+
+    sampleCap(chatHistories[gameId], {
+      cache: false,
+      modelTier: 'default',
+      onText: function(u){ chatPending[gameId] = u.text; renderChatLog(gameId); }
+    }).then(function(result){
+      chatHistories[gameId].push({role: 'assistant', content: result.text});
+      delete chatPending[gameId];
+      saveChatTurns(gameId, chatHistories[gameId]);
+      renderChatLog(gameId);
+      if (btn) btn.disabled = false;
+    }).catch(function(err){
+      delete chatPending[gameId];
+      renderChatLog(gameId);
+      if (hint) hint.textContent = chatErrorMessage(err);
+      if (btn) btn.disabled = false;
+    });
+  }
+
+  function gameContextText(g){
+    var lines = [];
+    lines.push(g.label + (g.ranked ? ' (' + g.ranked + ')' : '') + ' — ' + (g.kickoff || ''));
+    lines.push('Market: ' + (g.market || 'not yet posted'));
+    if (g.summary) lines.push('Take: ' + g.summary);
+    if (g.why) lines.push('Why: ' + String(g.why).replace(/<[^>]+>/g, ''));
+    if (g.injuryNote) lines.push('Injury watch: ' + g.injuryNote);
+    if (g.risk) lines.push('Risk: ' + String(g.risk).replace(/<[^>]+>/g, ''));
+    lines.push('Last updated: ' + (g.lastChecked || 'unknown'));
+    return lines.join('\n');
+  }
+
+  // ---------- All Games board (db capability) ----------
+  function relativeTime(iso){
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso);
+    var mins = Math.round((Date.now() - d.getTime()) / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + 'm ago';
+    var hrs = Math.round(mins / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    return Math.round(hrs / 24) + 'd ago';
+  }
+
+  function gameCardHtml(g){
+    var open = !!openGameIds[g.id];
+    var recent = recentChangeMap[g.id];
+    return '<div class="game-card' + (recent ? ' has-update' : '') + '" data-game-card="' + g.id + '">' +
+      '<div class="game-card-head">' +
+        '<div>' +
+          '<span class="game-tag ' + (g.tag === 'top25' ? 'top25' : 'interesting') + '">' + (g.tag === 'top25' ? 'Top 25' : 'Interesting') + '</span>' +
+          (recent ? '<span class="updated-badge">Updated</span>' : '') +
+          '<div class="game-title">' + g.label + '</div>' +
+          '<div class="game-meta">' + (g.ranked ? g.ranked + ' · ' : '') + (g.kickoff || '') + '</div>' +
+          '<div class="game-market">' + (g.market || 'Line not posted yet') + '</div>' +
+        '</div>' +
+        '<div class="game-updated">' + relativeTime(g.lastChecked) + '</div>' +
+      '</div>' +
+      (g.pick ?
+        '<div class="game-lean"><span class="lean-label">Best bet</span><span class="lean-pick">' + g.pick + '</span><span class="dots">' + dotsHtml(g.pickConfidence || 3) + '</span></div>' +
+        '<div class="add-slip-row"><button class="add-slip-btn' + (isGameOnSlip(g.id) ? ' on-slip' : '') + '" data-add-slip="' + g.id + '" type="button">' + (isGameOnSlip(g.id) ? '✓ On my slip — remove' : '+ Add to my slip') + '</button></div>' :
+        g.pass ?
+        '<div class="game-pass">No lean — ' + (g.passReason || 'no real edge either side.') + '</div>' : ''
+      ) +
+      '<button class="why-toggle" aria-expanded="' + open + '" data-game-toggle="' + g.id + '">Details &amp; chat <span class="arrow">&#9662;</span></button>' +
+      '<div class="game-detail" id="game-detail-' + g.id + '" ' + (open ? '' : 'hidden') + '>' +
+        (g.summary ? '<p>' + g.summary + '</p>' : '') +
+        (g.why ? '<p>' + g.why + '</p>' : '') +
+        (g.injuryNote ? '<div class="risk-line">' + g.injuryNote + '</div>' : '') +
+        chatBlockHtml(g.id) +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderGamesGrid(docs, statusText){
+    lastGamesDocs = docs;
+    var status = document.getElementById('games-status');
+    if (status) status.textContent = statusText || (docs.length + ' games tracked · live board' + (dbCap ? '' : ' (offline snapshot)'));
+    applyGamesFilter();
+  }
+
+  function applyGamesFilter(){
+    var grid = document.getElementById('games-grid');
+    var emptyEl = document.getElementById('games-empty');
+    var searchInput = document.getElementById('games-search');
+    var q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    var source = gamesSource();
+    var matches = !q ? source : source.filter(function(g){
+      return (g.label + ' ' + (g.home || '') + ' ' + (g.away || '')).toLowerCase().indexOf(q) !== -1;
+    });
+
+    if (matches.length){
+      emptyEl.hidden = true;
+      grid.hidden = false;
+      grid.innerHTML = matches.map(gameCardHtml).join('');
+      matches.forEach(function(g){ renderChatLog(g.id); });
+    } else {
+      grid.hidden = true;
+      emptyEl.hidden = false;
+      emptyEl.innerHTML = '<p>No tracked game matches “' + escapeHtml(q) + '.”</p>' +
+        (dbCap ?
+          '<button class="reset-btn" id="request-game-btn" type="button">Add it to the research queue</button><span class="copy-status" id="request-status"></span>' :
+          '<p>Live search isn’t connected in this preview — open the published page to search and queue new games.</p>');
+    }
+  }
+
+  function renderLastRefreshed(status){
+    var el = document.getElementById('asof-line');
+    if (!el) return;
+    if (!status || !status.lastRunAt){
+      el.textContent = 'Live board — last refresh time not recorded yet';
+      return;
+    }
+    el.textContent = 'Research last refreshed ' + relativeTime(status.lastRunAt);
+    el.title = new Date(status.lastRunAt).toLocaleString();
+  }
+
+  function subscribeChangelog(){
+    try{
+      dbCap.collection('changelog').orderBy('changedAt', 'desc').limit(20).onSnapshot(function(snap){
+        var entries = snap.docs.map(function(d){ return Object.assign({id: d.id}, d.data()); });
+        var cutoff = Date.now() - 48 * 60 * 60 * 1000;
+        var map = {};
+        entries.forEach(function(e){
+          var t = new Date(e.changedAt).getTime();
+            if (t >= cutoff && e.gameId && !map[e.gameId]) map[e.gameId] = e;
+        });
+        recentChangeMap = map;
+        applyGamesFilter();
+        renderResearchList();
+      }, function(){
+        recentChangeMap = {};
+        applyGamesFilter();
+        renderResearchList();
+      });
+    }catch(e){
+      recentChangeMap = {};
+    }
+  }
+
+  function isUgaRelevantAsk(a){
+    var q = (a.query || '').toLowerCase();
+    return q.indexOf('georgia') !== -1 || q.indexOf('uga') !== -1 || q.indexOf('dawg') !== -1 || a.relatedGameId === 'uga-ark' || a.relatedGameId === 'fan-uga';
+  }
+
+  function askItemHtml(a){
+    var badge = a.status === 'answered' ?
+      '<span class="ask-badge answered">Answered</span>' :
+      '<span class="ask-badge pending">Pending</span>';
+    var g = a.relatedGameId ? gamesSource().filter(function(x){ return x.id === a.relatedGameId; })[0] : null;
+    return '<div class="ask-item">' +
+      '<div class="ask-item-head"><span class="ask-q">“' + escapeHtml(a.query || '') + '”</span>' + badge + '</div>' +
+      '<div class="ask-time">Asked ' + relativeTime(a.askedAt) + (a.answeredAt ? ' · answered ' + relativeTime(a.answeredAt) : '') + '</div>' +
+      (a.answer ? '<div class="ask-answer">' + escapeHtml(a.answer) + '</div>' : '<div class="ask-waiting">Waiting on the next research pass…</div>') +
+      (g && g.pick ?
+        '<div class="game-lean"><span class="lean-label">Best bet</span><span class="lean-pick">' + g.pick + '</span><span class="dots">' + dotsHtml(g.pickConfidence || 3) + '</span></div>' +
+        '<div class="add-slip-row"><button class="add-slip-btn' + (isGameOnSlip(g.id) ? ' on-slip' : '') + '" data-add-slip="' + g.id + '" type="button">' + (isGameOnSlip(g.id) ? '✓ On my slip — remove' : '+ Add to my slip') + '</button></div>' :
+        ''
+      ) +
+    '</div>';
+  }
+
+  function renderAsksFeed(entries){
+    var el = document.getElementById('asks-feed');
+    if (!el) return;
+    if (!entries || !entries.length){
+      el.innerHTML = '';
+      return;
+    }
+    el.innerHTML = '<div class="asks-heading">Your custom research</div>' + entries.slice(0, 10).map(askItemHtml).join('');
+  }
+
+  function subscribeAsks(){
+    try{
+      dbCap.collection('asks').orderBy('askedAt', 'desc').limit(10).onSnapshot(function(snap){
+        var entries = snap.docs.map(function(d){ return Object.assign({id: d.id}, d.data()); });
+        lastAsksDocs = entries;
+        renderAsksFeed(entries);
+        renderUga(lastUgaDoc || UGA_FALLBACK);
+      }, function(){
+        lastAsksDocs = [];
+        renderAsksFeed([]);
+      });
+    }catch(e){
+      lastAsksDocs = [];
+      renderAsksFeed([]);
+    }
+  }
+
+  function subscribeStatus(){
+    try{
+      dbCap.doc('control/status').onSnapshot(function(snap){
+        renderLastRefreshed(snap.exists ? snap.data() : null);
+      }, function(){
+        renderLastRefreshed(null);
+      });
+    }catch(e){
+      renderLastRefreshed(null);
+    }
+  }
+
+  function refreshErrorMessage(err){
+    var code = err && err.code;
+    if (code === 'consent_required') return 'Allow page comments when prompted, then try again.';
+    if (code === 'forbidden') return 'Commenting from this page is off for this view.';
+    if (code === 'claude_unavailable') return 'No Claude session is currently watching this artifact.';
+    if (code === 'rate_limited') return 'Slow down a bit — try again shortly.';
+    if (code === 'not_granted' || code === 'capability_disabled' || code === 'capability_removed') return 'Refresh-by-comment isn’t available in this view.';
+    return 'Couldn’t send the refresh request — try again in a moment.';
+  }
+
+  function sendClaudePing(btn, statusElId, message, sentLabel){
+    var statusEl = document.getElementById(statusElId);
+    if (!commentsCap){
+      if (statusEl) statusEl.textContent = 'Ask-Claude-directly isn’t available in this view.';
+      return;
+    }
+    var originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    if (statusEl) statusEl.textContent = '';
+
+    commentsCap.canSendToClaude().then(function(state){
+      if (state !== 'available'){
+        btn.disabled = false;
+        btn.textContent = originalLabel;
+        if (statusEl){
+          statusEl.textContent = state === 'writers_only' ? 'Only an editor of this artifact can send this to Claude.' :
+            state === 'no_session' ? 'No Claude session is currently watching this artifact.' :
+            'Sending to Claude isn’t available right now.';
+        }
+        return;
+      }
+      commentsCap.anchorFor(btn).then(function(anchor){
+        return commentsCap.sendToClaude({anchor: anchor, text: message});
+      }).then(function(){
+        btn.textContent = 'Requested';
+        if (statusEl) statusEl.textContent = sentLabel;
+        setTimeout(function(){
+          btn.disabled = false;
+          btn.textContent = originalLabel;
+        }, 60000);
+      }).catch(function(err){
+        btn.disabled = false;
+        btn.textContent = originalLabel;
+        if (statusEl) statusEl.textContent = refreshErrorMessage(err);
+      });
+    }).catch(function(err){
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+      if (statusEl) statusEl.textContent = refreshErrorMessage(err);
+    });
+  }
+
+  function requestResearchRefresh(btn){
+    var statusEl = document.getElementById('refresh-action-status');
+    var originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Refreshing…';
+    if (statusEl) statusEl.textContent = '';
+    fetch('/api/research/refresh-board', { method: 'POST' }).then(function(r){
+      if (r.status === 401){ var e = new Error('auth'); e.code = 'not_granted'; throw e; }
+      return r.json().then(function(d){
+        if (!r.ok){ var e2 = new Error(d.error || 'failed'); e2.code = 'error'; throw e2; }
+        return d;
+      });
+    }).then(function(d){
+      btn.textContent = 'Refreshed';
+      if (statusEl) statusEl.textContent = d.summary || ('Reviewed the board — ' + (d.updated || 0) + ' games updated.');
+      if (dbCap){ subscribeGames(); subscribeStatus(); subscribeChangelog(); }
+      setTimeout(function(){ btn.disabled = false; btn.textContent = originalLabel; }, 15000);
+    }).catch(function(err){
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+      if (statusEl) statusEl.textContent = err.code === 'not_granted' ? 'Log in to refresh research.' : 'Refresh failed — try again.';
+    });
+  }
+
+  function requestCustomResearch(btn){
+    var input = document.getElementById('custom-research-input');
+    var query = input ? input.value.trim() : '';
+    var statusEl = document.getElementById('custom-research-status');
+    if (!query){
+      if (statusEl) statusEl.textContent = 'Type what you want looked into first.';
+      return;
+    }
+    var message = 'Custom research request from College Football App’s "Custom research" box: "' + query + '"\n\n' +
+      'Figure out which kind of ask this is and handle it accordingly:\n' +
+      '• A specific game named or clearly implied ("research the Alabama-Florida State game", "what’s going on with Ole Miss") — do a full, thorough research pass on that one game specifically (not just a delta-check): current DraftKings-market line/total/moneyline, injuries, storylines, recent form. Rewrite that game’s doc (summary/why/market/injuryNote/pick or pass) with what you find, log a changelog entry, and add the game to "games" first via a "requests"-style lookup if it isn’t tracked yet.\n' +
+      '• A general ask for a recommendation ("find me a bet I should make", "what’s worth betting today") — review the full tracked board (including games currently marked "pass") plus fresh research, and reply with one specific, well-reasoned recommendation — a real game/market/side, not a hedge. If it’s a game already on the board, you can point to its existing pick; if you find something better through fresh research, say so and update that game’s doc.\n' +
+      '• Anything else (a rules question, a strategy question, general context) — just answer it directly.\n\n' +
+      'Reply in this thread either way with what you found — be specific and direct, not generic.';
+    var originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Researching…';
+    if (statusEl) statusEl.textContent = '';
+    fetch('/api/research/custom', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({question: query})
+    }).then(function(r){
+      if (r.status === 401){ var e = new Error('auth'); e.code = 'not_granted'; throw e; }
+      return r.json().then(function(d){
+        if (!r.ok){ var e2 = new Error(d.error || 'failed'); e2.code = 'error'; throw e2; }
+        return d;
+      });
+    }).then(function(d){
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+      if (statusEl) statusEl.textContent = 'Answered — see below.';
+      lastAsksDocs = [{query: query, askedAt: new Date().toISOString(), answeredAt: new Date().toISOString(), status: 'answered', answer: d.answer}].concat(lastAsksDocs || []);
+      renderAsksFeed(lastAsksDocs);
+      renderUga(lastUgaDoc || UGA_FALLBACK);
+    }).catch(function(err){
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+      if (statusEl) statusEl.textContent = err.code === 'not_granted' ? 'Log in to use custom research.' : 'Couldn’t research that — try again in a moment.';
+    });
+    if (input) input.value = '';
+  }
+
+  function subscribeGames(){
+    try{
+      gamesUnsub = dbCap.collection('games').onSnapshot(function(snap){
+        var docs = snap.docs.map(function(d){ return Object.assign({id: d.id}, d.data()); });
+        docs.sort(function(a, b){ return (a.label || '').localeCompare(b.label || ''); });
+        renderGamesGrid(docs);
+        renderUga(lastUgaDoc || UGA_FALLBACK);
+        renderResearchList();
+        renderSlipTab();
+        populateCardAddSelect();
+      }, function(){
+        renderGamesGrid([], (GAMES_FALLBACK.length) + ' games tracked · offline snapshot (live board unreachable)');
+      });
+    }catch(e){
+      renderGamesGrid([], GAMES_FALLBACK.length + ' games tracked · offline snapshot');
+    }
+  }
+
+  // ---------- My Dawgs (UGA) ----------
+  function formatCountdown(ms){
+    if (ms <= 0) return null;
+    var totalMins = Math.floor(ms / 60000);
+    var days = Math.floor(totalMins / 1440);
+    var hours = Math.floor((totalMins % 1440) / 60);
+    var mins = totalMins % 60;
+    if (days > 0) return days + 'd ' + hours + 'h ' + mins + 'm';
+    if (hours > 0) return hours + 'h ' + mins + 'm';
+    return mins + 'm';
+  }
+
+  function tickUgaCountdown(kickoffISO){
+    var el = document.getElementById('uga-countdown');
+    if (!el) { if (ugaCountdownTimer) { clearInterval(ugaCountdownTimer); ugaCountdownTimer = null; } return; }
+    var ms = new Date(kickoffISO).getTime() - Date.now();
+    var label = formatCountdown(ms);
+    el.textContent = label ? ('Kickoff in ' + label) : 'Kickoff has passed — check All Games for the latest';
+  }
+
+  function ugaResearchHtml(u){
+    var gameId = u.nextGame && u.nextGame.gameId;
+    var out = '';
+    if (gameId){
+      var g = gamesSource().filter(function(x){ return x.id === gameId; })[0];
+      if (g){
+        out += '<div class="uga-research">' +
+          '<h3>Research: ' + g.label + '</h3>' +
+          (g.pick ?
+            '<div class="game-lean"><span class="lean-label">Best bet</span><span class="lean-pick">' + g.pick + '</span><span class="dots">' + dotsHtml(g.pickConfidence || 3) + '</span></div>' :
+            g.pass ? '<div class="game-pass">No lean — ' + (g.passReason || 'no real edge either side.') + '</div>' : ''
+          ) +
+          (g.summary ? '<p>' + g.summary + '</p>' : '') +
+          (g.why ? '<p>' + g.why + '</p>' : '') +
+          (g.injuryNote ? '<div class="risk-line">' + g.injuryNote + '</div>' : '') +
+          '<div class="games-status" style="margin-top:8px;">From All Games · updated ' + relativeTime(g.lastChecked) + '</div>' +
+        '</div>';
+      }
+    }
+    var ugaAsks = (lastAsksDocs || []).filter(isUgaRelevantAsk);
+    if (ugaAsks.length){
+      out += '<div class="asks-feed">' + '<div class="asks-heading">Your Georgia research asks</div>' + ugaAsks.slice(0, 5).map(askItemHtml).join('') + '</div>';
+    }
+    return out;
+  }
+
+  function renderUga(u){
+    var root = document.getElementById('uga-root');
+    if (!root) return;
+    lastUgaDoc = u;
+    if (ugaCountdownTimer) { clearInterval(ugaCountdownTimer); ugaCountdownTimer = null; }
+
+    var scheduleHtml = (u.schedule || []).map(function(g){
+      var cls = 'uga-game' + (g.current ? ' current' : '') + (g.result ? ' played' : '');
+      var badge = g.rivalry ? '<span class="badge rivalry">Rivalry</span>' : (g.ranked ? '<span class="badge ranked">Ranked</span>' : '');
+      return '<div class="' + cls + '"><span class="wk">' + g.wk + '</span><span class="opp">' + g.opp + '</span>' + badge +
+        (g.result ? '<span class="result">' + g.result + '</span>' : '') + '</div>';
+    }).join('');
+
+    root.innerHTML =
+      '<div class="uga-hero">' +
+        '<div class="eyebrow">Georgia Bulldogs · Just for you</div>' +
+        '<h2>' + u.rank + ' in the country · ' + u.record + '</h2>' +
+        '<div class="uga-stats">' +
+          '<div class="uga-stat"><div class="v">' + u.record + '</div><div class="k">Overall</div></div>' +
+          '<div class="uga-stat"><div class="v">' + u.secRecord + '</div><div class="k">SEC</div></div>' +
+        '</div>' +
+      '</div>' +
+      (u.nextGame ?
+        '<div class="uga-next">' +
+          '<h3>Next up: ' + u.nextGame.opponent + '</h3>' +
+          '<div class="meta">' + (u.nextGame.tv || '') + (u.nextGame.line ? ' · ' + u.nextGame.line : '') + '</div>' +
+          '<div class="uga-countdown" id="uga-countdown"></div>' +
+        '</div>' : ''
+      ) +
+      ugaResearchHtml(u) +
+      '<div class="uga-schedule">' + scheduleHtml + '</div>' +
+      (u.storyline && u.storyline.length ?
+        '<div class="uga-story"><h3>What to watch</h3>' + u.storyline.map(function(p){ return '<p>' + p + '</p>'; }).join('') + '</div>' : ''
+      );
+
+    if (u.nextGame && u.nextGame.kickoffISO){
+      tickUgaCountdown(u.nextGame.kickoffISO);
+      ugaCountdownTimer = setInterval(function(){ tickUgaCountdown(u.nextGame.kickoffISO); }, 60000);
+    }
+  }
+
+  function subscribeUga(){
+    try{
+      dbCap.doc('fan/uga').onSnapshot(function(snap){
+        renderUga(snap.exists ? snap.data() : UGA_FALLBACK);
+      }, function(){
+        renderUga(UGA_FALLBACK);
+      });
+    }catch(e){
+      renderUga(UGA_FALLBACK);
+    }
+  }
+
+  function contextForChat(id){
+    var pick = PICKS.filter(function(p){ return p.id === id; })[0];
+    if (pick){
+      return [
+        pick.title + ' — ' + pick.matchup,
+        pick.time + ' · ' + pick.market + ' (' + fmtAmerican(pick.odds) + ')',
+        'Our thesis: ' + pick.thesis,
+        'Why: ' + pick.why,
+        'Risk: ' + pick.risk
+      ].join('\n');
+    }
+    var parlay = PARLAYS.filter(function(p){ return p.id === id; })[0];
+    if (parlay){
+      var legs = parlay.legs.map(function(l){ return l.game + ': ' + l.market + ' (' + fmtAmerican(l.odds) + ')'; }).join('\n');
+      return [
+        parlay.title + ' — 3-leg parlay',
+        legs,
+        'Our thesis: ' + parlay.thesis,
+        'Why: ' + parlay.why,
+        'Risk: ' + parlay.risk
+      ].join('\n');
+    }
+    var g = gamesSource().filter(function(x){ return x.id === id; })[0];
+    if (g) return gameContextText(g);
+    return 'No stored research for this one yet on College Football App — answer from general knowledge and say plainly that it isn’t one of the tracked games.';
+  }
+
+  function requestGame(query){
+    var statusEl = document.getElementById('request-status');
+    if (!query){
+      if (statusEl) statusEl.textContent = 'Type a team or matchup first.';
+      return;
+    }
+    var btn = document.getElementById('request-game-btn');
+    if (btn) btn.disabled = true;
+    if (statusEl) statusEl.textContent = 'Researching…';
+    fetch('/api/research/add-game', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({query: query})
+    }).then(function(r){
+      if (r.status === 401){ var e = new Error('auth'); e.code = 'not_granted'; throw e; }
+      return r.json().then(function(d){
+        if (!r.ok){ var e2 = new Error(d.error || 'failed'); e2.code = 'error'; throw e2; }
+        return d;
+      });
+    }).then(function(d){
+      if (statusEl) statusEl.textContent = 'Added ' + (d.game && d.game.label ? d.game.label : query) + '.';
+      if (dbCap) subscribeGames();
+    }).catch(function(err){
+      if (btn) btn.disabled = false;
+      if (statusEl) statusEl.textContent = err.code === 'not_granted' ? 'Log in to research and add a new game.' : 'Couldn’t research that — try again in a moment.';
+    });
+  }
+
+  // ---------- events ----------
+  function wireEvents(){
+    document.getElementById('card-list').addEventListener('click', function(e){
+      var t = e.target.closest('.why-toggle');
+      if (t){
+        var id = t.getAttribute('data-why');
+        var body = document.getElementById('why-' + id);
+        var open = t.getAttribute('aria-expanded') === 'true';
+        t.setAttribute('aria-expanded', String(!open));
+        body.hidden = open;
+        return;
+      }
+      var sendBtn = e.target.closest('[data-chat-send]');
+      if (sendBtn){
+        var gid = sendBtn.getAttribute('data-chat-send');
+        sendChat(gid, contextForChat(gid));
+        return;
+      }
+      var removeCard = e.target.closest('[data-remove-card]');
+      if (removeCard){
+        removeGameFromSlip(removeCard.getAttribute('data-remove-card'));
+      }
+    });
+
+    document.getElementById('card-add-btn').addEventListener('click', function(){
+      var sel = document.getElementById('card-add-select');
+      if (sel && sel.value) addGameToSlip(sel.value);
+    });
+    document.getElementById('card-search-btn').addEventListener('click', searchAndAddCard);
+    document.getElementById('card-search-input').addEventListener('keydown', function(e){
+      if (e.key === 'Enter'){
+        e.preventDefault();
+        searchAndAddCard();
+      }
+    });
+
+    document.getElementById('card-list').addEventListener('keydown', function(e){
+      if (e.key === 'Enter' && e.target.matches('.chat-input')){
+        e.preventDefault();
+        var gid2 = e.target.id.replace('chat-input-', '');
+        sendChat(gid2, contextForChat(gid2));
+      }
+    });
+
+    document.getElementById('card-list').addEventListener('change', function(e){
+      if (e.target.matches('[data-placed-for]') || e.target.matches('[data-stake-for]')){
+        refreshAllRows();
+      }
+    });
+    document.getElementById('card-list').addEventListener('input', function(e){
+      if (e.target.matches('[data-stake-for]')){
+        refreshAllRows();
+      }
+    });
+
+    var gamesPanel = document.getElementById('panel-games');
+    gamesPanel.addEventListener('click', function(e){
+      var toggle = e.target.closest('[data-game-toggle]');
+      if (toggle){
+        var gcid = toggle.getAttribute('data-game-toggle');
+        var detail = document.getElementById('game-detail-' + gcid);
+        var isOpen = toggle.getAttribute('aria-expanded') === 'true';
+        toggle.setAttribute('aria-expanded', String(!isOpen));
+        detail.hidden = isOpen;
+        if (isOpen) delete openGameIds[gcid]; else openGameIds[gcid] = true;
+        if (!isOpen) renderChatLog(gcid);
+        return;
+      }
+      var send = e.target.closest('[data-chat-send]');
+      if (send){
+        var sgid = send.getAttribute('data-chat-send');
+        sendChat(sgid, contextForChat(sgid));
+        return;
+      }
+      var addSlip = e.target.closest('[data-add-slip]');
+      if (addSlip){
+        var agid = addSlip.getAttribute('data-add-slip');
+        if (isGameOnSlip(agid)) removeGameFromSlip(agid); else addGameToSlip(agid);
+        return;
+      }
+      if (e.target.id === 'request-game-btn'){
+        var q = document.getElementById('games-search');
+        requestGame(q ? q.value.trim() : '');
+      }
+    });
+    gamesPanel.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' && e.target.matches('.chat-input')){
+        e.preventDefault();
+        var gid3 = e.target.id.replace('chat-input-', '');
+        sendChat(gid3, contextForChat(gid3));
+      }
+    });
+    document.getElementById('games-search').addEventListener('input', applyGamesFilter);
+
+    document.getElementById('refresh-research-btn').addEventListener('click', function(e){
+      requestResearchRefresh(e.currentTarget);
+    });
+
+    document.getElementById('custom-research-btn').addEventListener('click', function(){
+      requestCustomResearch(document.getElementById('custom-research-btn'));
+    });
+    document.getElementById('custom-research-input').addEventListener('keydown', function(e){
+      if (e.key === 'Enter'){
+        e.preventDefault();
+        requestCustomResearch(document.getElementById('custom-research-btn'));
+      }
+    });
+    document.getElementById('panel-research').addEventListener('click', function(e){
+      var addSlipR = e.target.closest('[data-add-slip]');
+      if (addSlipR){
+        var rgid = addSlipR.getAttribute('data-add-slip');
+        if (isGameOnSlip(rgid)) removeGameFromSlip(rgid); else addGameToSlip(rgid);
+      }
+    });
+    document.getElementById('panel-uga').addEventListener('click', function(e){
+      var addSlipU = e.target.closest('[data-add-slip]');
+      if (addSlipU){
+        var ugid = addSlipU.getAttribute('data-add-slip');
+        if (isGameOnSlip(ugid)) removeGameFromSlip(ugid); else addGameToSlip(ugid);
+      }
+    });
+
+    document.getElementById('reset-slip').addEventListener('click', function(){
+      slipState = {};
+      saveSlip(slipState);
+      renderCards();
+      refreshAllRows();
+    });
+
+    var bankrollInput = document.getElementById('bankroll-input');
+    bankrollInput.addEventListener('input', function(){
+      saveBankrollValue(bankrollInput.value);
+      renderSlipTab();
+    });
+
+    document.getElementById('panel-slip').addEventListener('click', function(e){
+      var removeBtn = e.target.closest('[data-remove-slip]');
+      if (removeBtn){
+        removeGameFromSlip(removeBtn.getAttribute('data-remove-slip'));
+        return;
+      }
+      var toggle = e.target.closest('#toggle-summary-text');
+      if (toggle){
+        var taEl = document.getElementById('summary-text');
+        var open = toggle.getAttribute('aria-expanded') === 'true';
+        toggle.setAttribute('aria-expanded', String(!open));
+        toggle.textContent = open ? 'View as text' : 'Hide text';
+        if (taEl) taEl.hidden = open;
+        return;
+      }
+      var btn = e.target.closest('#copy-summary-btn');
+      if (!btn) return;
+      var ta = document.getElementById('summary-text');
+      var status = document.getElementById('copy-status');
+      if (!ta) return;
+      function showStatus(msg){
+        if (!status) return;
+        status.textContent = msg;
+        setTimeout(function(){ status.textContent = ''; }, 2500);
+      }
+      function fallbackCopy(){
+        try{
+          ta.hidden = false;
+          var revealBtn = document.getElementById('toggle-summary-text');
+          if (revealBtn){ revealBtn.setAttribute('aria-expanded', 'true'); revealBtn.textContent = 'Hide text'; }
+          ta.focus();
+          ta.select();
+          var ok = document.execCommand('copy');
+          showStatus(ok ? 'Copied' : 'Select the text below to copy');
+        }catch(err){
+          showStatus('Select the text below to copy');
+        }
+      }
+      try{
+        if (navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(ta.value).then(function(){ showStatus('Copied'); }).catch(fallbackCopy);
+        } else {
+          fallbackCopy();
+        }
+      }catch(err){
+        fallbackCopy();
+      }
+    });
+
+    var tabs = document.querySelectorAll('.tab');
+    tabs.forEach(function(tabEl){
+      tabEl.addEventListener('click', function(){
+        tabs.forEach(function(t2){ t2.setAttribute('aria-selected','false'); });
+        tabEl.setAttribute('aria-selected','true');
+        var panels = document.querySelectorAll('section[role="tabpanel"]');
+        panels.forEach(function(p){ p.hidden = true; });
+        document.getElementById(tabEl.getAttribute('aria-controls')).hidden = false;
+      });
+    });
+  }
+
+  // ---------- backend wiring: a small db-capability-shaped shim over our
+  // own Express/Firestore API, so the rest of this file (written against
+  // the Claude Artifact "db" capability) needs no other changes. ----------
+  function makeDbShim(){
+    function pollCollection(url, cb, errCb, intervalMs){
+      var stopped = false;
+      function tick(){
+        if (stopped) return;
+        fetch(url).then(function(r){ if (!r.ok) throw new Error('bad status'); return r.json(); })
+          .then(function(arr){
+            var docs = (arr || []).map(function(item){
+              var id = item.id;
+              var data = Object.assign({}, item);
+              delete data.id;
+              return { id: id, data: function(){ return data; } };
+            });
+            cb({ docs: docs });
+          })
+          .catch(function(err){ if (errCb) errCb(err); });
+      }
+      tick();
+      var timer = setInterval(tick, intervalMs || 25000);
+      return function unsub(){ stopped = true; clearInterval(timer); };
+    }
+    function pollDoc(url, cb, errCb, intervalMs){
+      var stopped = false;
+      function tick(){
+        if (stopped) return;
+        fetch(url).then(function(r){ if (!r.ok) throw new Error('bad status'); return r.json(); })
+          .then(function(obj){
+            var exists = !!(obj && Object.keys(obj).length);
+            cb({ exists: exists, data: function(){ return obj; } });
+          })
+          .catch(function(err){ if (errCb) errCb(err); });
+      }
+      tick();
+      var timer = setInterval(tick, intervalMs || 30000);
+      return function unsub(){ stopped = true; clearInterval(timer); };
+    }
+    var COLLECTION_URLS = { games: '/api/games', changelog: '/api/changelog', asks: '/api/asks' };
+    var DOC_URLS = { 'control/status': '/api/status', 'fan/uga': '/api/uga' };
+    return {
+      collection: function(name){
+        var api = {
+          orderBy: function(){ return api; },
+          limit: function(){ return api; },
+          onSnapshot: function(cb, errCb){
+            return pollCollection(COLLECTION_URLS[name] || ('/api/' + name), cb, errCb, name === 'games' ? 20000 : 25000);
+          },
+          add: function(){
+            // The original artifact used this as a fire-and-forget queue
+            // write; our backend's POST routes do the real work (and the
+            // Firestore write) synchronously, so this is an intentional no-op.
+            return Promise.resolve();
+          }
+        };
+        return api;
+      },
+      doc: function(path){
+        return {
+          onSnapshot: function(cb, errCb){
+            var url = DOC_URLS[path];
+            if (!url){ if (errCb) errCb(new Error('unknown doc: ' + path)); return function(){}; }
+            return pollDoc(url, cb, errCb, 30000);
+          }
+        };
+      }
+    };
+  }
+
+  function initCapabilities(){
+    renderGamesGrid(GAMES_FALLBACK, GAMES_FALLBACK.length + ' games tracked · connecting to live board…');
+    renderUga(UGA_FALLBACK);
+
+    dbCap = makeDbShim();
+    subscribeGames();
+    subscribeUga();
+    subscribeStatus();
+    subscribeChangelog();
+    subscribeAsks();
+    // sampleCap / commentsCap intentionally stay null - per-pick chat and
+    // comment-based pings aren't wired up in this deployment; the page's
+    // own existing fallback messaging ("not available in this view") covers it.
+  }
+
+  function start(){
+    renderSlate();
+    renderCards();
+    renderResearchList();
+    renderFutures();
+    document.getElementById('bankroll-input').value = loadBankroll();
+    refreshAllRows();
+    wireEvents();
+    initCapabilities();
+  }
+
+  if (window.claude && window.claude.hot && window.claude.hot.ready){
+    window.claude.hot.ready(start);
+  } else {
+    start();
+  }
+})();
 </script>
-</body>
-</html>
+
+</body></html>

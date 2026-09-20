@@ -35,12 +35,15 @@ function requireLogin(req, res, next) {
       return next();
     }
   }
-  res.set('WWW-Authenticate', 'Basic realm="Cover Sheet"');
+  res.set('WWW-Authenticate', 'Basic realm="College Football App"');
   return res.status(401).send('Login required.');
 }
 
 // ---------------------------------------------------------------------------
-// Public read routes - Cover Sheet data, no login required.
+// Public read routes - board data, no login required. Field names/shapes
+// here match what public/index.html (the ported artifact) expects, not an
+// independently designed API - see that file's GAMES_FALLBACK/UGA_FALLBACK
+// for the canonical shapes.
 // ---------------------------------------------------------------------------
 app.get('/api/games', async (req, res) => {
   try {
@@ -54,7 +57,7 @@ app.get('/api/games', async (req, res) => {
 
 app.get('/api/asks', async (req, res) => {
   try {
-    const snap = await db.collection('asks').orderBy('createdAt', 'desc').limit(50).get();
+    const snap = await db.collection('asks').orderBy('askedAt', 'desc').limit(50).get();
     res.json(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
   } catch (err) {
     console.error('GET /api/asks', err);
@@ -64,7 +67,7 @@ app.get('/api/asks', async (req, res) => {
 
 app.get('/api/changelog', async (req, res) => {
   try {
-    const snap = await db.collection('changelog').orderBy('createdAt', 'desc').limit(50).get();
+    const snap = await db.collection('changelog').orderBy('changedAt', 'desc').limit(50).get();
     res.json(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
   } catch (err) {
     console.error('GET /api/changelog', err);
@@ -74,8 +77,8 @@ app.get('/api/changelog', async (req, res) => {
 
 app.get('/api/uga', async (req, res) => {
   try {
-    const snap = await db.collection('uga').orderBy('createdAt', 'desc').limit(50).get();
-    res.json(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    const doc = await db.collection('fan').doc('uga').get();
+    res.json(doc.exists ? doc.data() : {});
   } catch (err) {
     console.error('GET /api/uga', err);
     res.status(500).json({ error: 'Failed to load My Dawgs content.' });
@@ -84,7 +87,7 @@ app.get('/api/uga', async (req, res) => {
 
 app.get('/api/status', async (req, res) => {
   try {
-    const doc = await db.collection('meta').doc('status').get();
+    const doc = await db.collection('control').doc('status').get();
     res.json(doc.exists ? doc.data() : {});
   } catch (err) {
     console.error('GET /api/status', err);
@@ -114,63 +117,139 @@ async function runResearch({ prompt, systemPrompt }) {
   return textBlocks.map((b) => b.text).join('\n\n');
 }
 
-app.post('/api/research/refresh', requireLogin, async (req, res) => {
+// Same as runResearch, but asks for (and parses) a single JSON object back -
+// used by the two routes below that need structured game-board updates
+// rather than free text.
+async function runStructuredResearch({ prompt, systemPrompt }) {
+  const response = await anthropic.messages.create({
+    model: 'claude-sonnet-5',
+    max_tokens: 3072,
+    system: systemPrompt,
+    tools: [
+      {
+        type: 'web_search_20260209',
+        name: 'web_search',
+        max_uses: 5,
+      },
+    ],
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const textBlocks = response.content.filter((b) => b.type === 'text');
+  const text = textBlocks.map((b) => b.text).join('\n\n');
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) {
+    throw new Error('Model did not return a JSON object.');
+  }
+  return JSON.parse(match[0]);
+}
+
+app.post('/api/research/custom', requireLogin, async (req, res) => {
   try {
-    const { gameId, matchup } = req.body || {};
-    if (!gameId || !matchup) {
-      return res.status(400).json({ error: 'gameId and matchup are required.' });
+    const { question } = req.body || {};
+    if (!question) {
+      return res.status(400).json({ error: 'question is required.' });
     }
-    const text = await runResearch({
+    const answer = await runResearch({
       systemPrompt:
-        'You are a college football betting research assistant. Give a concise, current, ' +
-        'factual research summary for the given matchup: injuries, line movement, recent form, ' +
-        'weather if relevant, and any other betting-relevant news. Cite what you find via web search. ' +
-        'Never invent a score, injury, or line - if you cannot verify something, say so.',
-      prompt: `Research this matchup for betting purposes: ${matchup}`,
+        'You are a college football betting research assistant inside College Football App. Answer the ' +
+        "user's question using current, verifiable information from web search - it might name a specific " +
+        'game, ask for a general betting recommendation, or be a general question. Be specific and direct, ' +
+        'not generic. Never invent a score, injury, or line - if you cannot verify something, say so.',
+      prompt: question,
     });
 
-    const docRef = await db.collection('asks').add({
-      gameId,
-      matchup,
-      type: 'refresh',
-      answer: text,
-      createdAt: Firestore.FieldValue.serverTimestamp(),
+    const askedAt = new Date().toISOString();
+    await db.collection('asks').add({
+      query: question,
+      askedAt,
+      answeredAt: askedAt,
+      status: 'answered',
+      answer,
+      relatedGameId: null,
     });
 
-    res.json({ id: docRef.id, answer: text });
+    res.json({ answer });
   } catch (err) {
-    console.error('POST /api/research/refresh', err);
+    console.error('POST /api/research/custom', err);
     res.status(500).json({ error: 'Research request failed.' });
   }
 });
 
-app.post('/api/research/custom', requireLogin, async (req, res) => {
+app.post('/api/research/add-game', requireLogin, async (req, res) => {
   try {
-    const { question, gameId, matchup } = req.body || {};
-    if (!question) {
-      return res.status(400).json({ error: 'question is required.' });
+    const { query } = req.body || {};
+    if (!query) {
+      return res.status(400).json({ error: 'query is required.' });
     }
-    const text = await runResearch({
+    const data = await runStructuredResearch({
       systemPrompt:
-        'You are a college football betting research assistant. Answer the user\'s question ' +
-        'using current, verifiable information from web search. Never invent a score, injury, ' +
-        'or line - if you cannot verify something, say so.',
-      prompt: matchup ? `Regarding ${matchup}: ${question}` : question,
+        'You are a college football betting research assistant. Research the given team or matchup using ' +
+        'web search for the current DraftKings-market line, injuries, and storylines. Respond with ONLY a ' +
+        'single JSON object (no prose, no markdown fences) with these exact keys: {"id": "short-kebab-id", ' +
+        '"label": "Team A at Team B", "home": "Team B", "away": "Team A", "kickoff": "Day H:MMp ET · Network", ' +
+        '"tag": "top25 or interesting", "ranked": "e.g. #5 Team A (or empty string)", "market": "spread/total ' +
+        'summary", "pick": "e.g. Team A -3.5 (empty string if passing)", "pickConfidence": 1-4, "summary": ' +
+        '"1-2 sentence summary", "why": "fuller reasoning paragraph", "injuryNote": "or empty string", ' +
+        '"pass": true or false, "passReason": "if pass, why (else empty string)"}. Never invent a score, ' +
+        'injury, or line - if you cannot verify something, omit it or say so in the text fields.',
+      prompt: `Research this team or matchup for the tracked games board: ${query}`,
     });
 
-    const docRef = await db.collection('asks').add({
-      gameId: gameId || null,
-      matchup: matchup || null,
-      type: 'custom',
-      question,
-      answer: text,
-      createdAt: Firestore.FieldValue.serverTimestamp(),
+    data.id = data.id || query.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40) || `game-${Date.now()}`;
+    data.lastChecked = new Date().toISOString();
+
+    await db.collection('games').doc(data.id).set(data, { merge: true });
+    await db.collection('changelog').add({
+      gameId: data.id,
+      changedAt: new Date().toISOString(),
+      note: `Added ${data.label || query} to tracked games`,
     });
 
-    res.json({ id: docRef.id, answer: text });
+    res.json({ id: data.id, game: data });
   } catch (err) {
-    console.error('POST /api/research/custom', err);
-    res.status(500).json({ error: 'Research request failed.' });
+    console.error('POST /api/research/add-game', err);
+    res.status(500).json({ error: 'Could not research and add that game.' });
+  }
+});
+
+app.post('/api/research/refresh-board', requireLogin, async (req, res) => {
+  try {
+    const snap = await db.collection('games').limit(15).get();
+    const games = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    const data = await runStructuredResearch({
+      systemPrompt:
+        'You are a college football betting research assistant reviewing an existing tracked-games board. ' +
+        'For EACH game given, use web search to check current injuries, line movement, and storylines, and ' +
+        'decide if anything materially changed since it was last checked. Respond with ONLY a single JSON ' +
+        'object (no prose, no markdown fences): {"updates": [{"id": "<matching id>", "market": "...", ' +
+        '"pick": "...", "pickConfidence": 1-4, "summary": "...", "why": "...", "injuryNote": "...", ' +
+        '"pass": true or false, "passReason": "..."}], "summary": "one sentence describing what changed ' +
+        'overall"}. Only include a game in "updates" if something genuinely changed - do not rewrite games ' +
+        'with nothing new. Never invent a score, injury, or line.',
+      prompt: `Current tracked games:\n${JSON.stringify(games, null, 2)}`,
+    });
+
+    const updates = Array.isArray(data.updates) ? data.updates : [];
+    const batch = db.batch();
+    const now = new Date().toISOString();
+    updates.forEach((u) => {
+      if (!u || !u.id) return;
+      batch.set(db.collection('games').doc(u.id), { ...u, lastChecked: now }, { merge: true });
+      batch.set(db.collection('changelog').doc(), {
+        gameId: u.id,
+        changedAt: now,
+        note: u.summary || 'Research update',
+      });
+    });
+    batch.set(db.collection('control').doc('status'), { lastRunAt: now }, { merge: true });
+    await batch.commit();
+
+    res.json({ summary: data.summary || `Reviewed ${games.length} games.`, updated: updates.length });
+  } catch (err) {
+    console.error('POST /api/research/refresh-board', err);
+    res.status(500).json({ error: 'Refresh failed.' });
   }
 });
 
@@ -182,5 +261,5 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Cover Sheet listening on :${PORT}`);
+  console.log(`College Football App listening on :${PORT}`);
 });
