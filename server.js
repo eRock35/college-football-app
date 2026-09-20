@@ -39,6 +39,84 @@ function requireLogin(req, res, next) {
   return res.status(401).send('Login required.');
 }
 
+// Same credentials as requireLogin, but a 401 here deliberately omits the
+// WWW-Authenticate header. The slip routes are polled on page load, and with
+// that header every anonymous visitor would get a native browser login popup
+// before they'd even seen the page. Without it the fetch just fails and the
+// page falls back to localStorage.
+function requireLoginSilent(req, res, next) {
+  if (!SITE_LOGIN_USERNAME || !SITE_LOGIN_PASSWORD) {
+    return res.status(500).json({ error: 'Server login is not configured.' });
+  }
+  const header = req.headers.authorization || '';
+  const [scheme, encoded] = header.split(' ');
+  if (scheme === 'Basic' && encoded) {
+    const decoded = Buffer.from(encoded, 'base64').toString('utf8');
+    const sep = decoded.indexOf(':');
+    if (decoded.slice(0, sep) === SITE_LOGIN_USERNAME && decoded.slice(sep + 1) === SITE_LOGIN_PASSWORD) {
+      return next();
+    }
+  }
+  return res.status(401).json({ error: 'not signed in' });
+}
+
+// A college football week runs Tuesday through Monday - games land Thu-Sat
+// with a Sunday/Monday tail, so Tuesday is the quiet boundary to roll on.
+// Anchored to US Eastern regardless of where the viewer is.
+function currentWeekKey() {
+  const et = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  et.setDate(et.getDate() - ((et.getDay() - 2 + 7) % 7));
+  return et.toISOString().slice(0, 10);
+}
+
+// Hitting this with credentials is what triggers the browser's login prompt,
+// so the "sync across devices" button has something to authenticate against.
+app.get('/api/login', requireLogin, (req, res) => {
+  res.json({ ok: true, weekKey: currentWeekKey() });
+});
+
+// Cross-device slip state. Gated: this app is public, and an ungated write
+// route would let any visitor scribble on the slip.
+app.get('/api/slip', requireLoginSilent, async (req, res) => {
+  try {
+    const doc = await db.collection('user-state').doc('slip').get();
+    const week = currentWeekKey();
+    const data = doc.exists ? doc.data() : null;
+    // Last week's slip is stale by definition - don't hand it back.
+    if (!data || data.weekKey !== week) {
+      return res.json({ weekKey: week, slip: {}, customPicks: {}, bankroll: '' });
+    }
+    res.json({
+      weekKey: week,
+      slip: data.slip || {},
+      customPicks: data.customPicks || {},
+      bankroll: data.bankroll || '',
+      updatedAt: data.updatedAt || null,
+    });
+  } catch (err) {
+    console.error('GET /api/slip', err);
+    res.status(500).json({ error: 'Failed to load slip.' });
+  }
+});
+
+app.put('/api/slip', requireLoginSilent, async (req, res) => {
+  try {
+    const { slip, customPicks, bankroll } = req.body || {};
+    const week = currentWeekKey();
+    await db.collection('user-state').doc('slip').set({
+      slip: slip && typeof slip === 'object' ? slip : {},
+      customPicks: customPicks && typeof customPicks === 'object' ? customPicks : {},
+      bankroll: typeof bankroll === 'string' ? bankroll.slice(0, 32) : '',
+      weekKey: week,
+      updatedAt: new Date().toISOString(),
+    });
+    res.json({ ok: true, weekKey: week });
+  } catch (err) {
+    console.error('PUT /api/slip', err);
+    res.status(500).json({ error: 'Failed to save slip.' });
+  }
+});
+
 // ---------------------------------------------------------------------------
 // Public read routes - board data, no login required. Field names/shapes
 // here match what public/index.html (the ported artifact) expects, not an
@@ -163,7 +241,7 @@ app.post('/api/chat', requireLogin, async (req, res) => {
     }
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-5',
+      model: 'claude-haiku-4-5',
       max_tokens: 1024,
       messages: clean,
     });

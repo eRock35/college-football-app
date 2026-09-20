@@ -518,6 +518,9 @@
   <div id="slip-body"></div>
   <div id="slip-review"></div>
   <button class="reset-btn" id="reset-slip">Clear my slip</button>
+  <button class="text-toggle-btn" id="slip-sync-btn" type="button">Sign in to sync across devices</button>
+  <div class="copy-status" id="slip-sync-status"></div>
+  <p class="muted" style="margin-top:10px; font-size:.78rem; color:var(--text-faint);">Your slip clears automatically each Tuesday when the new football week starts.</p>
 </section>
 
 <section role="tabpanel" id="panel-uga" aria-labelledby="tab-uga" hidden>
@@ -760,6 +763,100 @@
   }
 
   // ---------- storage ----------
+  // A college football week runs Tuesday->Monday (games Thu-Sat with a
+  // Sun/Mon tail), so Tuesday is the quiet point to roll the slip over.
+  // Anything stamped with an older week is last week's bets - drop it.
+  var WEEK_KEY_STORE = 'cfb-week-key-v1';
+  function currentWeekKey(){
+    var d = new Date();
+    d.setDate(d.getDate() - ((d.getDay() - 2 + 7) % 7));
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function expireStaleWeek(){
+    try{
+      var stored = localStorage.getItem(WEEK_KEY_STORE);
+      var now = currentWeekKey();
+      if (stored !== now){
+        localStorage.removeItem('cover-sheet-slip-v1');
+        localStorage.removeItem('cover-sheet-custom-picks-v1');
+        localStorage.removeItem('cover-sheet-bankroll-v1');
+        localStorage.setItem(WEEK_KEY_STORE, now);
+      }
+    }catch(e){}
+  }
+  expireStaleWeek();
+
+  // ---------- cross-device sync ----------
+  // Slip state lives on the server too, behind the same login that gates
+  // research. Signed in: the slip follows you between phone and laptop.
+  // Not signed in: everything still works, just locally on this device.
+  var syncEnabled = false;
+  var syncTimer = null;
+  function setSyncStatus(msg, cls){
+    var el = document.getElementById('slip-sync-status');
+    if (el){ el.textContent = msg; el.className = 'copy-status' + (cls ? ' ' + cls : ''); }
+    var btn = document.getElementById('slip-sync-btn');
+    if (btn) btn.hidden = syncEnabled;
+  }
+  function pushSlipState(){
+    if (!syncEnabled) return;
+    if (syncTimer) clearTimeout(syncTimer);
+    // Debounced: stake fields fire on every keystroke.
+    syncTimer = setTimeout(function(){
+      fetch('/api/slip', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          slip: slipState,
+          customPicks: customPicks,
+          bankroll: (document.getElementById('bankroll-input') || {}).value || ''
+        })
+      }).then(function(r){
+        if (r.status === 401){ syncEnabled = false; setSyncStatus('Signed out — saving on this device only'); return; }
+        if (r.ok) setSyncStatus('Synced');
+      }).catch(function(){ setSyncStatus('Sync failed — saved on this device', 'error'); });
+    }, 1200);
+  }
+  function adoptServerSlip(d){
+    if (!d) return;
+    slipState = d.slip || {};
+    customPicks = d.customPicks || {};
+    try{
+      localStorage.setItem('cover-sheet-slip-v1', JSON.stringify(slipState));
+      localStorage.setItem('cover-sheet-custom-picks-v1', JSON.stringify(customPicks));
+      if (typeof d.bankroll === 'string') localStorage.setItem('cover-sheet-bankroll-v1', d.bankroll);
+    }catch(e){}
+    var bankrollInput = document.getElementById('bankroll-input');
+    if (bankrollInput && typeof d.bankroll === 'string') bankrollInput.value = d.bankroll;
+    renderCards();
+    refreshAllRows();
+  }
+  function initSlipSync(){
+    fetch('/api/slip').then(function(r){
+      if (!r.ok) throw new Error('not signed in');
+      return r.json();
+    }).then(function(d){
+      syncEnabled = true;
+      adoptServerSlip(d);
+      setSyncStatus('Synced across your devices');
+    }).catch(function(){
+      syncEnabled = false;
+      setSyncStatus('');
+    });
+  }
+  function signInForSync(){
+    // Hitting the prompting route is what makes the browser ask for
+    // credentials; after that the silent slip routes start returning 200.
+    fetch('/api/login').then(function(r){
+      if (!r.ok) throw new Error('declined');
+      setSyncStatus('Signed in — syncing…');
+      initSlipSync();
+      pushSlipState();
+    }).catch(function(){
+      setSyncStatus('Sign-in cancelled — saving on this device only', 'error');
+    });
+  }
+
   var STORE_KEY = 'cover-sheet-slip-v1';
   function loadSlip(){
     try{
@@ -769,6 +866,7 @@
   }
   function saveSlip(state){
     try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+    pushSlipState();
   }
   var slipState = loadSlip();
 
@@ -782,6 +880,7 @@
   }
   function saveCustomPicks(){
     try{ localStorage.setItem(CUSTOM_PICKS_KEY, JSON.stringify(customPicks)); }catch(e){}
+    pushSlipState();
   }
   var customPicks = loadCustomPicks();
 
@@ -849,6 +948,7 @@
   }
   function saveBankrollValue(v){
     try{ localStorage.setItem(BANKROLL_KEY, v); }catch(e){}
+    pushSlipState();
   }
   function getBankroll(){
     var input = document.getElementById('bankroll-input');
@@ -2013,6 +2113,9 @@
       }
     });
 
+    var syncBtn = document.getElementById('slip-sync-btn');
+    if (syncBtn) syncBtn.addEventListener('click', signInForSync);
+
     document.getElementById('reset-slip').addEventListener('click', function(){
       slipState = {};
       saveSlip(slipState);
@@ -2168,6 +2271,7 @@
   }
 
   function initCapabilities(){
+    initSlipSync();
     renderGamesGrid(GAMES_FALLBACK, GAMES_FALLBACK.length + ' games tracked · connecting to live board…');
     renderUga(UGA_FALLBACK);
 

@@ -71,6 +71,8 @@ going forward gets its own repo; this one is just College Football App.
   - `fan/uga` — single doc, My Dawgs tab content
   - `control/status` — single doc, `lastRunAt` (drives the "last refreshed"
     line in the header)
+  - `user-state/slip` — single doc: the cross-device slip (`slip`,
+    `customPicks`, `bankroll`, `weekKey`, `updatedAt`)
 
 ## Secrets (Secret Manager)
 
@@ -85,10 +87,33 @@ secret-env-var mechanism: `SITE_LOGIN_USERNAME`, `SITE_LOGIN_PASSWORD`,
 
 ## Auth model
 
-- Public — anyone can view games, build a slip, etc. with no login. Only the
-  routes that call the Anthropic API (`/api/chat`, `/api/research/custom`,
-  `/api/research/add-game`, `/api/research/refresh-board`) are gated behind
-  HTTP Basic Auth.
+- Public — anyone can view games, build a slip, etc. with no login. Gated
+  behind HTTP Basic Auth: the routes that call the Anthropic API
+  (`/api/chat`, `/api/research/custom`, `/api/research/add-game`,
+  `/api/research/refresh-board`) plus the slip-sync routes (`/api/slip`
+  GET/PUT, `/api/login`).
+- **Two gate middlewares, deliberately.** `requireLogin` sends a
+  `WWW-Authenticate` header, so a 401 makes the browser show its native login
+  prompt — right for an action the user just clicked. `requireLoginSilent`
+  omits it, and is used on `/api/slip`, which is fetched on page load: with
+  the header, every anonymous visitor would get a login popup before seeing
+  the page. `/api/login` exists purely so the "Sign in to sync" button has a
+  prompting route to hit; once the browser has cached the credentials it
+  sends them to the silent routes automatically.
+
+## Slip state
+
+The slip, custom picks and bankroll live in `localStorage` **and**, when
+signed in, in `user-state/slip`. Not signed in, everything still works
+locally — sync is additive, never a prerequisite.
+
+Both layers expire weekly. A college football week is treated as
+Tuesday→Monday (games land Thu–Sat with a Sunday/Monday tail, so Tuesday is
+the quiet boundary); state carrying an older `weekKey` is dropped rather than
+shown. The client computes the key in local time and the server in US
+Eastern, so they can disagree for a few hours around the rollover — harmless
+at week granularity, but don't tighten this to day granularity without
+reconciling the two.
 - Mechanism: plain HTTP Basic Auth on specific Express routes (not a global
   gate, not cookies/sessions) — the browser's native credential caching acts
   as the "login". See `requireLogin` middleware in `server.js`.
@@ -114,11 +139,26 @@ approach, confirmed reachable through the sandbox's egress proxy:
 - `server.js` — Express app. Public GET routes (`/api/games`, `/api/asks`,
   `/api/changelog`, `/api/uga`, `/api/status`); gated POST routes
   (`/api/chat`, `/api/research/custom`, `/api/research/add-game`,
-  `/api/research/refresh-board`). The research routes ask the model for a JSON
-  object and parse it — see `runStructuredResearch`. `/api/chat` deliberately
-  passes **no tools**: the prompt the page sends states the model has no live
-  internet access, so handing it web search would contradict its own
-  instructions.
+  `/api/research/refresh-board`), plus slip sync (`/api/slip`, `/api/login`).
+  The research routes ask the model for a JSON object and parse it — see
+  `runStructuredResearch`. `/api/chat` deliberately passes **no tools**: the
+  prompt the page sends states the model has no live internet access, so
+  handing it web search would contradict its own instructions.
+
+## Models
+
+Chosen by the user after pricing them out, not defaults:
+- **Research routes → `claude-sonnet-5`** ($2/$10 per MTok). This is the
+  *cheapest* model that supports `web_search_20260209`; Haiku 4.5 is cheaper
+  but only supports the older basic web-search variant, so there is no cost
+  saving available on these routes without downgrading the tool.
+- **`/api/chat` → `claude-haiku-4-5`** ($1/$5). No tools on this route, so
+  Haiku is eligible, and it's discussing research notes already on the page
+  rather than reasoning from scratch.
+
+Note Haiku 4.5 has a 200K context (not 1M) and takes `budget_tokens` rather
+than adaptive thinking — neither matters here (chat history is capped at 20
+messages and no thinking config is set), but they would if this route grows.
 - `public/index.html` — a **direct port of the Claude Artifact**, not a
   rewrite. Six tabs: Today's Card, All Games, Research, Futures Watch, My
   Slip, My Dawgs. Only the Artifact-capability wiring was changed:
