@@ -398,7 +398,7 @@ async function runStructuredResearch({ prompt, systemPrompt }) {
 // sends tells the model it has no live internet and to say so rather than
 // guess at anything that may have moved. Giving it search here would
 // contradict its own instructions.
-app.post('/api/chat', requireResearch, async (req, res) => {
+app.post('/api/chat', requireResearch, identity.requireBudget, async (req, res) => {
   try {
     const { messages } = req.body || {};
     if (!Array.isArray(messages) || !messages.length) {
@@ -434,7 +434,7 @@ app.post('/api/chat', requireResearch, async (req, res) => {
   }
 });
 
-app.post('/api/research/custom', requireResearch, async (req, res) => {
+app.post('/api/research/custom', requireResearch, identity.requireBudget, async (req, res) => {
   try {
     const { question } = req.body || {};
     if (!question) {
@@ -466,7 +466,7 @@ app.post('/api/research/custom', requireResearch, async (req, res) => {
   }
 });
 
-app.post('/api/research/add-game', requireResearch, async (req, res) => {
+app.post('/api/research/add-game', requireResearch, identity.requireBudget, async (req, res) => {
   try {
     const { query } = req.body || {};
     if (!query) {
