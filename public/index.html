@@ -2167,9 +2167,32 @@
     subscribeStatus();
     subscribeChangelog();
     subscribeAsks();
-    // sampleCap / commentsCap intentionally stay null - per-pick chat and
-    // comment-based pings aren't wired up in this deployment; the page's
-    // own existing fallback messaging ("not available in this view") covers it.
+
+    // Per-game chat, backed by this app's own gated /api/chat route.
+    // Matches the shape sendChat() expects from the Artifact "sample"
+    // capability: (messages, {onText}) -> Promise<{text}>. There's no
+    // streaming on our backend, so onText fires once with the full answer.
+    // commentsCap stays null - nothing calls it any more.
+    sampleCap = function(messages, opts){
+      opts = opts || {};
+      return fetch('/api/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({messages: messages})
+      }).then(function(r){
+        if (r.status === 401){ var e = new Error('login'); e.code = 'not_granted'; throw e; }
+        if (r.status === 429){ var e429 = new Error('rate'); e429.code = 'rate_limited'; throw e429; }
+        return r.json().then(function(d){
+          if (r.status === 422 || d.error === 'refused'){ var e422 = new Error('refused'); e422.code = 'refused'; throw e422; }
+          if (!r.ok){ var e2 = new Error(d.error || 'failed'); e2.code = 'error'; throw e2; }
+          return d;
+        });
+      }).then(function(d){
+        var text = d.text || '';
+        if (opts.onText) opts.onText({text: text});
+        return {text: text};
+      });
+    };
   }
 
   function start(){

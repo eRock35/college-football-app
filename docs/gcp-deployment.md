@@ -86,7 +86,7 @@ secret-env-var mechanism: `SITE_LOGIN_USERNAME`, `SITE_LOGIN_PASSWORD`,
 ## Auth model
 
 - Public — anyone can view games, build a slip, etc. with no login. Only the
-  routes that call the Anthropic API (`/api/research/custom`,
+  routes that call the Anthropic API (`/api/chat`, `/api/research/custom`,
   `/api/research/add-game`, `/api/research/refresh-board`) are gated behind
   HTTP Basic Auth.
 - Mechanism: plain HTTP Basic Auth on specific Express routes (not a global
@@ -113,9 +113,12 @@ approach, confirmed reachable through the sandbox's egress proxy:
 
 - `server.js` — Express app. Public GET routes (`/api/games`, `/api/asks`,
   `/api/changelog`, `/api/uga`, `/api/status`); gated POST routes
-  (`/api/research/custom`, `/api/research/add-game`,
-  `/api/research/refresh-board`). The last two ask the model for a JSON
-  object and parse it — see `runStructuredResearch`.
+  (`/api/chat`, `/api/research/custom`, `/api/research/add-game`,
+  `/api/research/refresh-board`). The research routes ask the model for a JSON
+  object and parse it — see `runStructuredResearch`. `/api/chat` deliberately
+  passes **no tools**: the prompt the page sends states the model has no live
+  internet access, so handing it web search would contradict its own
+  instructions.
 - `public/index.html` — a **direct port of the Claude Artifact**, not a
   rewrite. Six tabs: Today's Card, All Games, Research, Futures Watch, My
   Slip, My Dawgs. Only the Artifact-capability wiring was changed:
@@ -125,9 +128,10 @@ approach, confirmed reachable through the sandbox's egress proxy:
     changes.
   - `window.claude.use('comments')` (the original "ping a live Claude session
     to do research" path) → direct `fetch()` calls to the gated routes above.
-  - `window.claude.use('sample')` (per-pick chat) → **intentionally left
-    unwired**. The page's own "not available in this view" fallback handles
-    it. This is the one deferred feature from the streamlined-v1 scope.
+  - `window.claude.use('sample')` (per-game chat) → a `fetch()` shim with the
+    same `(messages, {onText}) -> Promise<{text}>` shape `sendChat()` expects,
+    backed by `/api/chat`. No streaming on our side, so `onText` fires once
+    with the whole answer. Chat history stays in `localStorage` per game.
 - `Dockerfile` — `node:20-slim`, `npm install --omit=dev`, `node server.js` on
   `$PORT` (defaults 8080, matches Cloud Run's convention).
 
@@ -186,8 +190,6 @@ stakes than it already has.
 - **Runtime service account** — see "Known compromise" above.
 - Cloud Scheduler job(s) hitting `/api/research/refresh-board` on a cadence,
   replicating the old CCR-trigger cadence from the Artifact version.
-- Per-pick chat (the unwired `sample` capability) — the one deferred feature
-  from the original Artifact.
 - The `games` data is seeded from the Artifact's Sep 2026 snapshot. It only
   moves forward when someone hits "Refresh research" or adds a game, until
   the Cloud Scheduler job above exists.

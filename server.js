@@ -144,6 +144,46 @@ async function runStructuredResearch({ prompt, systemPrompt }) {
   return JSON.parse(match[0]);
 }
 
+// Per-game chat. Deliberately has NO web_search tool: the prompt the page
+// sends tells the model it has no live internet and to say so rather than
+// guess at anything that may have moved. Giving it search here would
+// contradict its own instructions.
+app.post('/api/chat', requireLogin, async (req, res) => {
+  try {
+    const { messages } = req.body || {};
+    if (!Array.isArray(messages) || !messages.length) {
+      return res.status(400).json({ error: 'messages array is required.' });
+    }
+    const clean = messages
+      .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+      .map((m) => ({ role: m.role, content: m.content.slice(0, 8000) }))
+      .slice(-20);
+    if (!clean.length || clean[0].role !== 'user') {
+      return res.status(400).json({ error: 'conversation must start with a user message.' });
+    }
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-5',
+      max_tokens: 1024,
+      messages: clean,
+    });
+
+    const text = response.content
+      .filter((b) => b.type === 'text')
+      .map((b) => b.text)
+      .join('\n\n');
+
+    if (response.stop_reason === 'refusal') {
+      return res.status(422).json({ error: 'refused' });
+    }
+    res.json({ text });
+  } catch (err) {
+    console.error('POST /api/chat', err);
+    const status = err && err.status === 429 ? 429 : 500;
+    res.status(status).json({ error: status === 429 ? 'rate_limited' : 'Chat request failed.' });
+  }
+});
+
 app.post('/api/research/custom', requireLogin, async (req, res) => {
   try {
     const { question } = req.body || {};
