@@ -138,6 +138,39 @@ box at someone who has no password to type and never will.
   prompting route to hit; once the browser has cached the credentials it
   sends them to the silent routes automatically.
 
+### The owner password can be changed without a deploy
+
+`SITE_LOGIN_PASSWORD` came from Secret Manager and nothing else read it, so
+changing it meant a new secret version plus a redeploy. In practice that meant
+it never changed, and "I forgot it" meant asking whoever holds deploy access.
+
+`sitepass.js` (a copy of `eriks-projects/shared/sitepass.js` — fix the shared
+one first, then re-copy) keeps a scrypt hash in `control/site-password` and
+prefers it over the env var. The env var stays as the **bootstrap**: it is
+what works on a fresh deploy, and what still works if the stored record is
+ever cleared. The plaintext is never written anywhere.
+
+Who may change it is narrower here than in the single-account apps, and the
+reason matters. This app has many accounts but exactly **one** site password,
+and it is the owner's — it gates research spending. So the proof is:
+
+- the **current password**, or
+- a session that was proved by **Face ID** *and* belongs to an address in
+  `RESEARCH_ALLOWED_EMAILS`.
+
+An ordinary user's passkey therefore cannot touch it, and neither can a
+password-proved session on its own — otherwise a stolen cookie could replace
+the password and take the account for good. `/api/auth/status` reports `via`
+(`password` | `passkey`) so the account sheet knows whether to ask for the
+current password; the server enforces all of this regardless.
+
+**Every password check is async as a result, and that is the trap in this
+code.** `if (hasSession(req) || passwordOk(req))` is always true once
+`passwordOk` returns a Promise, and `if (!adminPasswordOk(...))` is always
+false. Each call site awaits explicitly — including `requireResearch`, the
+gate on everything that spends Anthropic tokens. If you add a gate here, await
+it.
+
 ## Slip state
 
 The slip, custom picks and bankroll live in `localStorage` **and**, when
