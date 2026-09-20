@@ -556,17 +556,30 @@ app.post('/api/research/batch-collect', requireLoginOrCron, async (req, res) => 
     const writer = db.batch();
     let updated = 0;
     let failed = 0;
+    // A bare count says something broke but not what, and nothing here can read
+    // Cloud Logging (the deployer account gets 403 on every log view). Two runs
+    // in a row came back with exactly one failure, which is the signature of one
+    // game failing consistently rather than random flakiness - and there was no
+    // way to tell which. Record the id and the reason.
+    const failures = [];
+    const note = (id, why) => { failed += 1; failures.push(`${id}: ${why}`); };
 
     for await (const entry of await anthropic.messages.batches.results(batchId)) {
-      if (entry.result.type !== 'succeeded') { failed += 1; continue; }
+      if (entry.result.type !== 'succeeded') {
+        note(entry.custom_id, entry.result.type + (entry.result.error ? ` (${entry.result.error.type || 'error'})` : ''));
+        continue;
+      }
       const text = entry.result.message.content
         .filter((b) => b.type === 'text')
         .map((b) => b.text)
         .join('\n');
       const match = text.match(/\{[\s\S]*\}/);
-      if (!match) { failed += 1; continue; }
+      if (!match) {
+        note(entry.custom_id, `no JSON in ${text.length} chars (stop_reason: ${entry.result.message.stop_reason})`);
+        continue;
+      }
       let parsed;
-      try { parsed = JSON.parse(match[0]); } catch (e) { failed += 1; continue; }
+      try { parsed = JSON.parse(match[0]); } catch (e) { note(entry.custom_id, `unparseable JSON: ${e.message}`); continue; }
       if (parsed.changed === false) continue;
 
       delete parsed.changed;
@@ -580,10 +593,10 @@ app.post('/api/research/batch-collect', requireLoginOrCron, async (req, res) => 
     }
 
     writer.set(db.collection('control').doc('status'), { lastRunAt: now }, { merge: true });
-    writer.set(ref, { batchId, status: 'done', collectedAt: now, updated, failed }, { merge: true });
+    writer.set(ref, { batchId, status: 'done', collectedAt: now, updated, failed, failures }, { merge: true });
     await writer.commit();
 
-    res.json({ batchId, updated, failed });
+    res.json({ batchId, updated, failed, failures });
   } catch (err) {
     console.error('POST /api/research/batch-collect', err);
     res.status(500).json({ error: 'Batch collect failed.' });
