@@ -1066,7 +1066,9 @@
       '</article>';
     });
 
+    var cardDrafts = captureChatDrafts();
     list.innerHTML = html;
+    restoreChatDrafts(cardDrafts);
   }
 
   function searchAndAddCard(){
@@ -1554,6 +1556,35 @@
     applyGamesFilter();
   }
 
+  // Rebuilding a card list replaces its chat inputs with fresh empty ones.
+  // Carry any half-written message (and the caret) across the rebuild.
+  function captureChatDrafts(){
+    var state = {drafts: {}, activeId: null, sel: null};
+    var active = document.activeElement;
+    if (active && active.classList && active.classList.contains('chat-input')){
+      state.activeId = active.id;
+      try{ state.sel = [active.selectionStart, active.selectionEnd]; }catch(e){}
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('.chat-input'), function(inp){
+      if (inp.value) state.drafts[inp.id] = inp.value;
+    });
+    return state;
+  }
+  function restoreChatDrafts(state){
+    if (!state) return;
+    Object.keys(state.drafts).forEach(function(id){
+      var inp = document.getElementById(id);
+      if (inp) inp.value = state.drafts[id];
+    });
+    if (state.activeId){
+      var a = document.getElementById(state.activeId);
+      if (a){
+        a.focus();
+        if (state.sel){ try{ a.setSelectionRange(state.sel[0], state.sel[1]); }catch(e){} }
+      }
+    }
+  }
+
   function applyGamesFilter(){
     var grid = document.getElementById('games-grid');
     var emptyEl = document.getElementById('games-empty');
@@ -1567,8 +1598,10 @@
     if (matches.length){
       emptyEl.hidden = true;
       grid.hidden = false;
+      var drafts = captureChatDrafts();
       grid.innerHTML = matches.map(gameCardHtml).join('');
       matches.forEach(function(g){ renderChatLog(g.id); });
+      restoreChatDrafts(drafts);
     } else {
       grid.hidden = true;
       emptyEl.hidden = false;
@@ -2184,10 +2217,19 @@
       return unsub;
     }
 
+    // Only call back when the payload actually changed. A Firestore
+    // onSnapshot listener fires on change; a poller that fires every tick
+    // would rebuild the DOM on a timer - wiping whatever the user was
+    // typing into a chat box.
+    var lastSeen = {};
+
     function pollCollection(url, cb, errCb, intervalMs){
       return startPoller(url, intervalMs || 60000, function(){
         fetch(url).then(function(r){ if (!r.ok) throw new Error('bad status'); return r.json(); })
           .then(function(arr){
+            var fingerprint = JSON.stringify(arr);
+            if (lastSeen[url] === fingerprint) return;
+            lastSeen[url] = fingerprint;
             var docs = (arr || []).map(function(item){
               var id = item.id;
               var data = Object.assign({}, item);
@@ -2203,6 +2245,9 @@
       return startPoller(url, intervalMs || 120000, function(){
         fetch(url).then(function(r){ if (!r.ok) throw new Error('bad status'); return r.json(); })
           .then(function(obj){
+            var fingerprint = JSON.stringify(obj);
+            if (lastSeen[url] === fingerprint) return;
+            lastSeen[url] = fingerprint;
             var exists = !!(obj && Object.keys(obj).length);
             cb({ exists: exists, data: function(){ return obj; } });
           })
