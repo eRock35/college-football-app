@@ -839,9 +839,45 @@
     }).catch(function(){ return {}; });
   }
 
+  // WebAuthn has to be called from a live user gesture, and iOS Safari's
+  // activation window is a few seconds - a native password dialog consumes it
+  // outright. So the obvious shape (fetch the options, then call create() in
+  // the .then) fails on a phone with NotAllowedError, which surfaces as
+  // "Cancelled" even though the user never cancelled anything. Both flows
+  // below keep the create()/get() call on a gesture with the options already
+  // in hand: registration always takes a second tap, sign-in takes one and
+  // arms a retry only if the first attempt is refused.
+  var CHALLENGE_GRACE_MS = 4 * 60 * 1000; // the server holds them 5 minutes
+  var armedReg = null, armedRegAt = 0;
+  var armedLogin = null, armedLoginAt = 0;
+  // A second tap while a WebAuthn call is still outstanding gets rejected by
+  // the browser as a duplicate request, which would otherwise read as a plain
+  // failure and throw away a challenge that was still good.
+  var authBusy = false;
+
+  function armedFresh(at){ return !!at && (Date.now() - at) < CHALLENGE_GRACE_MS; }
+  function setBtnLabel(id, text){
+    var el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+  function disarmReg(){
+    armedReg = null; armedRegAt = 0;
+    setBtnLabel('passkey-setup-btn', 'Set up Face ID sign-in');
+  }
+  function disarmLogin(){
+    armedLogin = null; armedLoginAt = 0;
+    setBtnLabel('passkey-signin-btn', 'Sign in with Face ID');
+  }
+
   function registerPasskey(){
-    if (!passkeySupported()){ setAuthStatus('This browser doesn\u2019t support passkeys.', 'error'); return; }
-    setAuthStatus('Confirm your password, then Face ID\u2026');
+    if (!passkeySupported()){ setAuthStatus('This browser doesn’t support passkeys.', 'error'); return; }
+    // Second tap: the challenge is already here, so create() runs on this
+    // gesture rather than on one the password dialog already spent.
+    if (armedReg && armedFresh(armedRegAt)) return createPasskeyNow();
+    if (authBusy) return;
+    authBusy = true;
+    disarmReg();
+    setAuthStatus('Confirm your password…');
     // This route requires the password, so the browser prompts for it first -
     // otherwise anyone who found the URL could enrol their own passkey.
     fetch('/api/auth/passkey/register/options', {method: 'POST'})
@@ -850,8 +886,24 @@
         options.challenge = b64urlToBuf(options.challenge);
         options.user.id = b64urlToBuf(options.user.id);
         (options.excludeCredentials || []).forEach(function(c){ c.id = b64urlToBuf(c.id); });
-        return navigator.credentials.create({publicKey: options});
+        armedReg = options;
+        armedRegAt = Date.now();
+        authBusy = false;
+        setBtnLabel('passkey-setup-btn', 'Tap again for Face ID');
+        setAuthStatus('Password accepted — tap again to finish with Face ID.');
       })
+      .catch(function(){
+        authBusy = false;
+        disarmReg();
+        setAuthStatus('Couldn’t start Face ID setup — check your password and try again.', 'error');
+      });
+  }
+
+  function createPasskeyNow(){
+    if (authBusy) return;
+    authBusy = true;
+    setAuthStatus('Waiting for Face ID…');
+    return navigator.credentials.create({publicKey: armedReg})
       .then(function(cred){
         return fetch('/api/auth/passkey/register/verify', {
           method: 'POST',
@@ -871,27 +923,59 @@
       })
       .then(function(r){ return r.json().then(function(d){ if (!r.ok) throw new Error(d.error || 'failed'); return d; }); })
       .then(function(){
+        authBusy = false;
+        disarmReg();
         syncEnabled = true;
-        setAuthStatus('Face ID set up — you\u2019re signed in');
+        setAuthStatus('Face ID set up — you’re signed in');
         refreshAuthStatus();
         initSlipSync();
         pushSlipState();
       })
       .catch(function(err){
-        setAuthStatus(err && err.name === 'NotAllowedError' ? 'Cancelled.' : 'Couldn\u2019t set up Face ID \u2014 try again.', 'error');
+        authBusy = false;
+        // A refused or cancelled prompt keeps the armed challenge - it's good
+        // for a few more minutes, so another tap retries Face ID without
+        // making the user re-enter the password.
+        if (err && err.name === 'NotAllowedError' && armedFresh(armedRegAt)){
+          setBtnLabel('passkey-setup-btn', 'Tap again for Face ID');
+          setAuthStatus('Face ID didn’t complete — tap again.', 'error');
+          return;
+        }
+        disarmReg();
+        setAuthStatus('Couldn’t set up Face ID — try again.', 'error');
       });
   }
 
   function signInWithPasskey(){
-    if (!passkeySupported()){ setAuthStatus('This browser doesn\u2019t support passkeys.', 'error'); return; }
-    setAuthStatus('Waiting for Face ID\u2026');
+    if (!passkeySupported()){ setAuthStatus('This browser doesn’t support passkeys.', 'error'); return; }
+    if (armedLogin && armedFresh(armedLoginAt)) return getPasskeyNow();
+    if (authBusy) return;
+    authBusy = true;
+    disarmLogin();
+    setAuthStatus('Waiting for Face ID…');
+    // No password dialog on this path, so the one-tap flow usually stays
+    // inside the activation window; getPasskeyNow() arms a retry if it doesn't.
     fetch('/api/auth/passkey/login/options', {method: 'POST'})
       .then(function(r){ return r.json().then(function(d){ if (!r.ok) throw new Error(d.error || 'failed'); return d; }); })
       .then(function(options){
         options.challenge = b64urlToBuf(options.challenge);
         (options.allowCredentials || []).forEach(function(c){ c.id = b64urlToBuf(c.id); });
-        return navigator.credentials.get({publicKey: options});
+        armedLogin = options;
+        armedLoginAt = Date.now();
+        authBusy = false;
+        return getPasskeyNow();
       })
+      .catch(function(){
+        authBusy = false;
+        disarmLogin();
+        setAuthStatus('Face ID sign-in failed — try again.', 'error');
+      });
+  }
+
+  function getPasskeyNow(){
+    if (authBusy) return;
+    authBusy = true;
+    return navigator.credentials.get({publicKey: armedLogin})
       .then(function(cred){
         return fetch('/api/auth/passkey/login/verify', {
           method: 'POST',
@@ -912,13 +996,22 @@
       })
       .then(function(r){ return r.json().then(function(d){ if (!r.ok) throw new Error(d.error || 'failed'); return d; }); })
       .then(function(){
+        authBusy = false;
+        disarmLogin();
         syncEnabled = true;
         setAuthStatus('Signed in');
         refreshAuthStatus();
         initSlipSync();
       })
       .catch(function(err){
-        setAuthStatus(err && err.name === 'NotAllowedError' ? 'Cancelled.' : 'Face ID sign-in failed \u2014 try again.', 'error');
+        authBusy = false;
+        if (err && err.name === 'NotAllowedError' && armedFresh(armedLoginAt)){
+          setBtnLabel('passkey-signin-btn', 'Tap again for Face ID');
+          setAuthStatus('Face ID didn’t complete — tap again.', 'error');
+          return;
+        }
+        disarmLogin();
+        setAuthStatus('Face ID sign-in failed — try again.', 'error');
       });
   }
 
