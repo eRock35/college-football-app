@@ -56,3 +56,62 @@ before assuming either way.
 Ask the user to either figure out the "API credentials" vault option above, or
 just re-upload the key file for this session — that's been the working
 fallback throughout.
+
+## The board is data, not markup (2026-09-21)
+
+This app's front page - the slate, the best bets, the parlays - was three
+`var` arrays inside `public/index.html`. A new week therefore needed a deploy,
+which meant it did not happen: the page sat on the September 20 slate for days
+while the research sweep dutifully annotated each card to say the game had
+already been played. The sweep could ANNOTATE a card; nothing could retire one
+or add the next week's.
+
+- `board.js` is the SEED - what a fresh database serves, and what still works
+  if `board/current` is deleted. Same bootstrap relationship
+  `santa-rosa-beach-trip`'s `schedule.js` has with its stored plan.
+- `validate()` runs on the model's PROPOSAL, before anything is written. A
+  pick with no odds or a parlay with one leg would render as a broken front
+  page needing a deploy to fix, which is the exact problem this ended. It also
+  strips angle brackets: these cards are interpolated straight into innerHTML
+  and they are written by a model with web search now, not typed by a person.
+- `GET /api/board` serves the stored board or the seed, and says which, plus
+  `stale` when the week is over. A board from a finished week should admit it
+  rather than present played games as Saturday's card.
+- `POST /api/research/weekly-board` grades, then builds. Grading is its own
+  call and asks for a final score - "Ole Miss 32, LSU 24" - rather than a
+  verdict to take on faith. The graded results ride on the new board so the
+  card tab opens with how the last one went.
+- `boardWeekKey()` is deliberately NOT `currentWeekKey()`. The slip's week
+  rolls on Tuesday; the board turns over Sunday or Monday, when the weekend is
+  settled. Stamping a Sunday rebuild with the week that just ended would make
+  a fresh board look stale the moment it was built.
+- Cloud Scheduler `cfb-weekend-settle` (Sun/Mon 10:00 ET) runs it. Its
+  `attemptDeadline` is 900s, not the 180s default.
+
+### Two things that cost three failed runs
+
+Both are in `runStructuredResearch`, and both are invisible from the code:
+
+- **`pause_turn`.** `web_search` is a SERVER-side tool: Anthropic runs the
+  search loop inside the request, and when it hits its iteration limit the
+  turn returns `stop_reason: "pause_turn"` with no answer. Resuming is
+  re-sending the conversation with the paused assistant turn appended - no
+  "please continue", which would be a new instruction rather than a
+  resumption.
+- **`max_tokens` covers the searching, not just the answer.** A thorough
+  search spends the whole budget and returns `max_tokens` with ZERO characters
+  of text. 4096 was never a ceiling on a board; it was a ceiling on looking
+  things up. Grading gets 16000, building 32000.
+
+And these calls **stream**. Nothing reads the stream - `finalMessage()`
+returns what `create()` would have - but a ten-minute non-streaming call hits
+the SDK's HTTP timeout and is then retried twice, which is how one rebuild
+spent ten minutes failing three times over.
+
+## Signing in with the shared account
+
+The account that covers every app on this domain is mounted at `/api/id` and
+the account sheet offers it directly, beside this app's own registration
+rather than instead of it. The original door stays as the fallback; the shared
+one carries research access, credit and the passkey, because those live on the
+account rather than in any one app.
