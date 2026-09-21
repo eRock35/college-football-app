@@ -858,6 +858,24 @@
   </div>
   <div class="copy-status" id="auth-panel-status"></div>
 
+  <!-- The shared account: one email and password across every app on this
+       domain. This app's own registration above predates it and stays as the
+       second door; this is the one that also carries your research access,
+       your credit and your passkey, because they live on the account rather
+       than in any one app. -->
+  <div class="auth-or">or use your account for all the apps</div>
+  <div class="form-group">
+    <label for="shared-email">Email</label>
+    <input type="email" id="shared-email" inputmode="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="you@example.com">
+    <label for="shared-password" style="margin-top:10px;">Password</label>
+    <input type="password" id="shared-password" autocomplete="current-password" enterkeyhint="done" placeholder="Your password">
+  </div>
+  <button class="auth-go" id="shared-signin-btn" type="button" style="margin-top:10px;">Sign in</button>
+  <p class="muted" style="font-size:13px; margin:8px 0 0;">
+    <a href="https://strongtechnicalconsulting.com/account">Manage that account</a> &mdash; password, Face ID, credit.
+  </p>
+  <div class="copy-status" id="shared-status"></div>
+
   <!-- Changing the site password. Shown only to an account that may spend on
        research - this app has many accounts but ONE site password, and it is
        the owner's. The server enforces that regardless of what shows here. -->
@@ -1048,6 +1066,41 @@
     }catch(e){}
   }
   expireStaleWeek();
+
+  /** Sign in with the account that covers every app on this domain.
+   *
+   *  It posts to /api/id/login, which is the shared identity service mounted
+   *  in this app - not this app's own accounts. The cookie it sets is scoped
+   *  to the parent domain, so this one sign-in is also a sign-in on Trip
+   *  Planner, Friction, DataViz and Hopscotch. That is the whole point: a
+   *  password you set once should not need setting again per app.
+   *
+   *  A full reload afterwards rather than patching state: research access,
+   *  the model tier and the credit meter all come from the server on load,
+   *  and a half-updated page that thinks it is signed out is worse than a
+   *  second of white. */
+  async function signInWithSharedAccount(){
+    var status = document.getElementById('shared-status');
+    var btn = document.getElementById('shared-signin-btn');
+    var email = (document.getElementById('shared-email').value || '').trim();
+    var password = document.getElementById('shared-password').value || '';
+    if (!email || !password){ status.textContent = 'Email and password, please.'; return; }
+    btn.disabled = true;
+    status.textContent = 'Signing in\u2026';
+    try {
+      var res = await fetch('/api/id/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email: email, password: password })
+      });
+      var data = await res.json().catch(function(){ return {}; });
+      if (!res.ok) throw new Error(data.error || 'That did not work.');
+      location.reload();
+    } catch (e) {
+      status.textContent = e.message;
+      btn.disabled = false;
+    }
+  }
 
   // ---------- passkeys (Face ID / Touch ID) ----------
   // Native WebAuthn, no library: the browser hands back ArrayBuffers and the
@@ -2975,6 +3028,8 @@
     if (pkOut) pkOut.addEventListener('click', signOut);
     var chip = document.getElementById('auth-chip');
     if (chip) chip.addEventListener('click', authChipClick);
+    var sharedBtn = document.getElementById('shared-signin-btn');
+    if (sharedBtn) sharedBtn.addEventListener('click', signInWithSharedAccount);
 
     document.getElementById('reset-slip').addEventListener('click', function(){
       confirmSheet({
