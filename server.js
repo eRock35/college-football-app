@@ -540,10 +540,14 @@ async function runResearch({ prompt, systemPrompt, user }) {
 // trailing server_tool_use block and picks up where it stopped. No extra
 // "continue" message: that would be a new instruction, not a resumption.
 //
-// `maxTokens`. A whole board - nine games, seven picks with a paragraph each,
-// three parlays - does not fit in 3072 tokens, and a JSON object cut off at
-// the ceiling fails to parse with the same unhelpful error. Callers that ask
-// for a lot say so.
+// `maxTokens`. This is the one that actually bit, twice. A whole board - nine
+// games, seven picks with a paragraph each, three parlays - does not fit in
+// 3072 tokens, and a JSON object cut off at the ceiling fails to parse with
+// the same unhelpful error. Worse: the server-side search loop's own output
+// counts against this ceiling too, so a thorough search can spend the whole
+// budget and return `stop_reason: max_tokens` with ZERO characters of text.
+// That is what the first live rebuild did. The ceilings here are set for the
+// searching, not just for the answer.
 const MAX_CONTINUATIONS = 5;
 
 async function runStructuredResearch({ prompt, systemPrompt, user, maxTokens = 3072, tier }) {
@@ -557,13 +561,18 @@ async function runStructuredResearch({ prompt, systemPrompt, user, maxTokens = 3
 
   let response;
   for (let i = 0; i <= MAX_CONTINUATIONS; i++) {
-    response = await client.messages.create({
+    // Streamed, not because anything here reads a stream, but because these
+    // requests run for minutes and a non-streaming call of this size hits the
+    // SDK's HTTP timeout - then retries it twice, which is how one rebuild
+    // spent ten minutes failing three times over. `finalMessage()` gives back
+    // exactly what create() would have.
+    response = await client.messages.stream({
       model: plan.model,
       max_tokens: maxTokens,
       system: systemPrompt,
       tools: [plan.webSearch],
       messages,
-    });
+    }).finalMessage();
     if (response.stop_reason !== 'pause_turn') break;
     messages.push({ role: 'assistant', content: response.content });
   }
@@ -788,7 +797,7 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
           'if you cannot verify the final, use "void" and say so in the note.',
         prompt: `Bets to grade:\n${JSON.stringify(staked, null, 2)}`,
         user: req.user,
-        maxTokens: 4096,
+        maxTokens: 16000,
         tier: 'paid',
       });
       results = Array.isArray(graded.results) ? graded.results : [];
@@ -814,9 +823,10 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
         'this coming weekend. These games are finished and must NOT appear again:\n' +
         JSON.stringify(current.games.map((g) => g.label), null, 2),
       user: req.user,
-      // A full board is long: nine games, seven picks with a paragraph of
-      // reasoning each, three parlays.
-      maxTokens: 8192,
+      // A full board is long - nine games, seven picks with a paragraph of
+      // reasoning each, three parlays - and the searching that precedes it
+      // comes out of the same budget.
+      maxTokens: 32000,
       tier: 'paid',
     });
 
