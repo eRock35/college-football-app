@@ -13,7 +13,8 @@
   <!-- Analytics. Serves an inert file unless GA_MEASUREMENT_ID is set on
        the service, so local runs and browser tests send nothing. -->
   <script src="/analytics.js" async></script>
-</head><body>
+<link rel="stylesheet" href="/desktop.css">
+</head><body class="dk">
 <style>
   /* =========================================================================
      Tokens. The app's brand hue (Apple-style blue) stays the tint; the
@@ -685,7 +686,7 @@
   </div>
 </header>
 
-<nav class="tabbar" role="tablist" aria-label="Sections">
+<nav class="tabbar dk-tabbar" role="tablist" aria-label="Sections">
   <button class="tab" role="tab" aria-selected="true" aria-controls="panel-card" id="tab-card" type="button">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 6v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-6z"/><path d="M12 9.5l.9 1.9 2.1.3-1.5 1.5.4 2.1-1.9-1-1.9 1 .4-2.1-1.5-1.5 2.1-.3z"/></svg>
     <span class="tab-label"><span class="l-short">Card</span><span class="l-full">Today's Card</span></span>
