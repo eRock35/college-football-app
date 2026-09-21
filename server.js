@@ -354,9 +354,15 @@ app.get('/api/status', async (req, res) => {
 // Haiku returns 400 on web_search_20260209 - model and tool move together.
 const MODEL_TIERS = { free: 'claude-haiku-4-5', paid: 'claude-sonnet-5' };
 
+/** The client this request should use: the caller's own key if they have one
+ *  on file, otherwise the app's. */
+function clientFor(user) {
+  return identity.clientFor(user, anthropic, (apiKey) => new Anthropic({ apiKey }));
+}
+
 async function runResearch({ prompt, systemPrompt, user }) {
   const plan = identityLib.planFor(user, MODEL_TIERS);
-  const response = await anthropic.messages.create({
+  const response = await (await clientFor(user)).messages.create({
     model: plan.model,
     max_tokens: 4096,
     system: systemPrompt,
@@ -373,7 +379,7 @@ async function runResearch({ prompt, systemPrompt, user }) {
 // rather than free text.
 async function runStructuredResearch({ prompt, systemPrompt, user }) {
   const plan = identityLib.planFor(user, MODEL_TIERS);
-  const response = await anthropic.messages.create({
+  const response = await (await clientFor(user)).messages.create({
     model: plan.model,
     max_tokens: 3072,
     system: systemPrompt,
