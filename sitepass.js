@@ -1,22 +1,7 @@
 // A changeable password for the apps that have exactly one.
 //
-// COPY of eriks-projects/shared/sitepass.js. Other copies live in
-// eriks-projects/apps/friction/lib/ and the sibling trip/football repos.
-// Fix the shared one first, then re-copy.
-//
-// Several of these apps authenticate with a single shared password held in an
-// environment variable, which comes from Secret Manager. That works until you
-// want to change it, at which point it needs a new secret version and a
-// redeploy - so in practice it never gets changed, and "I forgot it" means
-// asking someone with deploy access.
-//
-// This stores a salted hash in the app's own database and prefers it over the
-// environment variable when present. The env var stays as the bootstrap: it
-// is what works on a fresh deploy and what still works if the stored one is
-// ever deleted. Changing the password therefore needs no deploy, and losing
-// it is recoverable through a passkey rather than through Secret Manager.
-//
-// The stored value is a scrypt hash. The plaintext is never written anywhere.
+// COPY. The source is eriks-projects/shared/sitepass.js - edit it there and
+// run `node scripts/sync-shared.js`. CI fails if a copy drifts.
 
 const crypto = require('crypto');
 
