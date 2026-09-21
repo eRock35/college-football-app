@@ -6,6 +6,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const { createPasskeyAuth } = require('./auth');
 const analytics = require('./analytics');
 const sitepass = require('./sitepass');
+const board = require('./board');
 const identityLib = require('./identity');
 const identityStore = require('./identity-store');
 
@@ -109,6 +110,27 @@ async function requireLoginSilent(req, res, next) {
 // Anchored to US Eastern regardless of where the viewer is.
 function currentWeekKey() {
   const et = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  et.setDate(et.getDate() - ((et.getDay() - 2 + 7) % 7));
+  return et.toISOString().slice(0, 10);
+}
+
+/**
+ * Which week a BOARD belongs to: the Tuesday that starts the week containing
+ * the next Saturday of games.
+ *
+ * Deliberately not `currentWeekKey()`, which answers a different question -
+ * which week's slip you are filling in - and rolls on Tuesday. Turning the
+ * board over happens on Sunday or Monday, when the weekend is settled and the
+ * next one is what anybody wants to read about. Labelling a Sunday rebuild
+ * with `currentWeekKey()` would stamp the coming weekend's games with the
+ * week that just finished, and the board would then look stale the moment it
+ * was built.
+ */
+function boardWeekKey() {
+  const et = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  // Forward to the coming Saturday (today, if today is Saturday)...
+  et.setDate(et.getDate() + ((6 - et.getDay() + 7) % 7));
+  // ...then back to the Tuesday that starts its week.
   et.setDate(et.getDate() - ((et.getDay() - 2 + 7) % 7));
   return et.toISOString().slice(0, 10);
 }
@@ -439,6 +461,30 @@ app.get('/api/uga', async (req, res) => {
   }
 });
 
+/* ---------- the board: slate, best bets, last week's results ---------- */
+
+/**
+ * What the front page draws. Open, like the rest of the reading surface.
+ *
+ * `stale` is the honest part: the board is rebuilt once a week, and if that
+ * run has not happened the page should be able to say so rather than present
+ * finished games as this week's card. It is what the September 20 slate
+ * needed and did not have.
+ */
+app.get('/api/board', async (_req, res) => {
+  try {
+    const doc = await db.collection('board').doc('current').get();
+    const current = doc.exists ? board.validate(doc.data()) : board.seed();
+    res.json({ ...current, stale: current.weekKey !== boardWeekKey(), seeded: !doc.exists });
+  } catch (err) {
+    // A stored board that no longer validates is a bug worth shouting about,
+    // but not one worth an empty front page: fall back to the seed.
+    console.error('GET /api/board', err);
+    const fallback = board.seed();
+    res.json({ ...fallback, stale: true, seeded: true, error: 'stored board was unreadable' });
+  }
+});
+
 app.get('/api/status', async (req, res) => {
   try {
     const doc = await db.collection('control').doc('status').get();
@@ -649,6 +695,104 @@ app.post('/api/research/refresh-board', requireLoginOrCron, async (req, res) => 
   } catch (err) {
     console.error('POST /api/research/refresh-board', err);
     res.status(500).json({ error: 'Refresh failed.' });
+  }
+});
+
+/**
+ * Turn the board over to a new week.
+ *
+ * This is the route the app was missing. `refresh-board` can only ANNOTATE
+ * the cards that already exist - which is how the front page ended up telling
+ * people, at length and accurately, that every game on it had already been
+ * played. Nothing retired a finished bet, and nothing ever added the next
+ * week's.
+ *
+ * Two research calls, in this order, because the second must not overwrite
+ * what the first is reading:
+ *
+ *   1. GRADE. Take the picks now on the board and find out how they finished.
+ *      This is a question about the past, so it is asked on its own and
+ *      answered with a final score - "Ole Miss 32, LSU 24" - rather than a
+ *      verdict we would have to take on faith.
+ *   2. BUILD. Research the coming week and propose a fresh slate and a fresh
+ *      set of bets.
+ *
+ * The graded results ride along on the new board, so the front page can open
+ * with how last week went before asking for another stake. Erik asked for
+ * exactly that: wins or losses, or new cards.
+ */
+app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
+  try {
+    const doc = await db.collection('board').doc('current').get();
+    const current = doc.exists ? board.validate(doc.data()) : board.seed();
+    const week = boardWeekKey();
+
+    if (current.weekKey === week && !req.query.force) {
+      return res.json({ skipped: 'the board is already on this week', weekKey: week });
+    }
+
+    const staked = [...current.picks, ...current.parlays].map((p) => ({
+      id: p.id, title: p.title, matchup: p.matchup || (p.legs || []).map((l) => l.game).join(' + '),
+      market: p.market || (p.legs || []).map((l) => l.market).join(' + '),
+    }));
+
+    // 1. How last week finished.
+    let results = [];
+    if (staked.length) {
+      const graded = await runStructuredResearch({
+        systemPrompt:
+          'You are grading college football bets that have already been played. Use web search to find the ' +
+          'FINAL SCORE of each game, then decide whether the bet won, lost or pushed. Respond with ONLY a ' +
+          'single JSON object (no prose, no markdown fences): {"results": [{"id": "<matching id>", ' +
+          '"title": "...", "matchup": "...", "market": "...", "finalScore": "Team 31, Team 24", ' +
+          '"outcome": "win" | "loss" | "push" | "void", "note": "one sentence on how it played out"}]}. ' +
+          'Use "void" ONLY when the game has not been played yet or was cancelled. Never invent a score: ' +
+          'if you cannot verify the final, use "void" and say so in the note.',
+        prompt: `Bets to grade:\n${JSON.stringify(staked, null, 2)}`,
+        user: req.user,
+      });
+      results = Array.isArray(graded.results) ? graded.results : [];
+    }
+
+    // 2. The coming week.
+    const built = await runStructuredResearch({
+      systemPrompt:
+        'You are a college football betting analyst building this week\'s board. Use web search for the ' +
+        'CURRENT week\'s schedule and the lines posted for it. Respond with ONLY a single JSON object (no ' +
+        'prose, no markdown fences): {"games": [{"id": "short-slug", "label": "Away at Home", "time": ' +
+        '"Sat 3:30p ET \u00b7 ABC", "kicker": "#5 Away (-3.5) at Home"}], "picks": [{"id": "short-slug", ' +
+        '"title": "Team -3.5", "matchup": "Away at Home", "time": "Sat 3:30p ET", "market": ' +
+        '"Spread \u00b7 Team -3.5", "odds": -110, "confidence": 1-4, "thesis": "one sentence", "why": ' +
+        '"a full paragraph of reasoning", "risk": "what would break this"}], "parlays": [{"id": ' +
+        '"short-slug", "title": "...", "confidence": 1-4, "thesis": "one sentence", "legs": [{"game": ' +
+        '"Away at Home", "market": "Team -3.5", "odds": -110}], "why": "...", "risk": "..."}]}. ' +
+        'Give 6-10 games, 5-8 picks and 2-3 parlays. Every parlay needs at least two legs. Odds are ' +
+        'American and numeric. Only include games that have NOT yet been played. Never invent a line, an ' +
+        'injury or a score - if a line is not posted yet, say so in the market field.',
+      prompt:
+        `Today is ${new Date().toISOString().slice(0, 10)}. Build the board for the games being played ` +
+        'this coming weekend. These games are finished and must NOT appear again:\n' +
+        JSON.stringify(current.games.map((g) => g.label), null, 2),
+      user: req.user,
+    });
+
+    // The model proposed it; this is what decides whether anyone sees it. A
+    // board that does not validate leaves the old one in place, which is a
+    // week out of date but coherent - strictly better than a front page of
+    // half-written cards.
+    const next = board.validate({ ...built, results, weekKey: week, generatedAt: new Date().toISOString() });
+
+    await db.collection('board').doc('current').set(next);
+    // Last week's board, kept so a result can be checked against what was
+    // actually offered rather than against what we now say we offered.
+    await db.collection('board').doc(`week-${current.weekKey || 'seed'}`).set(current).catch(() => {});
+    await db.collection('control').doc('status').set({ lastRunAt: next.generatedAt, boardWeek: week }, { merge: true });
+
+    res.json({ weekKey: week, games: next.games.length, picks: next.picks.length,
+               parlays: next.parlays.length, results: next.results.length });
+  } catch (err) {
+    console.error('POST /api/research/weekly-board', err);
+    res.status(500).json({ error: err.message || 'Could not rebuild the board.' });
   }
 });
 
