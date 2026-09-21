@@ -525,25 +525,63 @@ async function runResearch({ prompt, systemPrompt, user }) {
 }
 
 // Same as runResearch, but asks for (and parses) a single JSON object back -
-// used by the two routes below that need structured game-board updates
-// rather than free text.
-async function runStructuredResearch({ prompt, systemPrompt, user }) {
-  const plan = identityLib.planFor(user, MODEL_TIERS);
-  const response = await (await clientFor(user)).messages.create({
-    model: plan.model,
-    max_tokens: 3072,
-    system: systemPrompt,
-    tools: [plan.webSearch],
-    messages: [{ role: 'user', content: prompt }],
-  });
+// used by the routes below that need structured game-board updates rather
+// than free text.
+//
+// Two things here were learned from a failed run rather than from the docs.
+//
+// `pause_turn`. web_search is a SERVER-side tool: Anthropic runs the search
+// loop inside the request, and when that loop hits its iteration limit the
+// turn comes back with `stop_reason: "pause_turn"` and no final answer. A
+// single create() call therefore returns prose or nothing at all on exactly
+// the questions worth searching hardest for, and the caller sees "Model did
+// not return a JSON object" 24 seconds in. Resuming is just re-sending the
+// conversation with the paused assistant turn appended - the API sees the
+// trailing server_tool_use block and picks up where it stopped. No extra
+// "continue" message: that would be a new instruction, not a resumption.
+//
+// `maxTokens`. A whole board - nine games, seven picks with a paragraph each,
+// three parlays - does not fit in 3072 tokens, and a JSON object cut off at
+// the ceiling fails to parse with the same unhelpful error. Callers that ask
+// for a lot say so.
+const MAX_CONTINUATIONS = 5;
+
+async function runStructuredResearch({ prompt, systemPrompt, user, maxTokens = 3072, tier }) {
+  // `tier: 'paid'` is for work the APP wants done, not work a visitor asked
+  // for: the weekly board is the front page, it runs unattended from Cloud
+  // Scheduler with no user to bill or tier, and four searches cannot survey a
+  // week of games.
+  const plan = identityLib.planFor(tier === 'paid' ? { admin: true } : user, MODEL_TIERS);
+  const client = await clientFor(user);
+  const messages = [{ role: 'user', content: prompt }];
+
+  let response;
+  for (let i = 0; i <= MAX_CONTINUATIONS; i++) {
+    response = await client.messages.create({
+      model: plan.model,
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      tools: [plan.webSearch],
+      messages,
+    });
+    if (response.stop_reason !== 'pause_turn') break;
+    messages.push({ role: 'assistant', content: response.content });
+  }
 
   const textBlocks = response.content.filter((b) => b.type === 'text');
   const text = textBlocks.map((b) => b.text).join('\n\n');
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) {
-    throw new Error('Model did not return a JSON object.');
+    // Say which of the several ways this went wrong actually happened. The
+    // bare message cost an afternoon: a paused turn, a truncated object and a
+    // model answering in prose all looked identical from the log.
+    throw new Error(`Model did not return a JSON object (stop_reason: ${response.stop_reason}, ${text.length} chars of text).`);
   }
-  return JSON.parse(match[0]);
+  try {
+    return JSON.parse(match[0]);
+  } catch (err) {
+    throw new Error(`Model returned unparseable JSON (stop_reason: ${response.stop_reason}, ${match[0].length} chars): ${err.message}`);
+  }
 }
 
 // Per-game chat. Deliberately has NO web_search tool: the prompt the page
@@ -750,6 +788,8 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
           'if you cannot verify the final, use "void" and say so in the note.',
         prompt: `Bets to grade:\n${JSON.stringify(staked, null, 2)}`,
         user: req.user,
+        maxTokens: 4096,
+        tier: 'paid',
       });
       results = Array.isArray(graded.results) ? graded.results : [];
     }
@@ -774,6 +814,10 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
         'this coming weekend. These games are finished and must NOT appear again:\n' +
         JSON.stringify(current.games.map((g) => g.label), null, 2),
       user: req.user,
+      // A full board is long: nine games, seven picks with a paragraph of
+      // reasoning each, three parlays.
+      maxTokens: 8192,
+      tier: 'paid',
     });
 
     // The model proposed it; this is what decides whether anyone sees it. A
