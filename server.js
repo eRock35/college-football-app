@@ -348,18 +348,19 @@ app.get('/api/status', async (req, res) => {
 // ---------------------------------------------------------------------------
 // Login-gated: anything that calls the Anthropic API.
 // ---------------------------------------------------------------------------
-async function runResearch({ prompt, systemPrompt }) {
+// The free allowance runs on Haiku, which is half Sonnet's price and holds up
+// fine here; the owner, Pro, and anyone on their own key get Sonnet. The
+// search tool comes back from planFor rather than being written out, because
+// Haiku returns 400 on web_search_20260209 - model and tool move together.
+const MODEL_TIERS = { free: 'claude-haiku-4-5', paid: 'claude-sonnet-5' };
+
+async function runResearch({ prompt, systemPrompt, user }) {
+  const plan = identityLib.planFor(user, MODEL_TIERS);
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-5',
+    model: plan.model,
     max_tokens: 4096,
     system: systemPrompt,
-    tools: [
-      {
-        type: 'web_search_20260209',
-        name: 'web_search',
-        max_uses: 5,
-      },
-    ],
+    tools: [plan.webSearch],
     messages: [{ role: 'user', content: prompt }],
   });
 
@@ -370,18 +371,13 @@ async function runResearch({ prompt, systemPrompt }) {
 // Same as runResearch, but asks for (and parses) a single JSON object back -
 // used by the two routes below that need structured game-board updates
 // rather than free text.
-async function runStructuredResearch({ prompt, systemPrompt }) {
+async function runStructuredResearch({ prompt, systemPrompt, user }) {
+  const plan = identityLib.planFor(user, MODEL_TIERS);
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-5',
+    model: plan.model,
     max_tokens: 3072,
     system: systemPrompt,
-    tools: [
-      {
-        type: 'web_search_20260209',
-        name: 'web_search',
-        max_uses: 5,
-      },
-    ],
+    tools: [plan.webSearch],
     messages: [{ role: 'user', content: prompt }],
   });
 
@@ -447,6 +443,7 @@ app.post('/api/research/custom', requireResearch, identity.requireBudget, async 
         'game, ask for a general betting recommendation, or be a general question. Be specific and direct, ' +
         'not generic. Never invent a score, injury, or line - if you cannot verify something, say so.',
       prompt: question,
+      user: req.user,
     });
 
     const askedAt = new Date().toISOString();
@@ -484,6 +481,7 @@ app.post('/api/research/add-game', requireResearch, identity.requireBudget, asyn
         '"pass": true or false, "passReason": "if pass, why (else empty string)"}. Never invent a score, ' +
         'injury, or line - if you cannot verify something, omit it or say so in the text fields.',
       prompt: `Research this team or matchup for the tracked games board: ${query}`,
+      user: req.user,
     });
 
     data.id = data.id || query.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40) || `game-${Date.now()}`;
@@ -519,6 +517,7 @@ app.post('/api/research/refresh-board', requireLoginOrCron, async (req, res) => 
         'overall"}. Only include a game in "updates" if something genuinely changed - do not rewrite games ' +
         'with nothing new. Never invent a score, injury, or line.',
       prompt: `Current tracked games:\n${JSON.stringify(games, null, 2)}`,
+      user: req.user,
     });
 
     const updates = Array.isArray(data.updates) ? data.updates : [];
