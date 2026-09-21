@@ -339,22 +339,31 @@ source (before the repo move — same code, just wasn't here yet):
   (the Artifact Registry repo itself stays `erik-projects` — it's shared
   across every project hosted on this domain, not per-app).
 
-### Known compromise: runtime service account
+### Runtime service account — fixed 2026-09-21
 
-Cloud Run's `serviceAccount` is currently set to
-`cover-sheet-deployer@metal-celerity-236019.iam.gserviceaccount.com` — the
-same broad-privilege account used for deploys (Artifact Registry Admin, Cloud
-Build Editor, Service Usage Admin, Storage Admin, etc.), **not** a scoped-down
-runtime identity. The right fix is a dedicated `cover-sheet-runtime@...`
-service account (name it `college-football-app-runtime`) with only
-`roles/datastore.user` and
-`roles/secretmanager.secretAccessor` on the three secrets — but the deployer
-account itself lacks `iam.serviceAccounts.create`, so this needs either (a)
-the user grants the deployer account `roles/iam.serviceAccountAdmin`, or (b)
-the user creates that runtime account by hand and grants those two roles.
-Until then, a compromise of the running container has more GCP blast radius
-than it should. Fix this before the app is trusted with anything higher
-stakes than it already has.
+This app runs as **`football-run@metal-celerity-236019.iam.gserviceaccount.com`**.
+
+It used to run as `cover-sheet-deployer@` — the same broad account used for
+deploys (Artifact Registry Admin, Cloud Build Editor, Storage Admin and more) —
+so a compromise of this container reached the whole deploy pipeline. All seven
+services on the project now have their own identity.
+
+`football-run` holds exactly three things:
+
+- `roles/logging.logWriter`
+- `roles/datastore.user`, **conditioned** to the `college-football-app` and
+  `identity` databases. Verified by impersonation before the service was moved:
+  it reads both, and is refused `santa-rosa-beach-trip`.
+- `roles/secretmanager.secretAccessor` on the seven secrets this service mounts,
+  one binding per secret.
+
+**If you add a secret or a database to this app, bind it to `football-run`**
+or the next revision will fail to start — Cloud Run resolves secret env vars
+before it will report a revision ready. The deployer cannot make that binding
+itself (it holds no IAM-admin rights, by design); ask Erik.
+
+The full record, including what every other service got and how it was
+verified, is in `eriks-projects/docs/phase4-runtime-service-accounts.md`.
 
 ## Still to do
 
