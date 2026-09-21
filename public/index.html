@@ -3373,4 +3373,47 @@
 })();
 </script>
 
+<script src="/tour.js"></script>
+<script>
+// The self-running demo the landing page frames: down the card, open a "why",
+// over to the games board, back. Read-only, nothing reaches the server.
+(function () {
+  "use strict";
+  if (!window.Tour || !Tour.active()) return;
+  var T = window.Tour;
+  var $ = function (id) { return document.getElementById(id); };
+  T.run([
+    async function theCard() {
+      await T.until(function () { return document.querySelector(".pick, .game-card"); }, 25000);
+      await T.tap($("tab-card"));
+      await T.scrollTo(window, 0, 400);
+      await T.wait(1000);
+      await T.scrollThrough(window, 6000);
+      await T.wait(800);
+    },
+    async function whyThisNumber() {
+      var why = document.querySelector('.why-toggle[aria-expanded="false"]');
+      if (why) {
+        await T.scrollTo(window, Math.max(0, why.getBoundingClientRect().top + window.scrollY - 200), 800);
+        await T.tap(why);
+        await T.wait(2600);
+        await T.tap(why);
+        await T.wait(500);
+      }
+    },
+    async function theBoard() {
+      await T.tap($("tab-games"));
+      await T.scrollTo(window, 0, 300);
+      await T.wait(1000);
+      var card = document.querySelector(".game-card");
+      if (card) { await T.tap(card, { silent: true }); await T.wait(1200); }
+      await T.scrollThrough(window, 6500);
+      await T.wait(1200);
+      await T.tap($("tab-card"));
+      await T.scrollTo(window, 0, 300);
+      await T.wait(600);
+    },
+  ]);
+})();
+</script>
 </body></html>
