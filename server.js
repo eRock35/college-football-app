@@ -37,6 +37,14 @@ const anthropic = new Anthropic(); // reads ANTHROPIC_API_KEY from env
 
 const app = express();
 app.use(express.json());
+
+// Only the landing page may put this app in a frame - it shows a live
+// preview you can swipe through. Nothing else should be able to: a gated app
+// inside a hostile page is the setup for clickjacking a signed-in session.
+app.use((req, res, next) => {
+  res.set('Content-Security-Policy', "frame-ancestors 'self' https://strongtechnicalconsulting.com https://www.strongtechnicalconsulting.com");
+  next();
+});
 // Analytics. Serves an inert file unless GA_MEASUREMENT_ID is set.
 analytics.mount(app, 'football');
 
