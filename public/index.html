@@ -1956,6 +1956,7 @@
       summary.itemsHtml +
       '<div class="summary-copy-wrap">' +
         '<button class="reset-btn" id="copy-summary-btn" type="button">Copy summary</button>' +
+        '<button class="reset-btn" id="share-slip-btn" type="button">Share this slip</button>' +
         '<button class="text-toggle-btn" id="toggle-summary-text" type="button" aria-expanded="false">View as text</button>' +
         '<span class="copy-status" id="copy-status"></span>' +
       '</div>' +
@@ -2046,6 +2047,95 @@
         return '<div class="slip-live-row"><b>' + g.label + ':</b> ' + (g.summary || 'No live update yet') + ' <span class="slip-live-time">(' + relativeTime(g.lastChecked) + ')</span></div>';
       }).join('') +
     '</div>';
+  }
+
+  // ---------- share a slip by link ----------
+  // The pick prose is a literal in this page and the server has never seen
+  // it, so the snapshot is assembled here and posted whole. What comes back
+  // is a plain URL anyone can open - no account, no bankroll, no way back to
+  // this person's other slips.
+  function shareItems(){
+    return allPicks()
+      .filter(function(x){ return slipState[x.data.id] && slipState[x.data.id].placed; })
+      .map(function(x){
+        var s = slipState[x.data.id] || {stake:0};
+        var stake = Number(s.stake) || 0;
+        var odds = x.kind === 'straight'
+          ? x.data.odds
+          : Number(decimalToAmerican(parlayDecimal(x.data.legs)).replace('+',''));
+        return {
+          kind: x.kind,
+          title: x.data.title,
+          matchup: x.data.matchup || '',
+          time: x.data.time || '',
+          market: x.data.market || '',
+          odds: odds,
+          legs: x.kind === 'parlay'
+            ? x.data.legs.map(function(l){ return {game:l.game, market:l.market, odds:l.odds}; })
+            : [],
+          why: String(x.data.why || '').replace(/<[^>]+>/g, ''),
+          risk: String(x.data.risk || '').replace(/<[^>]+>/g, ''),
+          stake: stake,
+          toWin: stake * (americanToDecimal(odds) - 1)
+        };
+      });
+  }
+
+  function shareStatus(msg, isError){
+    toast(msg);
+    var el = document.getElementById('copy-status');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'copy-status' + (isError ? ' error' : '');
+    setTimeout(function(){ el.textContent = ''; el.className = 'copy-status'; }, 4000);
+  }
+
+  function copyShareLink(url){
+    function toClipboard(){
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(url)
+          .then(function(){ shareStatus('Link copied'); })
+          .catch(function(){ shareStatus(url); });
+      } else {
+        shareStatus(url);
+      }
+    }
+    if (navigator.share){
+      navigator.share({title: 'My slip', url: url}).then(function(){
+        shareStatus('Shared');
+      }).catch(function(err){
+        // A cancelled share sheet is not a failure - don't quietly do
+        // something else with the link the person just decided not to send.
+        if (err && err.name === 'AbortError') return;
+        toClipboard();
+      });
+      return;
+    }
+    toClipboard();
+  }
+
+  function shareSlip(btn){
+    var items = shareItems();
+    if (!items.length) return shareStatus('Nothing on your slip to share yet.', true);
+    var label = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Making a link\u2026';
+    function done(){ btn.disabled = false; btn.textContent = label; }
+    fetch('/api/slip/share', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({items: items})
+    }).then(function(r){
+      return r.json().then(function(d){ return {ok: r.ok, status: r.status, d: d}; });
+    }).then(function(res){
+      done();
+      if (res.status === 401) return shareStatus('Sign in first \u2014 a share link needs an account.', true);
+      if (!res.ok || res.d.error) return shareStatus(res.d.error || 'Could not make a link.', true);
+      copyShareLink(res.d.url);
+    }).catch(function(){
+      done();
+      shareStatus('Could not make a link.', true);
+    });
   }
 
   function buildSummary(placedOnes){
@@ -2988,6 +3078,8 @@
         if (taEl) taEl.hidden = open;
         return;
       }
+      var shareBtn = e.target.closest('#share-slip-btn');
+      if (shareBtn){ shareSlip(shareBtn); return; }
       var btn = e.target.closest('#copy-summary-btn');
       if (!btn) return;
       var ta = document.getElementById('summary-text');

@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const crypto = require('crypto');
 const { Firestore } = require('@google-cloud/firestore');
 const Anthropic = require('@anthropic-ai/sdk');
 const { createPasskeyAuth } = require('./auth');
@@ -276,6 +277,101 @@ app.get('/api/slip', requireLoginSilent, async (req, res) => {
   } catch (err) {
     console.error('GET /api/slip', err);
     res.status(500).json({ error: 'Failed to load slip.' });
+  }
+});
+
+// Share a slip by link.
+//
+// A slip is the one thing here worth sending to someone: "this is what I am
+// on this week". It was locked to one account across that account's own
+// devices, which is sync, not sharing.
+//
+// The snapshot is a COPY, not a live view of the slip. Someone who opens the
+// link a day later should see what was sent, not whatever has been edited
+// since - and a live view would also mean a link that keeps reading a private
+// document forever. The bankroll is deliberately left out: the stake on each
+// play travels with the pick because that is part of what was sent, but the
+// size of the roll behind it is nobody else's business.
+//
+// The pick prose (title, market, why, risk) lives in public/index.html as a
+// literal and the server has never seen it, so the browser sends the resolved
+// items it is already showing. That also keeps the snapshot honest once next
+// week's card replaces this week's: the link still renders what was sent,
+// rather than resolving stale ids against a board that has moved on.
+const clipStr = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
+const finiteNum = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+
+// Anything stored here is served to strangers, so every field is clamped to a
+// plain string of bounded length and the page escapes all of it on render.
+function cleanSharedItem(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const title = clipStr(raw.title, 120);
+  if (!title) return null;
+  return {
+    kind: raw.kind === 'parlay' ? 'parlay' : 'straight',
+    title,
+    matchup: clipStr(raw.matchup, 160),
+    time: clipStr(raw.time, 80),
+    market: clipStr(raw.market, 160),
+    odds: finiteNum(raw.odds),
+    legs: (Array.isArray(raw.legs) ? raw.legs : []).slice(0, 12).map((l) => ({
+      game: clipStr(l && l.game, 160),
+      market: clipStr(l && l.market, 160),
+      odds: finiteNum(l && l.odds),
+    })),
+    why: clipStr(raw.why, 2000),
+    risk: clipStr(raw.risk, 2000),
+    stake: Math.max(0, finiteNum(raw.stake)),
+    toWin: Math.max(0, finiteNum(raw.toWin)),
+  };
+}
+
+app.post('/api/slip/share', requireLoginSilent, async (req, res) => {
+  try {
+    const items = (Array.isArray(req.body && req.body.items) ? req.body.items : [])
+      .slice(0, 30)
+      .map(cleanSharedItem)
+      .filter(Boolean);
+    if (!items.length) {
+      return res.status(400).json({ error: 'Nothing on your slip to share yet.' });
+    }
+    const shareId = crypto.randomBytes(9).toString('base64url');
+    const me = currentUser(req);
+    await db.collection('shared-slips').doc(shareId).set({
+      items,
+      totalRisk: items.reduce((n, i) => n + i.stake, 0),
+      totalToWin: items.reduce((n, i) => n + i.toWin, 0),
+      weekKey: currentWeekKey(),
+      by: (me && me.email ? me.email.split('@')[0] : 'someone'),
+      createdAt: new Date().toISOString(),
+    });
+    res.json({ shareId, url: `${req.protocol}://${req.get('host')}/s/${shareId}` });
+  } catch (err) {
+    console.error('POST /api/slip/share', err);
+    res.status(500).json({ error: 'Could not share that slip.' });
+  }
+});
+
+// Open to anyone with the link - that is what a share is. It carries no
+// account, no bankroll and no way back to the person's other slips.
+app.get('/api/shared-slip/:shareId', async (req, res) => {
+  try {
+    const doc = await db.collection('shared-slips').doc(String(req.params.shareId).slice(0, 40)).get();
+    if (!doc.exists) return res.status(404).json({ error: 'That slip is not here.' });
+    const d = doc.data();
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json({
+      items: d.items || [],
+      totalRisk: d.totalRisk || 0,
+      totalToWin: d.totalToWin || 0,
+      weekKey: d.weekKey,
+      by: d.by,
+      createdAt: d.createdAt,
+      stale: d.weekKey !== currentWeekKey(),
+    });
+  } catch (err) {
+    console.error('GET /api/shared-slip', err);
+    res.status(500).json({ error: 'Could not load that slip.' });
   }
 });
 
@@ -682,6 +778,10 @@ app.get('/healthz', (req, res) => res.status(200).send('ok'));
 // testing a route no external monitor could ever reach. /api/health is the
 // same handler on a path the edge leaves alone.
 app.get('/api/health', (req, res) => res.status(200).send('ok'));
+
+// A shared slip is a page anyone can open. Registered before the catch-all,
+// and outside the gate for the same reason the link exists at all.
+app.get('/s/:shareId', (req, res) => res.sendFile(path.join(__dirname, 'public', 'shared-slip.html')));
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));

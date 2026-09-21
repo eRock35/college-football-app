@@ -1,0 +1,210 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>A shared slip · College Football</title>
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#F5F5F7">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script src="/analytics.js" async></script>
+<style>
+  /* Tokens are a copy of the app's, so a shared link reads as the same app
+     rather than a bare JSON dump. This page deliberately does NOT use
+     desktop.css: that stylesheet turns a bottom tab bar into a left sidebar,
+     and there is no tab bar here - a single read-only page wants a centred
+     column instead. */
+  :root{
+    color-scheme: light dark;
+    --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --bg:#F5F5F7; --surface:#FFFFFF; --sep:rgba(60,60,67,.22);
+    --text:#1D1D1F; --text-faint:#8E8E93; --label-2:#6E6E73;
+    --tint:#0071E3; --accent-soft:#E8F1FE;
+    --positive:#1D8A3B;
+    --warning:#C93400; --warning-soft:#FFEFDF;
+    --parlay:#8944AB; --parlay-soft:#F4E9FB;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 20px -14px rgba(0,0,0,.10);
+    --radius: 16px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#000000; --surface:#1C1C1E; --sep:rgba(84,84,88,.6);
+      --text:#F5F5F7; --text-faint:#8E8E93; --label-2:#AEAEB2;
+      --tint:#0A84FF; --accent-soft:#0F2E4F;
+      --positive:#30D158;
+      --warning:#FF9F0A; --warning-soft:#3D2600;
+      --parlay:#BF5AF2; --parlay-soft:#341A47;
+      --shadow:none;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text); font-family:var(--font-ui);
+    -webkit-font-smoothing:antialiased; font-size:16px; line-height:1.45;
+  }
+  .wrap{max-width:720px; margin:0 auto; padding:0 16px 56px;}
+  header{padding-top:calc(env(safe-area-inset-top,0px) + 22px); padding-bottom:6px;}
+  .eyebrow{
+    font-size:13px; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--tint);
+  }
+  h1{font-size:32px; font-weight:700; letter-spacing:-.02em; line-height:1.15; margin:2px 0 4px;}
+  .sub{color:var(--label-2); font-size:15px; margin:0;}
+  .num, .stat .v{font-variant-numeric:tabular-nums;}
+
+  .banner{
+    margin-top:14px; padding:12px 14px; border-radius:12px;
+    background:var(--warning-soft); color:var(--warning); font-size:14px; line-height:1.45;
+  }
+  .summary{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px;}
+  .summary:empty{display:none;}
+  .stat, .play{background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);}
+  .stat{padding:14px 16px;}
+  .stat:nth-child(3){grid-column:1 / -1;}
+  .stat .k{font-size:13px; color:var(--label-2); font-weight:500;}
+  .stat .v{font-size:26px; font-weight:700; margin-top:2px; letter-spacing:-.02em;}
+  .stat .v.win{color:var(--positive);}
+  @media (min-width:640px){
+    .summary{grid-template-columns:repeat(3,1fr);}
+    .stat:nth-child(3){grid-column:auto;}
+  }
+
+  h2{font-size:22px; letter-spacing:-.02em; margin:26px 0 10px;}
+  .lead{color:var(--label-2); font-size:15px; margin:0 0 12px;}
+  .play{padding:16px; margin-top:12px;}
+  .play h3{font-size:18px; margin:0 0 2px; letter-spacing:-.01em; display:inline-block;}
+  .kind{
+    font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    padding:3px 8px; border-radius:6px; display:inline-block; margin-left:8px;
+    vertical-align:middle;
+  }
+  .kind.straight{background:var(--accent-soft); color:var(--tint);}
+  .kind.parlay{background:var(--parlay-soft); color:var(--parlay);}
+  .meta{font-size:13px; color:var(--text-faint); margin:2px 0 10px; font-variant-numeric:tabular-nums;}
+  .play p{color:var(--label-2); font-size:15px; line-height:1.5; margin:0 0 10px;}
+  .money{
+    margin-top:10px; padding:10px 12px; border-radius:10px; background:var(--accent-soft);
+    color:var(--text); font-size:14px; font-variant-numeric:tabular-nums;
+  }
+  .risk{
+    margin-top:10px; padding:10px 12px; border-radius:10px;
+    background:var(--warning-soft); color:var(--warning); font-size:14px; line-height:1.4;
+  }
+
+  .cta{
+    display:block; margin-top:26px; padding:14px 18px; border-radius:12px;
+    background:var(--tint); color:#fff; font-size:16px; font-weight:600;
+    text-align:center; text-decoration:none;
+  }
+  .cta:active{transform:scale(.99);}
+  .state{
+    margin-top:40px; text-align:center; color:var(--label-2); font-size:15px; line-height:1.5;
+  }
+  .fine{
+    margin-top:26px; padding-top:16px; border-top:1px solid var(--sep);
+    color:var(--text-faint); font-size:12px; line-height:1.5;
+  }
+</style>
+</head><body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="eyebrow">Shared slip</div>
+    <h1 id="title">Loading…</h1>
+    <p class="sub" id="sub"></p>
+  </header>
+  <div id="banner"></div>
+  <div class="summary" id="summary"></div>
+  <div id="body"></div>
+  <div id="foot"></div>
+</div>
+<script>
+(function(){
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function money(n){
+    return '$' + Number(n || 0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  function american(a){
+    a = Number(a) || 0;
+    return a > 0 ? '+' + a : String(a);
+  }
+  function el(id){ return document.getElementById(id); }
+
+  function fail(msg){
+    el('title').textContent = 'Slip not found';
+    el('sub').textContent = '';
+    el('body').innerHTML = '<div class="state">' + esc(msg) + '</div>' +
+      '<a class="cta" href="/">Open College Football</a>';
+  }
+
+  var shareId = (location.pathname.split('/s/')[1] || '').split(/[?#/]/)[0];
+  if (!shareId) return fail('That link is missing its slip.');
+
+  fetch('/api/shared-slip/' + encodeURIComponent(shareId))
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
+    .then(function(res){
+      if (!res.ok || res.d.error) return fail(res.d.error || 'That slip is not here.');
+      render(res.d);
+    })
+    .catch(function(){ fail('Could not load that slip. Check your connection and try again.'); });
+
+  function render(d){
+    var items = Array.isArray(d.items) ? d.items : [];
+    if (!items.length) return fail('That slip came through empty.');
+
+    document.title = (d.by || 'Someone') + '’s slip · College Football';
+    el('title').textContent = (d.by || 'Someone') + '’s slip';
+
+    var when = d.createdAt ? new Date(d.createdAt) : null;
+    el('sub').textContent = items.length + ' play' + (items.length === 1 ? '' : 's') +
+      (when && !isNaN(when) ? ' · shared ' + when.toLocaleDateString('en-US', {month:'short', day:'numeric'}) : '');
+
+    if (d.stale){
+      el('banner').innerHTML = '<div class="banner">This slip is from a past football week. ' +
+        'The games are done and the numbers below are what they were when it was shared.</div>';
+    }
+
+    var risk = Number(d.totalRisk) || 0;
+    var toWin = Number(d.totalToWin) || 0;
+    el('summary').innerHTML =
+      '<div class="stat"><div class="k">At risk</div><div class="v">' + money(risk) + '</div></div>' +
+      '<div class="stat"><div class="k">Plays</div><div class="v">' + items.length + '</div></div>' +
+      '<div class="stat"><div class="k">If everything hits</div><div class="v win">' + money(risk + toWin) + '</div></div>';
+
+    // Every field below came from a browser and is served to strangers, so all
+    // of it is escaped. The pick prose is plain text - nothing is lost.
+    var html = '<h2>The plays</h2>';
+    items.forEach(function(it){
+      var parlay = it.kind === 'parlay';
+      var meta = parlay
+        ? (it.legs || []).map(function(l){
+            return esc(l.game) + ': ' + esc(l.market) + ' (' + esc(american(l.odds)) + ')';
+          }).join(' &middot; ')
+        : [esc(it.matchup), esc(it.time), esc(it.market) + ' (' + esc(american(it.odds)) + ')']
+            .filter(Boolean).join(' &middot; ');
+
+      html += '<div class="play">' +
+        '<h3>' + esc(it.title) + '</h3>' +
+        '<span class="kind ' + (parlay ? 'parlay' : 'straight') + '">' + (parlay ? 'Parlay' : 'Straight') + '</span>' +
+        (meta ? '<div class="meta">' + meta + '</div>' : '') +
+        (it.why ? '<p>' + esc(it.why) + '</p>' : '') +
+        '<div class="money">Stake ' + money(it.stake) + ' &rarr; to win ' + money(it.toWin) +
+          ' (returns ' + money(Number(it.stake || 0) + Number(it.toWin || 0)) + ')</div>' +
+        (it.risk ? '<div class="risk">Risk: ' + esc(it.risk) + '</div>' : '') +
+      '</div>';
+    });
+    el('body').innerHTML = html;
+
+    el('foot').innerHTML =
+      '<a class="cta" href="/">Build your own slip</a>' +
+      '<div class="fine"><strong>Independent analysis, not a guarantee.</strong> ' +
+      'This is someone else’s slip, shared as a snapshot — it is research and commentary compiled ' +
+      'from public reporting, not affiliated with or endorsed by any sportsbook. Lines move; confirm ' +
+      'the current number yourself before wagering. Bet only what you can afford to lose. Must be 21+ ' +
+      'and physically located where sports wagering is legal.</div>';
+  }
+})();
+</script>
+</body></html>
