@@ -49,8 +49,8 @@
     --warning-soft:#FFEFDF;
     --parlay:#8944AB;
     --parlay-soft:#F4E9FB;
-    --uga-red:#BA0C2F;
-    --uga-red-soft:#FBE4E8;
+    --team:#BA0C2F;
+    --team-soft:#FBE4E8;
     --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 20px -14px rgba(0,0,0,.10);
     --radius: 16px;
     --tabbar-h: 49px;
@@ -81,8 +81,8 @@
       --warning-soft:#3D2600;
       --parlay:#BF5AF2;
       --parlay-soft:#341A47;
-      --uga-red:#FF4B5C;
-      --uga-red-soft:#3A1319;
+      --team:#FF4B5C;
+      --team-soft:#3A1319;
       --shadow: none;
     }
   }
@@ -110,8 +110,8 @@
     --warning-soft:#3D2600;
     --parlay:#BF5AF2;
     --parlay-soft:#341A47;
-    --uga-red:#FF4B5C;
-    --uga-red-soft:#3A1319;
+    --team:#FF4B5C;
+    --team-soft:#3A1319;
     --shadow: none;
   }
 
@@ -138,7 +138,7 @@
   button, .tabbar, .compact-header, .sheet .grabber{-webkit-user-select:none; user-select:none;}
   img{max-width:100%;}
   .mono{font-family:var(--font-mono); font-variant-numeric:tabular-nums;}
-  .num, .payout, .stat-tile .v, .uga-countdown, .uga-stat .v, .futures-table td.odds, .leg .m, .game-market{font-variant-numeric:tabular-nums;}
+  .num, .payout, .stat-tile .v, .team-countdown, .team-stat .v, .futures-table td.odds, .leg .m, .game-market{font-variant-numeric:tabular-nums;}
   :focus-visible{outline:2px solid var(--tint); outline-offset:2px;}
   section[role="tabpanel"][hidden]{display:none!important;}
   section[role="tabpanel"]{animation:panel-in .22s ease-out;}
@@ -345,6 +345,15 @@
   }
   .reset-btn.destructive, #reset-slip{color:var(--negative);}
   .credit-options{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px;}
+  .team-picker-list{max-height:52vh; overflow-y:auto; -webkit-overflow-scrolling:touch; margin-top:4px;}
+  .team-option{display:flex; align-items:center; gap:10px; width:100%; min-height:44px; padding:8px 10px;
+    border:0; border-radius:10px; background:transparent; color:var(--text); font:inherit; text-align:left; cursor:pointer;}
+  .team-option:hover{background:var(--fill);}
+  .team-option[aria-current="true"]{background:var(--team-soft);}
+  .team-dot{width:12px; height:12px; border-radius:50%; flex:0 0 auto;}
+  .team-option-name{flex:1; font-weight:600; font-size:15px;}
+  .team-option-mascot{font-size:13px; color:var(--text-faint);}
+  .team-footer{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:12px;}
   .credit-options .reset-btn{padding:0 6px; font-size:14px; width:100%;}
   .text-toggle-btn{
     min-height:44px; padding:0 6px; border:none; background:transparent;
@@ -425,7 +434,7 @@
     .page{ max-width: var(--dk-max); }
     .intro p, .disclaimer{ max-width: 66ch; }
   }
-  .pick, .game-card, .research-game, .ask-item, .stat-tile, .bankroll-row, .uga-next, .uga-story, .uga-research, .review-col{
+  .pick, .game-card, .research-game, .ask-item, .stat-tile, .bankroll-row, .team-next, .team-story, .team-research, .review-col{
     background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
   }
   .pick, .game-card{overflow:hidden;}
@@ -647,37 +656,37 @@
   .chat-hint{font-size:13px; color:var(--warning); margin-top:6px; min-height:1.2em;}
 
   /* ---- My Dawgs (UGA) ---- */
-  .uga-hero{background:linear-gradient(135deg, var(--uga-red), #7A0A1F); color:#fff; border-radius:20px; padding:22px 20px; margin-top:14px; box-shadow:var(--shadow);}
-  .uga-hero .eyebrow{color:rgba(255,255,255,.85); font-size:12px;}
-  .uga-hero h2{font-size:26px; font-weight:800; letter-spacing:-.02em; margin:4px 0 14px; color:#fff;}
-  .uga-stats{display:flex; gap:24px; flex-wrap:wrap;}
-  .uga-stat .v{font-size:24px; font-weight:700; font-variant-numeric:tabular-nums;}
-  .uga-stat .k{font-size:11px; opacity:.85; text-transform:uppercase; letter-spacing:.05em; margin-top:2px;}
-  .uga-next{padding:16px; margin-top:12px;}
-  .uga-next h3{font-size:18px; margin-bottom:2px; letter-spacing:-.01em;}
-  .uga-next .meta{font-size:13px; color:var(--text-faint); margin-bottom:8px;}
-  .uga-countdown{font-size:26px; font-weight:700; letter-spacing:-.02em; color:var(--uga-red); margin:4px 0; font-variant-numeric:tabular-nums;}
-  .uga-line{font-size:15px; color:var(--label-2);}
-  .uga-schedule{margin-top:12px; background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;}
-  .uga-game{display:flex; align-items:center; gap:10px; min-height:48px; padding:8px 16px; background:var(--surface);}
-  .uga-game + .uga-game{box-shadow:inset 0 1px 0 var(--sep);}
-  .uga-game.played{opacity:.6;}
-  .uga-game.current{background:var(--uga-red-soft);}
-  .uga-game .wk{font-size:13px; color:var(--text-faint); width:56px; flex:0 0 auto; font-variant-numeric:tabular-nums;}
-  .uga-game .opp{flex:1; font-size:16px; color:var(--text); font-weight:500; min-width:0;}
-  .uga-game .badge{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:3px 8px; border-radius:6px; flex:0 0 auto;}
-  .uga-game .badge.rivalry{background:var(--uga-red-soft); color:var(--uga-red);}
-  .uga-game .badge.ranked{background:var(--accent-soft); color:var(--tint);}
-  .uga-game .result{font-size:14px; color:var(--positive); font-weight:600; flex:0 0 auto; font-variant-numeric:tabular-nums;}
-  .uga-story{margin-top:12px; padding:16px;}
-  .uga-story h3{font-size:18px; margin-bottom:8px; letter-spacing:-.01em;}
-  .uga-story p{color:var(--label-2); font-size:15px; line-height:1.5; margin:0 0 10px;}
-  .uga-story p:last-child{margin-bottom:0;}
-  .uga-research{margin-top:12px; padding:16px; box-shadow:0 0 0 1.5px var(--uga-red);}
-  .uga-research h3{font-size:18px; margin-bottom:10px; letter-spacing:-.01em;}
-  .uga-research p{color:var(--label-2); font-size:15px; line-height:1.5; margin:0 0 10px;}
-  .uga-research p:last-child{margin-bottom:0;}
-  .uga-research .game-lean, .uga-research .game-pass{margin:0 0 10px;}
+  .team-hero{background:linear-gradient(135deg, var(--team), #7A0A1F); color:#fff; border-radius:20px; padding:22px 20px; margin-top:14px; box-shadow:var(--shadow);}
+  .team-hero .eyebrow{color:rgba(255,255,255,.85); font-size:12px;}
+  .team-hero h2{font-size:26px; font-weight:800; letter-spacing:-.02em; margin:4px 0 14px; color:#fff;}
+  .team-stats{display:flex; gap:24px; flex-wrap:wrap;}
+  .team-stat .v{font-size:24px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .team-stat .k{font-size:11px; opacity:.85; text-transform:uppercase; letter-spacing:.05em; margin-top:2px;}
+  .team-next{padding:16px; margin-top:12px;}
+  .team-next h3{font-size:18px; margin-bottom:2px; letter-spacing:-.01em;}
+  .team-next .meta{font-size:13px; color:var(--text-faint); margin-bottom:8px;}
+  .team-countdown{font-size:26px; font-weight:700; letter-spacing:-.02em; color:var(--team); margin:4px 0; font-variant-numeric:tabular-nums;}
+  .team-line{font-size:15px; color:var(--label-2);}
+  .team-schedule{margin-top:12px; background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;}
+  .team-game{display:flex; align-items:center; gap:10px; min-height:48px; padding:8px 16px; background:var(--surface);}
+  .team-game + .team-game{box-shadow:inset 0 1px 0 var(--sep);}
+  .team-game.played{opacity:.6;}
+  .team-game.current{background:var(--team-soft);}
+  .team-game .wk{font-size:13px; color:var(--text-faint); width:56px; flex:0 0 auto; font-variant-numeric:tabular-nums;}
+  .team-game .opp{flex:1; font-size:16px; color:var(--text); font-weight:500; min-width:0;}
+  .team-game .badge{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:3px 8px; border-radius:6px; flex:0 0 auto;}
+  .team-game .badge.rivalry{background:var(--team-soft); color:var(--team);}
+  .team-game .badge.ranked{background:var(--accent-soft); color:var(--tint);}
+  .team-game .result{font-size:14px; color:var(--positive); font-weight:600; flex:0 0 auto; font-variant-numeric:tabular-nums;}
+  .team-story{margin-top:12px; padding:16px;}
+  .team-story h3{font-size:18px; margin-bottom:8px; letter-spacing:-.01em;}
+  .team-story p{color:var(--label-2); font-size:15px; line-height:1.5; margin:0 0 10px;}
+  .team-story p:last-child{margin-bottom:0;}
+  .team-research{margin-top:12px; padding:16px; box-shadow:0 0 0 1.5px var(--team);}
+  .team-research h3{font-size:18px; margin-bottom:10px; letter-spacing:-.01em;}
+  .team-research p{color:var(--label-2); font-size:15px; line-height:1.5; margin:0 0 10px;}
+  .team-research p:last-child{margin-bottom:0;}
+  .team-research .game-lean, .team-research .game-pass{margin:0 0 10px;}
 
   /* ---- Footer ---- */
   footer{margin-top:32px; padding-top:16px; border-top:1px solid var(--sep);}
@@ -822,7 +831,7 @@
 </section>
 
 <section role="tabpanel" id="panel-uga" aria-labelledby="tab-uga" hidden>
-  <div id="uga-root"></div>
+  <div id="team-root"></div>
 </section>
 </main>
 
@@ -836,6 +845,22 @@
 </div>
 
 <div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
+
+<!-- Picking a team. 132 of them, so the list is grouped by conference and
+     filterable: a flat alphabetical list is not something anyone finds their
+     team in on a phone. -->
+<div class="sheet" id="team-picker" role="dialog" aria-modal="true" aria-label="Choose your team" hidden>
+  <div class="grabber"></div>
+  <h2 class="sheet-title">Your team</h2>
+  <p class="muted" style="margin:0 0 10px;">Sets the My Team tab, its colours and which research asks it shows.</p>
+  <div class="form-group">
+    <input type="search" id="team-search" placeholder="Search 132 teams" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
+  </div>
+  <div id="team-picker-list" class="team-picker-list"></div>
+  <div class="auth-panel-actions">
+    <button class="text-toggle-btn" id="team-picker-close" type="button">Close</button>
+  </div>
+</div>
 
 <!-- Auth lives in a sheet reachable from every tab: the gated actions are on
      Research, and a browser password box with no hint that Face ID exists two
@@ -1018,7 +1043,7 @@
   }
 
   // Used only when the live db doc for "My Dawgs" is unavailable.
-  var UGA_FALLBACK = {
+  var GEORGIA_SEED = {
     rank: '#2', record: '2-0', secRecord: '0-0 SEC',
     nextGame: {opponent: 'at Arkansas', kickoffISO: '2026-09-19T16:00:00Z', tv: 'ABC', line: 'Georgia -24.5', gameId: 'uga-ark'},
     schedule: [
@@ -1045,7 +1070,154 @@
   };
 
   var ugaCountdownTimer = null;
-  var lastUgaDoc = null;
+  var lastFanDoc = null;
+
+  // ---------- My Team ----------
+  //
+  // This tab was Georgia, hardcoded. GEORGIA_SEED below is what it used to
+  // draw, and it survives as exactly one thing: the bootstrap content for the
+  // one team that already has a hand-written page, the same relationship
+  // board.js has with the stored board. Every other team starts empty and says
+  // so, because 130 invented schedules would be worse than an honest gap.
+  var myTeam = 'uga';
+  var myTeamMeta = { id: 'uga', name: 'Georgia', mascot: 'Bulldogs', color: '#BA0C2F' };
+  var teamConferences = [];
+  var TEAM_KEY = 'cover-sheet-team-v1';
+
+  function loadStoredTeam(){
+    try { return localStorage.getItem(TEAM_KEY) || null; } catch(e){ return null; }
+  }
+  function storeTeam(id){
+    try { localStorage.setItem(TEAM_KEY, id); } catch(e){}
+  }
+
+  function teamMetaFor(id){
+    for (var i = 0; i < teamConferences.length; i++){
+      var list = teamConferences[i].teams;
+      for (var j = 0; j < list.length; j++) if (list[j].id === id) return list[j];
+    }
+    return null;
+  }
+
+  /** Paint the team's colour and name into the shell. The hero gradient and
+   *  the accent are CSS variables, so one assignment reskins the whole tab. */
+  function applyTeamChrome(){
+    var meta = myTeamMeta || {};
+    if (meta.color){
+      document.documentElement.style.setProperty('--team', meta.color);
+      document.documentElement.style.setProperty('--team-soft', meta.color + '22');
+    }
+    var label = document.querySelector('#tab-uga .tab-label');
+    if (label && meta.name){
+      label.innerHTML = '<span class="l-short">' + escapeHtml(meta.name) + '</span>' +
+                        '<span class="l-full">My ' + escapeHtml(meta.mascot || meta.name) + '</span>';
+    }
+    var row = document.querySelector('[data-tab-target="tab-uga"] span:not(.chev)');
+    if (row && meta.name) row.textContent = 'My ' + (meta.mascot || meta.name);
+  }
+
+  function setTeam(id, opts){
+    var meta = teamMetaFor(id);
+    if (!meta) return;
+    myTeam = id;
+    myTeamMeta = meta;
+    storeTeam(id);
+    applyTeamChrome();
+    lastFanDoc = null;
+    renderTeam({ team: id, meta: meta, researched: false, loading: true });
+    loadTeam();
+    // Signed in, so the choice should follow them to another device.
+    if (!(opts && opts.skipSave) && syncEnabled){
+      fetch('/api/prefs', {
+        method: 'PUT', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ team: id })
+      }).catch(function(){});
+    }
+  }
+
+  function openTeamPicker(){
+    var panel = document.getElementById('team-picker');
+    if (!panel) return;
+    renderTeamPicker('');
+    openSheet(panel, {});
+    var input = document.getElementById('team-search');
+    if (input){ input.value = ''; setTimeout(function(){ try{ input.focus(); }catch(e){} }, 60); }
+  }
+
+  function renderTeamPicker(filter){
+    var body = document.getElementById('team-picker-list');
+    if (!body) return;
+    var q = (filter || '').trim().toLowerCase();
+    var html = '';
+    teamConferences.forEach(function(group){
+      var hits = group.teams.filter(function(t){
+        return !q || (t.name + ' ' + t.mascot).toLowerCase().indexOf(q) !== -1;
+      });
+      if (!hits.length) return;
+      html += '<div class="auth-or">' + escapeHtml(group.conf) + '</div>';
+      html += hits.map(function(t){
+        return '<button class="team-option" type="button" data-team="' + escapeHtml(t.id) + '"' +
+          (t.id === myTeam ? ' aria-current="true"' : '') + '>' +
+          '<span class="team-dot" style="background:' + escapeHtml(t.color) + '"></span>' +
+          '<span class="team-option-name">' + escapeHtml(t.name) + '</span>' +
+          '<span class="team-option-mascot">' + escapeHtml(t.mascot) + '</span>' +
+          '</button>';
+      }).join('');
+    });
+    body.innerHTML = html || '<p class="muted" style="padding:12px 2px;">No team by that name.</p>';
+  }
+
+  function loadTeams(){
+    return fetch('/api/teams').then(function(r){ return r.json(); }).then(function(d){
+      teamConferences = d.conferences || [];
+      var stored = loadStoredTeam();
+      var pick = teamMetaFor(stored) ? stored : (d['default'] || 'uga');
+      myTeam = pick;
+      myTeamMeta = teamMetaFor(pick) || myTeamMeta;
+      applyTeamChrome();
+      // A signed-in choice outranks this device's: it is the one that followed
+      // them here. Failing quietly is right - a signed-out visitor still gets
+      // whatever this browser remembered.
+      return fetch('/api/prefs').then(function(r){ return r.ok ? r.json() : null; }).then(function(p){
+        if (p && p.team && p.team !== myTeam && teamMetaFor(p.team)){
+          myTeam = p.team;
+          myTeamMeta = teamMetaFor(p.team);
+          storeTeam(p.team);
+          applyTeamChrome();
+        }
+      }).catch(function(){});
+    }).catch(function(){});
+  }
+
+  function loadTeam(){
+    return fetch('/api/fan/' + encodeURIComponent(myTeam)).then(function(r){ return r.json(); })
+      .then(function(d){
+        // Georgia is the one team with a hand-written page behind it.
+        if (!d.researched && myTeam === 'uga') { renderTeam(Object.assign({}, GEORGIA_SEED, { team: 'uga', meta: myTeamMeta, researched: true })); return; }
+        renderTeam(Object.assign({}, d, { meta: d.meta || myTeamMeta }));
+      })
+      .catch(function(){ renderTeam({ team: myTeam, meta: myTeamMeta, researched: false, failed: true }); });
+  }
+
+  function researchTeam(btn){
+    var status = document.getElementById('team-research-status');
+    if (btn) btn.disabled = true;
+    if (status) status.textContent = 'Looking it up — this takes a minute…';
+    fetch('/api/fan/' + encodeURIComponent(myTeam) + '/research', { method: 'POST' })
+      .then(function(r){
+        return r.json().catch(function(){ return {}; }).then(function(d){
+          if (r.status === 401) throw new Error('Sign in first — this spends your own AI credit.');
+          if (r.status === 402) throw new Error(d.error || 'You are out of AI credit.');
+          if (!r.ok) throw new Error(d.error || 'Could not look that team up.');
+          renderTeam(Object.assign({}, d, { meta: d.meta || myTeamMeta }));
+        });
+      })
+      .catch(function(e){
+        if (status) status.textContent = e.message;
+        if (btn) btn.disabled = false;
+      });
+  }
+
 
   // ---------- odds helpers ----------
   function americanToDecimal(a){
@@ -1779,7 +1951,7 @@
     applyGamesFilter();
     renderResearchList();
     renderAsksFeed(lastAsksDocs);
-    renderUga(lastUgaDoc || UGA_FALLBACK);
+    redrawTeam();
   }
 
   function removeGameFromSlip(gameId){
@@ -1792,7 +1964,7 @@
     applyGamesFilter();
     renderResearchList();
     renderAsksFeed(lastAsksDocs);
-    renderUga(lastUgaDoc || UGA_FALLBACK);
+    redrawTeam();
   }
 
   function pickGameIds(id){
@@ -2689,9 +2861,16 @@
     }
   }
 
-  function isUgaRelevantAsk(a){
+  /** Research asks that are about the team whose tab this is. It used to be a
+   *  hardcoded list of Georgia words; now it is built from whichever team the
+   *  reader follows, so a Michigan fan sees Michigan asks. */
+  function isTeamRelevantAsk(a){
+    var meta = myTeamMeta || {};
+    var words = [meta.name, meta.mascot].filter(Boolean).map(function(w){ return w.toLowerCase(); });
+    if (myTeam === 'uga') words.push('uga', 'dawg');
     var q = (a.query || '').toLowerCase();
-    return q.indexOf('georgia') !== -1 || q.indexOf('uga') !== -1 || q.indexOf('dawg') !== -1 || a.relatedGameId === 'uga-ark' || a.relatedGameId === 'fan-uga';
+    for (var i = 0; i < words.length; i++) if (q.indexOf(words[i]) !== -1) return true;
+    return a.relatedGameId === 'fan-' + myTeam;
   }
 
   function askItemHtml(a){
@@ -2727,7 +2906,7 @@
         var entries = snap.docs.map(function(d){ return Object.assign({id: d.id}, d.data()); });
         lastAsksDocs = entries;
         renderAsksFeed(entries);
-        renderUga(lastUgaDoc || UGA_FALLBACK);
+        redrawTeam();
       }, function(){
         lastAsksDocs = [];
         renderAsksFeed([]);
@@ -2864,7 +3043,7 @@
       if (statusEl) statusEl.textContent = 'Answered — see below.';
       lastAsksDocs = [{query: query, askedAt: new Date().toISOString(), answeredAt: new Date().toISOString(), status: 'answered', answer: d.answer}].concat(lastAsksDocs || []);
       renderAsksFeed(lastAsksDocs);
-      renderUga(lastUgaDoc || UGA_FALLBACK);
+      redrawTeam();
     }).catch(function(err){
       btn.disabled = false;
       btn.textContent = originalLabel;
@@ -2881,7 +3060,7 @@
         var docs = snap.docs.map(function(d){ return Object.assign({id: d.id}, d.data()); });
         docs.sort(function(a, b){ return (a.label || '').localeCompare(b.label || ''); });
         renderGamesGrid(docs);
-        renderUga(lastUgaDoc || UGA_FALLBACK);
+        redrawTeam();
         renderResearchList();
         renderSlipTab();
       }, function(){
@@ -2905,20 +3084,20 @@
   }
 
   function tickUgaCountdown(kickoffISO){
-    var el = document.getElementById('uga-countdown');
+    var el = document.getElementById('team-countdown');
     if (!el) { if (ugaCountdownTimer) { clearInterval(ugaCountdownTimer); ugaCountdownTimer = null; } return; }
     var ms = new Date(kickoffISO).getTime() - Date.now();
     var label = formatCountdown(ms);
     el.textContent = label ? ('Kickoff in ' + label) : 'Kickoff has passed — check All Games for the latest';
   }
 
-  function ugaResearchHtml(u){
+  function teamResearchHtml(u){
     var gameId = u.nextGame && u.nextGame.gameId;
     var out = '';
     if (gameId){
       var g = gamesSource().filter(function(x){ return x.id === gameId; })[0];
       if (g){
-        out += '<div class="uga-research">' +
+        out += '<div class="team-research">' +
           '<h3>Research: ' + g.label + '</h3>' +
           (g.pick ?
             '<div class="game-lean"><span class="lean-label">Best bet</span><span class="lean-pick">' + g.pick + '</span><span class="dots">' + dotsHtml(g.pickConfidence || 3) + '</span></div>' :
@@ -2931,47 +3110,90 @@
         '</div>';
       }
     }
-    var ugaAsks = (lastAsksDocs || []).filter(isUgaRelevantAsk);
-    if (ugaAsks.length){
-      out += '<div class="asks-feed">' + '<div class="asks-heading">Your Georgia research asks</div>' + ugaAsks.slice(0, 5).map(askItemHtml).join('') + '</div>';
+    var mine = (lastAsksDocs || []).filter(isTeamRelevantAsk);
+    if (mine.length){
+      out += '<div class="asks-feed"><div class="asks-heading">Your ' +
+        escapeHtml((myTeamMeta || {}).name || 'team') + ' research asks</div>' +
+        mine.slice(0, 5).map(askItemHtml).join('') + '</div>';
     }
     return out;
   }
 
-  function renderUga(u){
-    var root = document.getElementById('uga-root');
+  function renderTeam(u){
+    var root = document.getElementById('team-root');
     if (!root) return;
-    lastUgaDoc = u;
+    lastFanDoc = u;
     if (ugaCountdownTimer) { clearInterval(ugaCountdownTimer); ugaCountdownTimer = null; }
+    var meta = u.meta || myTeamMeta || {};
+    var name = meta.name || 'Your team';
+
+    var change = '<button class="text-toggle-btn" type="button" id="change-team">Change team</button>';
+
+    if (u.loading){
+      root.innerHTML = '<div class="team-hero"><div class="eyebrow">' + escapeHtml(name) + '</div>' +
+        '<h2>Loading\u2026</h2></div>';
+      return;
+    }
+
+    // Never researched. Say so and offer the button, rather than inventing a
+    // season - a fabricated schedule is worse than an empty tab, because the
+    // reader cannot tell which one they are looking at.
+    if (!u.researched){
+      root.innerHTML =
+        '<div class="team-hero">' +
+          '<div class="eyebrow">' + escapeHtml(meta.conf || '') + '</div>' +
+          '<h2>' + escapeHtml(name) + '</h2>' +
+        '</div>' +
+        '<div class="team-next">' +
+          '<h3>Nobody has looked this team up yet</h3>' +
+          '<div class="meta">Rank, record, the full schedule and what to watch \u2014 pulled from the web.</div>' +
+          '<button class="auth-go" type="button" id="research-team">Look up ' + escapeHtml(name) + '</button>' +
+          '<p class="muted" style="margin:8px 0 0;">Spends your own AI credit, once. ' +
+          'After that it is cached and free for everyone who follows ' + escapeHtml(name) + '.</p>' +
+          '<div class="copy-status" id="team-research-status"></div>' +
+        '</div>' +
+        '<div style="margin-top:10px;">' + change + '</div>';
+      return;
+    }
 
     var scheduleHtml = (u.schedule || []).map(function(g){
-      var cls = 'uga-game' + (g.current ? ' current' : '') + (g.result ? ' played' : '');
+      var cls = 'team-game' + (g.current ? ' current' : '') + (g.result ? ' played' : '');
       var badge = g.rivalry ? '<span class="badge rivalry">Rivalry</span>' : (g.ranked ? '<span class="badge ranked">Ranked</span>' : '');
       return '<div class="' + cls + '"><span class="wk">' + g.wk + '</span><span class="opp">' + g.opp + '</span>' + badge +
         (g.result ? '<span class="result">' + g.result + '</span>' : '') + '</div>';
     }).join('');
 
+    // confRecord is the field now; secRecord is what the hand-written Georgia
+    // document used before this tab could be any team.
+    var conf = u.confRecord || u.secRecord || '';
+    var headline = [u.rank ? u.rank + ' in the country' : '', u.record].filter(Boolean).join(' \u00b7 ') || name;
+
     root.innerHTML =
-      '<div class="uga-hero">' +
-        '<div class="eyebrow">Georgia Bulldogs · Just for you</div>' +
-        '<h2>' + u.rank + ' in the country · ' + u.record + '</h2>' +
-        '<div class="uga-stats">' +
-          '<div class="uga-stat"><div class="v">' + u.record + '</div><div class="k">Overall</div></div>' +
-          '<div class="uga-stat"><div class="v">' + u.secRecord + '</div><div class="k">SEC</div></div>' +
-        '</div>' +
+      '<div class="team-hero">' +
+        '<div class="eyebrow">' + escapeHtml(name + (meta.mascot ? ' ' + meta.mascot : '')) + ' \u00b7 Just for you</div>' +
+        '<h2>' + headline + '</h2>' +
+        (u.record || conf ?
+          '<div class="team-stats">' +
+            (u.record ? '<div class="team-stat"><div class="v">' + u.record + '</div><div class="k">Overall</div></div>' : '') +
+            (conf ? '<div class="team-stat"><div class="v">' + conf + '</div><div class="k">' + escapeHtml(meta.conf || 'Conference') + '</div></div>' : '') +
+          '</div>' : '') +
       '</div>' +
       (u.nextGame ?
-        '<div class="uga-next">' +
+        '<div class="team-next">' +
           '<h3>Next up: ' + u.nextGame.opponent + '</h3>' +
-          '<div class="meta">' + (u.nextGame.tv || '') + (u.nextGame.line ? ' · ' + u.nextGame.line : '') + '</div>' +
-          '<div class="uga-countdown" id="uga-countdown"></div>' +
+          '<div class="meta">' + (u.nextGame.tv || '') + (u.nextGame.line ? ' \u00b7 ' + u.nextGame.line : '') + '</div>' +
+          '<div class="team-countdown" id="team-countdown"></div>' +
         '</div>' : ''
       ) +
-      ugaResearchHtml(u) +
-      '<div class="uga-schedule">' + scheduleHtml + '</div>' +
+      teamResearchHtml(u) +
+      (scheduleHtml ? '<div class="team-schedule">' + scheduleHtml + '</div>' : '') +
       (u.storyline && u.storyline.length ?
-        '<div class="uga-story"><h3>What to watch</h3>' + u.storyline.map(function(p){ return '<p>' + p + '</p>'; }).join('') + '</div>' : ''
-      );
+        '<div class="team-story"><h3>What to watch</h3>' + u.storyline.map(function(p){ return '<p>' + p + '</p>'; }).join('') + '</div>' : ''
+      ) +
+      '<div class="team-footer">' + change +
+        '<button class="text-toggle-btn" type="button" id="research-team">Refresh</button>' +
+        '<div class="copy-status" id="team-research-status"></div>' +
+      '</div>';
 
     if (u.nextGame && u.nextGame.kickoffISO){
       tickUgaCountdown(u.nextGame.kickoffISO);
@@ -2979,16 +3201,10 @@
     }
   }
 
-  function subscribeUga(){
-    try{
-      dbCap.doc('fan/uga').onSnapshot(function(snap){
-        renderUga(snap.exists ? snap.data() : UGA_FALLBACK);
-      }, function(){
-        renderUga(UGA_FALLBACK);
-      });
-    }catch(e){
-      renderUga(UGA_FALLBACK);
-    }
+  /** Re-draw whatever the tab last had, after something else on the page
+   *  changed underneath it (the board, the asks feed, a slip edit). */
+  function redrawTeam(){
+    if (lastFanDoc) renderTeam(lastFanDoc);
   }
 
   function contextForChat(id){
@@ -3049,6 +3265,29 @@
 
   // ---------- events ----------
   function wireEvents(){
+    // My Team: change it, or pay to look it up. Delegated because the tab's
+    // contents are re-rendered whenever the board, the asks feed or the team
+    // itself changes, which would strip a directly-bound listener.
+    var teamPanel = document.getElementById('panel-uga');
+    if (teamPanel) teamPanel.addEventListener('click', function(e){
+      if (e.target.closest('#change-team')) { openTeamPicker(); return; }
+      var go = e.target.closest('#research-team');
+      if (go) researchTeam(go);
+    });
+    var pickerList = document.getElementById('team-picker-list');
+    if (pickerList) pickerList.addEventListener('click', function(e){
+      var btn = e.target.closest('[data-team]');
+      if (!btn) return;
+      setTeam(btn.getAttribute('data-team'));
+      closeSheet(document.getElementById('team-picker'));
+    });
+    var search = document.getElementById('team-search');
+    if (search) search.addEventListener('input', function(){ renderTeamPicker(this.value); });
+    var pickerClose = document.getElementById('team-picker-close');
+    if (pickerClose) pickerClose.addEventListener('click', function(){
+      closeSheet(document.getElementById('team-picker'));
+    });
+
     document.getElementById('card-list').addEventListener('click', function(e){
       var t = e.target.closest('.why-toggle');
       if (t){
@@ -3555,11 +3794,10 @@
     refreshBilling().then(noteBillingReturn);
     initSlipSync();
     renderGamesGrid(GAMES_FALLBACK, GAMES_FALLBACK.length + ' games tracked · connecting to live board…');
-    renderUga(UGA_FALLBACK);
 
     dbCap = makeDbShim();
     subscribeGames();
-    subscribeUga();
+    loadTeams().then(loadTeam);
     subscribeStatus();
     subscribeChangelog();
     subscribeAsks();

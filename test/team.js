@@ -1,0 +1,153 @@
+// My Team: the tab that used to be Georgia, hardcoded.
+//
+// The thing worth testing is not that a dropdown works. It is the shape that
+// makes 132 teams affordable: a team's page is cached under `fan/<id>` and
+// SHARED, so cost scales with teams in use rather than with users, and an
+// unknown id can never become a Firestore document key.
+const h = require('./harness.js');
+h.install();
+
+// One mutable reply, read on every call. The server builds its Anthropic
+// client once at startup, so swapping require.cache later does nothing - a
+// mistake that made two assertions pass for the wrong reason before this.
+let researchCalls = 0;
+let reply = {
+  rank: '#11', record: '3-1', confRecord: '1-0 Big Ten',
+  nextGame: { opponent: 'at Ohio State', kickoffISO: '2026-10-03T16:00:00Z', tv: 'FOX' },
+  schedule: [{ wk: 'Sep 5', opp: 'Fresno State', loc: 'home', result: 'W 30-10' },
+             { wk: 'Oct 3', opp: 'at Ohio State', loc: 'away', current: true, ranked: true }],
+  storyline: ['A paragraph about the season.'],
+};
+
+require.cache['FAKE_AN'].exports = function () {
+  const message = async () => ({
+    stop_reason: 'end_turn',
+    usage: { input_tokens: 10, output_tokens: 10 },
+    content: [{ type: 'text', text: JSON.stringify(reply) }],
+  });
+  return {
+    messages: {
+      // identity.meter() wraps both, so both must exist or the app does not boot.
+      create: message,
+      // Counted HERE, not in finalMessage(): meter() calls finalMessage() to
+      // price the call and the caller calls it again, and on the real SDK both
+      // resolve the same single request. Counting the resolutions would have
+      // reported two API calls for every one that happened.
+      stream: () => { researchCalls++; return { finalMessage: message }; },
+    },
+    batches: {},
+  };
+};
+
+const SECRET = 'identity-secret-abcdefghijklmn';
+process.env.IDENTITY_SESSION_SECRET = SECRET;
+process.env.SESSION_SECRET = 'cfb-secret-abcdefghijklmnopq';
+process.env.SITE_LOGIN_USERNAME = 'erik';
+process.env.SITE_LOGIN_PASSWORD = 'site-password-here-1';
+process.env.RESEARCH_ALLOWED_EMAILS = 'owner@example.com';
+process.env.FIRESTORE_DATABASE_ID = 'college-football-app';
+process.env.IDENTITY_DATABASE_ID = 'identity';
+process.env.GOOGLE_CLOUD_PROJECT = 'test';
+process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
+process.env.CRON_SECRET = 'cron-secret-value-here';
+process.env.PASSKEY_RP_ID = 'strongtechnicalconsulting.com';
+process.env.PORT = '9209';
+require(require('path').join(__dirname, '..', 'server.js'));
+const teams = require(require('path').join(__dirname, '..', 'teams.js'));
+
+const B = 'http://127.0.0.1:9209';
+let pass = 0, fail = 0;
+const ok = (n, c, x) => { if (c) { pass++; console.log('  PASS  ' + n); } else { fail++; console.log('  FAIL  ' + n + (x ? '  <- ' + x : '')); } };
+const J = { 'content-type': 'application/json' };
+const send = (m, p, b, c) => fetch(B + p, {
+  method: m, headers: c ? { ...J, cookie: c } : J,
+  body: b === undefined ? undefined : JSON.stringify(b),
+});
+const jar = (r) => (r.headers.getSetCookie() || []).map((c) => c.split(';')[0]).join('; ');
+
+(async () => {
+  await new Promise((r) => setTimeout(r, 900));
+
+  // --- the picker ----------------------------------------------------------
+  let r = await send('GET', '/api/teams');
+  const list = await r.json();
+  ok('the team list is open to anyone', r.status === 200, String(r.status));
+  const all = list.conferences.flatMap((c) => c.teams);
+  ok('...and carries every FBS team', all.length === teams.TEAMS.length, String(all.length));
+  ok('...grouped, because 132 names is not a list anyone scans', list.conferences.length > 5);
+  ok('...with Georgia still the default', list.default === 'uga', list.default);
+  ok('...and a colour per team, for the tab chrome', all.every((t) => /^#[0-9A-Fa-f]{6}$/.test(t.color)));
+
+  // --- an unknown id never becomes a document key --------------------------
+  // Without this, a typo in a URL creates a `fan/<junk>` row nothing cleans up
+  // - and a path separator in one would not stay inside the collection.
+  for (const junk of ['../evil', 'not-a-team', 'Georgia Bulldogs']) {
+    const bad = await send('GET', `/api/fan/${encodeURIComponent(junk)}`);
+    ok(`an unknown team id is a 404, not a new document (${junk || 'empty'})`,
+        bad.status === 404, String(bad.status));
+  }
+
+  // --- reading a team is open, and honest about being empty ----------------
+  r = await send('GET', '/api/fan/michigan');
+  let page = await r.json();
+  ok('an unresearched team reads back fine', r.status === 200, String(r.status));
+  ok('...and says it has never been looked up', page.researched === false);
+  ok('...rather than inventing a season', !page.schedule);
+  ok('...but still names the team, so the tab can be drawn', page.meta.name === 'Michigan');
+
+  // --- researching costs credit, so it needs an account --------------------
+  const anon = await send('POST', '/api/fan/michigan/research');
+  ok('researching a team needs an account', anon.status === 401, String(anon.status));
+  ok('...and nothing was spent doing it', researchCalls === 0, String(researchCalls));
+
+  const cookie = jar(await send('POST', '/api/id/register',
+    { email: 'fan@example.com', password: 'a-long-password-1' }));
+
+  // A plain member, NOT on the research allowlist. This is the point of the
+  // change: research used to be the owner's alone.
+  r = await send('POST', '/api/fan/michigan/research', {}, cookie);
+  page = await r.json();
+  ok('a member who is not the owner may research their own team',
+      r.status === 200, JSON.stringify(page).slice(0, 160));
+  ok('...and it cost exactly one model call', researchCalls === 1, String(researchCalls));
+  ok('...and the page came back filled in', page.record === '3-1' && page.schedule.length === 2);
+  ok('...marked as researched', page.researched === true && page.cached === false);
+
+  // --- the cache is the whole economics ------------------------------------
+  // The second fan of a team pays nothing. Without this, cost scales with
+  // users rather than with teams, and 132 teams is a bill rather than a list.
+  const second = jar(await send('POST', '/api/id/register',
+    { email: 'fan2@example.com', password: 'a-long-password-2' }));
+  r = await send('POST', '/api/fan/michigan/research', {}, second);
+  const again = await r.json();
+  ok('the next person to ask for that team is served the cache', again.cached === true);
+  ok('...spending nothing', researchCalls === 1, String(researchCalls));
+
+  // --- a bad research run leaves the good page standing --------------------
+  // validate() runs on the PROPOSAL. Without that, one bad run replaces a good
+  // page with a broken tab that needs a deploy to fix.
+  reply = { schedule: [{ wk: 'Sep 5', loc: 'home' }] };   // a row with no opponent
+  const bag = h.bag('college-football-app');
+  const stored = bag.get('fan/michigan');
+  bag.set('fan/michigan', { ...stored, lastChecked: '2020-01-01T00:00:00.000Z' });
+  const before = researchCalls;
+  r = await send('POST', '/api/fan/michigan/research', {}, cookie);
+  ok('a stale page IS re-researched', researchCalls === before + 1, String(researchCalls - before));
+  ok('...a run that returns junk fails', r.status >= 400, String(r.status));
+  ok('...and the last good page is still there',
+      (bag.get('fan/michigan') || {}).record === '3-1',
+      JSON.stringify(bag.get('fan/michigan')));
+
+  // --- the choice is durable, not weekly -----------------------------------
+  // The slip resets every Tuesday. A team is not a weekly decision, so it
+  // lives somewhere that does not get handed back empty.
+  r = await send('PUT', '/api/prefs', { team: 'michigan' }, cookie);
+  ok('a member saves their team', r.status === 200, String(r.status));
+  r = await send('GET', '/api/prefs', undefined, cookie);
+  ok('...and gets it back', (await r.json()).team === 'michigan');
+  r = await send('PUT', '/api/prefs', { team: '../evil' }, cookie);
+  ok('an unknown team is refused rather than stored', r.status === 400, String(r.status));
+
+  console.log(`\n${pass} passed, ${fail} failed`);
+  process.exit(fail ? 1 : 0);
+})();
