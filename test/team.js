@@ -184,6 +184,50 @@ const jar = (r) => (r.headers.getSetCookie() || []).map((c) => c.split(';')[0]).
   }
   ok('a board with no poll is still a board', board.validate(board.SEED).rankings.length === 0);
 
+  // --- arranging the board -------------------------------------------------
+  // Per reader, week-scoped, carried on the slip so it follows them between
+  // devices and expires with the board it arranged.
+  r = await send('PUT', '/api/slip', {
+    slip: {}, customPicks: {}, bankroll: '',
+    board: {
+      hidden: ['msu-nd'], pinned: ['lsu-om'], order: ['lsu-om', 'msu-nd'],
+      own: [{ id: 'own-1', title: 'Vandy +17.5 <script>', matchup: 'Vanderbilt at Alabama',
+              market: 'Spread', odds: '-105', thesis: 'Backdoor cover machine.' },
+            { title: '' }],
+    },
+  }, cookie);
+  ok('an arrangement saves with the slip', r.status === 200, String(r.status));
+
+  r = await send('GET', '/api/slip', undefined, cookie);
+  const back = await r.json();
+  ok('...and comes back', back.board.hidden[0] === 'msu-nd' && back.board.pinned[0] === 'lsu-om');
+  ok('...with the order intact', back.board.order.join(',') === 'lsu-om,msu-nd');
+  ok('...and one card, the one with a title', back.board.own.length === 1);
+  // These are drawn straight into innerHTML, same as every other card.
+  ok('...with angle brackets stripped from what the reader typed',
+      back.board.own[0].title === 'Vandy +17.5 script', back.board.own[0].title);
+
+  // Unbounded arrays here are a way to make your own board unopenable.
+  r = await send('PUT', '/api/slip', {
+    slip: {}, customPicks: {}, bankroll: '',
+    board: { hidden: new Array(500).fill('x'), own: new Array(100).fill({ title: 'a' }) },
+  }, cookie);
+  r = await send('GET', '/api/slip', undefined, cookie);
+  const capped = (await r.json()).board;
+  ok('a huge arrangement is capped rather than stored', capped.hidden.length === 200, String(capped.hidden.length));
+  ok('...and so are hand-written cards', capped.own.length === 25, String(capped.own.length));
+
+  // Rubbish in the shape must not become a rendered card.
+  r = await send('PUT', '/api/slip', {
+    slip: {}, customPicks: {}, bankroll: '',
+    board: { hidden: 'not-an-array', pinned: [1, null, 'ok'], own: 'nope' },
+  }, cookie);
+  r = await send('GET', '/api/slip', undefined, cookie);
+  const junk = (await r.json()).board;
+  ok('a non-array arrangement reads back empty, not broken',
+      Array.isArray(junk.hidden) && junk.hidden.length === 0 && Array.isArray(junk.own));
+  ok('...and non-string ids are dropped', junk.pinned.join(',') === 'ok', junk.pinned.join(','));
+
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 })();

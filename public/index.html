@@ -366,6 +366,15 @@
   .top25-row .gm{flex:1; display:flex; flex-direction:column; align-items:flex-end; gap:1px;
     text-align:right; font-size:13.5px; color:var(--label-2); min-width:0;}
   .top25-row .gm .ln{font-size:12px; color:var(--text-faint);}
+  .card-tools{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; padding-top:10px; box-shadow:inset 0 1px 0 var(--sep);}
+  .card-tool{min-height:32px; padding:0 10px; border:0; border-radius:8px; background:var(--fill);
+    color:var(--label-2); font:inherit; font-size:13px; font-weight:600; cursor:pointer;}
+  .card-tool:hover{background:var(--fill-2);}
+  .card-tool[aria-pressed="true"]{background:var(--accent-soft); color:var(--tint);}
+  .pick.own{border-left:3px solid var(--tint);}
+  .pick-kind.own{background:var(--accent-soft); color:var(--tint);}
+  .hidden-note{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:13px;
+    color:var(--text-faint); padding:2px 2px 10px;}
   .top25-row.bye .gm{font-style:italic; color:var(--text-faint);}
   .top25-row .gm .ln{color:var(--text-faint);}
   .credit-options .reset-btn{padding:0 6px; font-size:14px; width:100%;}
@@ -795,6 +804,25 @@
       <button class="refresh-btn" id="card-search-btn" type="button">Find</button>
     </div>
     <div class="refresh-meta" id="card-search-status">Researched on the spot and added for everyone. Spends your own AI credit.</div>
+    <!-- Your own card. No research, no cost, and yours alone - the opposite
+         trade from the button above, which spends credit and shows everyone. -->
+    <button class="text-toggle-btn" id="own-card-toggle" type="button">Or write your own card</button>
+    <div id="own-card-form" hidden>
+      <div class="form-group">
+        <label for="own-title">The bet</label>
+        <input type="text" id="own-title" maxlength="120" placeholder="Georgia -24.5" autocomplete="off">
+        <label for="own-matchup" style="margin-top:10px;">Matchup</label>
+        <input type="text" id="own-matchup" maxlength="120" placeholder="Georgia at Arkansas" autocomplete="off">
+        <label for="own-market" style="margin-top:10px;">Market</label>
+        <input type="text" id="own-market" maxlength="120" placeholder="Spread" autocomplete="off">
+        <label for="own-odds" style="margin-top:10px;">Price (optional)</label>
+        <input type="text" id="own-odds" maxlength="24" placeholder="-110" autocomplete="off" inputmode="text">
+        <label for="own-thesis" style="margin-top:10px;">Why</label>
+        <input type="text" id="own-thesis" maxlength="400" placeholder="One line on the reason" autocomplete="off">
+      </div>
+      <button class="auth-go" id="own-card-save" type="button">Add to my board</button>
+      <div class="copy-status" id="own-card-status"></div>
+    </div>
   </div>
   <div class="card-list dk-grid" id="card-list"></div>
 </section>
@@ -1862,6 +1890,7 @@
         body: JSON.stringify({
           slip: slipState,
           customPicks: customPicks,
+          board: arrangement,
           bankroll: (document.getElementById('bankroll-input') || {}).value || ''
         })
       }).then(function(r){
@@ -1874,6 +1903,14 @@
     if (!d) return;
     slipState = d.slip || {};
     customPicks = d.customPicks || {};
+    // The signed-in arrangement wins: it is the one that followed them here.
+    if (d.board && typeof d.board === 'object'){
+      arrangement = {
+        hidden: d.board.hidden || [], pinned: d.board.pinned || [],
+        order: d.board.order || [], own: d.board.own || []
+      };
+      try{ localStorage.setItem(ARRANGE_KEY, JSON.stringify(arrangement)); }catch(e){}
+    }
     try{
       localStorage.setItem('cover-sheet-slip-v1', JSON.stringify(slipState));
       localStorage.setItem('cover-sheet-custom-picks-v1', JSON.stringify(customPicks));
@@ -2049,11 +2086,161 @@
     return slipState[id] && slipState[id].placed ? 'checked' : '';
   }
 
+  // ---------- arranging the board ----------
+  //
+  // One shared board, arranged per reader: hide what you do not care about,
+  // pin what you do, nudge the rest into order, and write your own card.
+  //
+  // Week-scoped on purpose, and stored on the slip so it follows you between
+  // devices. Card ids mean different games next week, so an arrangement that
+  // outlived its board would hide games nobody chose to hide.
+  var ARRANGE_KEY = 'cover-sheet-board-v1';
+  var arrangement = loadArrangement();
+
+  function emptyArrangement(){ return { hidden: [], pinned: [], order: [], own: [] }; }
+  function loadArrangement(){
+    try{
+      var raw = localStorage.getItem(ARRANGE_KEY);
+      var a = raw ? JSON.parse(raw) : null;
+      if (!a || typeof a !== 'object') return emptyArrangement();
+      return {
+        hidden: Array.isArray(a.hidden) ? a.hidden : [],
+        pinned: Array.isArray(a.pinned) ? a.pinned : [],
+        order: Array.isArray(a.order) ? a.order : [],
+        own: Array.isArray(a.own) ? a.own : []
+      };
+    }catch(e){ return emptyArrangement(); }
+  }
+  function saveArrangement(){
+    try{ localStorage.setItem(ARRANGE_KEY, JSON.stringify(arrangement)); }catch(e){}
+    pushSlipState();
+    renderCards();
+    refreshAllRows();
+  }
+  function inList(list, id){ return list.indexOf(id) !== -1; }
+  function toggleIn(list, id){
+    var i = list.indexOf(id);
+    if (i === -1) list.push(id); else list.splice(i, 1);
+  }
+
+  /** The cards this reader sees, in the order they put them: their own first-
+   *  class cards and the board's, minus what they hid, pinned floated up, and
+   *  whatever order they nudged things into applied on top. */
+  function arrangedCards(){
+    var own = (arrangement.own || []).map(function(c){
+      return { id: c.id, type: 'own', title: c.title, matchup: c.matchup, market: c.market,
+               odds: c.odds, thesis: c.thesis, confidence: 0 };
+    });
+    var all = own.concat(PICKS);
+    var visible = all.filter(function(c){ return !inList(arrangement.hidden, c.id); });
+    var order = arrangement.order || [];
+    visible.sort(function(a, b){
+      var pa = inList(arrangement.pinned, a.id) ? 0 : 1;
+      var pb = inList(arrangement.pinned, b.id) ? 0 : 1;
+      if (pa !== pb) return pa - pb;
+      var ia = order.indexOf(a.id), ib = order.indexOf(b.id);
+      // Anything never moved keeps its original position, behind anything
+      // that was: an unlisted card sorting to the top would reshuffle the
+      // board every time somebody nudged one thing.
+      if (ia === -1 && ib === -1) return all.indexOf(a) - all.indexOf(b);
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+    return visible;
+  }
+
+  /** Move a card one place within what is currently shown. Written back as a
+   *  full order so the next render is exactly what was just seen. */
+  function moveCard(id, delta){
+    var shown = arrangedCards().map(function(c){ return c.id; });
+    var i = shown.indexOf(id);
+    var j = i + delta;
+    if (i === -1 || j < 0 || j >= shown.length) return;
+    shown.splice(j, 0, shown.splice(i, 1)[0]);
+    arrangement.order = shown;
+    // Moving a card out from under a pinned one is a request to unpin it.
+    if (inList(arrangement.pinned, id) && j > 0 && !inList(arrangement.pinned, shown[j - 1])){
+      toggleIn(arrangement.pinned, id);
+    }
+    saveArrangement();
+  }
+
+  function cardToolsHtml(id, isOwn){
+    var pinned = inList(arrangement.pinned, id);
+    return '<div class="card-tools">' +
+      '<button class="card-tool" type="button" data-arrange="pin" data-id="' + escapeHtml(id) + '"' +
+        (pinned ? ' aria-pressed="true"' : '') + '>' + (pinned ? 'Pinned' : 'Pin') + '</button>' +
+      '<button class="card-tool" type="button" data-arrange="up" data-id="' + escapeHtml(id) + '" aria-label="Move up">↑</button>' +
+      '<button class="card-tool" type="button" data-arrange="down" data-id="' + escapeHtml(id) + '" aria-label="Move down">↓</button>' +
+      '<button class="card-tool" type="button" data-arrange="' + (isOwn ? 'delete' : 'hide') + '" data-id="' + escapeHtml(id) + '">' +
+        (isOwn ? 'Delete' : 'Hide') + '</button>' +
+    '</div>';
+  }
+
+  /** The strip that says how many cards are hidden, and gives them back. A
+   *  hidden card with no way to unhide it is a card someone has lost. */
+  function hiddenNoticeHtml(){
+    var n = (arrangement.hidden || []).length;
+    if (!n) return '';
+    return '<div class="hidden-note">' + n + (n === 1 ? ' card hidden' : ' cards hidden') +
+      ' <button class="text-toggle-btn" type="button" id="unhide-all">Show them</button></div>';
+  }
+
+  function ownCardHtml(c){
+    return '<article class="pick own" data-pick="' + escapeHtml(c.id) + '">' +
+      '<div class="pick-head"><div>' +
+        '<span class="pick-kind own">Your card</span>' +
+        '<div class="pick-title">' + escapeHtml(c.title) + '</div>' +
+        (c.matchup ? '<div class="pick-sub">' + escapeHtml(c.matchup) + '</div>' : '') +
+        (c.market || c.odds ?
+          '<div class="pick-time">' + escapeHtml([c.market, c.odds].filter(Boolean).join(' · ')) + '</div>' : '') +
+      '</div></div>' +
+      (c.thesis ? '<div class="pick-thesis">' + escapeHtml(c.thesis) + '</div>' : '') +
+      cardToolsHtml(c.id, true) +
+    '</article>';
+  }
+
+  function openOwnCardForm(){
+    var el = document.getElementById('own-card-form');
+    if (el) el.hidden = !el.hidden;
+    if (el && !el.hidden){
+      var t = document.getElementById('own-title');
+      if (t) { t.value = ''; setTimeout(function(){ try{ t.focus(); }catch(e){} }, 50); }
+      ['own-matchup','own-market','own-odds','own-thesis'].forEach(function(id){
+        var f = document.getElementById(id); if (f) f.value = '';
+      });
+    }
+  }
+
+  function saveOwnCard(){
+    var val = function(id){ return (document.getElementById(id) || {}).value || ''; };
+    var title = val('own-title').trim();
+    var status = document.getElementById('own-card-status');
+    if (!title){ if (status) status.textContent = 'Give it a title, at least.'; return; }
+    var id = 'own-' + Date.now().toString(36);
+    arrangement.own = (arrangement.own || []).concat([{
+      id: id,
+      title: title, matchup: val('own-matchup').trim(), market: val('own-market').trim(),
+      odds: val('own-odds').trim(), thesis: val('own-thesis').trim()
+    }]);
+    // Put it where they can see it. Once any card has been moved there IS an
+    // explicit order, and anything not in it sorts to the bottom - so a card
+    // someone just wrote would land off the end of the board they wrote it on.
+    if ((arrangement.order || []).length) arrangement.order.unshift(id);
+    if (status) status.textContent = '';
+    var form = document.getElementById('own-card-form');
+    if (form) form.hidden = true;
+    saveArrangement();
+  }
+
   function renderCards(){
     var list = document.getElementById('card-list');
-    var html = '';
+    var html = hiddenNoticeHtml();
+    var shown = arrangedCards();
 
-    PICKS.forEach(function(p){
+    shown.forEach(function(p){
+      if (p.type === 'own'){ html += ownCardHtml(p); return; }
       var dec = americanToDecimal(p.odds);
       html += '' +
       '<article class="pick" data-pick="' + p.id + '">' +
@@ -2073,6 +2260,7 @@
           switchRowHtml(p.id) +
           '<div class="stake-row">' + stakeInputHtml(p.id) + '<span class="payout" data-payout-for="' + p.id + '"></span></div>' +
         '</div>' +
+        cardToolsHtml(p.id, false) +
       '</article>';
     });
 
@@ -3301,6 +3489,29 @@
       var go = e.target.closest('#research-team');
       if (go) researchTeam(go);
     });
+    // Arranging the board: pin, move, hide, and your own card.
+    var cardList = document.getElementById('card-list');
+    if (cardList) cardList.addEventListener('click', function(e){
+      var unhide = e.target.closest('#unhide-all');
+      if (unhide){ arrangement.hidden = []; saveArrangement(); return; }
+      var tool = e.target.closest('[data-arrange]');
+      if (!tool) return;
+      var id = tool.getAttribute('data-id');
+      var what = tool.getAttribute('data-arrange');
+      if (what === 'pin'){ toggleIn(arrangement.pinned, id); saveArrangement(); }
+      else if (what === 'hide'){ toggleIn(arrangement.hidden, id); saveArrangement(); }
+      else if (what === 'up'){ moveCard(id, -1); }
+      else if (what === 'down'){ moveCard(id, 1); }
+      else if (what === 'delete'){
+        arrangement.own = (arrangement.own || []).filter(function(c){ return c.id !== id; });
+        saveArrangement();
+      }
+    });
+    var ownToggle = document.getElementById('own-card-toggle');
+    if (ownToggle) ownToggle.addEventListener('click', openOwnCardForm);
+    var ownSave = document.getElementById('own-card-save');
+    if (ownSave) ownSave.addEventListener('click', saveOwnCard);
+
     // The Top 25, and jumping from a ranked team to its card on the slate.
     var t25 = document.getElementById('top25-toggle');
     if (t25) t25.addEventListener('click', function(){
