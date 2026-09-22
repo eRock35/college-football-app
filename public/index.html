@@ -344,6 +344,8 @@
     background:var(--fill); color:var(--tint); font-size:15px; font-weight:600; cursor:pointer;
   }
   .reset-btn.destructive, #reset-slip{color:var(--negative);}
+  .credit-options{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px;}
+  .credit-options .reset-btn{padding:0 6px; font-size:14px; width:100%;}
   .text-toggle-btn{
     min-height:44px; padding:0 6px; border:none; background:transparent;
     color:var(--tint); font-size:15px; font-weight:600; cursor:pointer;
@@ -864,17 +866,35 @@
        your credit and your passkey, because they live on the account rather
        than in any one app. -->
   <div class="auth-or">or use your account for all the apps</div>
-  <div class="form-group">
-    <label for="shared-email">Email</label>
-    <input type="email" id="shared-email" inputmode="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="you@example.com">
-    <label for="shared-password" style="margin-top:10px;">Password</label>
-    <input type="password" id="shared-password" autocomplete="current-password" enterkeyhint="done" placeholder="Your password">
+  <div id="shared-signin-form">
+    <div class="form-group">
+      <label for="shared-email">Email</label>
+      <input type="email" id="shared-email" inputmode="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" placeholder="you@example.com">
+      <label for="shared-password" style="margin-top:10px;">Password</label>
+      <input type="password" id="shared-password" autocomplete="current-password" enterkeyhint="done" placeholder="Your password">
+    </div>
+    <button class="auth-go" id="shared-signin-btn" type="button" style="margin-top:10px;">Sign in</button>
   </div>
-  <button class="auth-go" id="shared-signin-btn" type="button" style="margin-top:10px;">Sign in</button>
+  <!-- Offering a sign-in form to someone already signed in is how the panel
+       used to read once the credit section landed underneath it. -->
+  <p class="muted" id="shared-signed-in" style="font-size:13px; margin:8px 0 0;" hidden></p>
   <p class="muted" style="font-size:13px; margin:8px 0 0;">
-    <a href="https://acct.strongtechnicalconsulting.com">Manage that account</a> &mdash; password, Face ID, credit.
+    <a href="https://acct.strongtechnicalconsulting.com">Manage that account</a> &mdash; password and Face ID.
   </p>
   <div class="copy-status" id="shared-status"></div>
+
+  <!-- AI credit, bought HERE.
+       This used to be the "credit" in the link above: press it and you landed
+       in DataViz, a chart app you were not using, styled like a different
+       product, to buy something that was never DataViz's to sell. The checkout
+       routes live in the shared account module now, so this app mints its own
+       and Stripe returns you to this page. Only the money is shared. -->
+  <div id="credit-section" hidden>
+    <div class="auth-or">AI credit</div>
+    <p class="muted" id="credit-meter" style="margin:0 0 8px;"></p>
+    <div id="credit-body"></div>
+    <div class="copy-status" id="credit-status"></div>
+  </div>
 
   <!-- Changing the site password. Shown only to an account that may spend on
        research - this app has many accounts but ONE site password, and it is
@@ -1102,6 +1122,121 @@
     }
   }
 
+  // ---------- AI credit ----------
+  // The balance lives on the shared account, so it is read from /api/id -
+  // this app's own sign-in has never had anything to do with it. What is
+  // bought is account-level too; only the sheet is this app's.
+  var billing = null;
+
+  function creditMoney(n){ return '$' + Number(n || 0).toFixed(2); }
+  /** A price, not a balance: "$5 a month", not "$5.00 a month". */
+  function creditFee(n){ var v = Number(n || 0); return '$' + (v % 1 ? v.toFixed(2) : String(v)); }
+
+  function paintCredit(){
+    var sec = document.getElementById('credit-section');
+    if (!sec) return;
+    // Nothing to say to someone who is not on the shared account: this app's
+    // own sign-in carries no balance, and offering to top up a balance they
+    // do not have would be a dead end.
+    var form = document.getElementById('shared-signin-form');
+    var who = document.getElementById('shared-signed-in');
+    var on = !!(billing && billing.signedIn);
+    if (form) form.hidden = on;
+    if (who){
+      who.hidden = !on;
+      if (on) who.textContent = 'Signed in as ' + (billing.email || 'your account') + '.';
+    }
+    if (!on){ sec.hidden = true; return; }
+    sec.hidden = false;
+
+    var meter = document.getElementById('credit-meter');
+    var body = document.getElementById('credit-body');
+    document.getElementById('credit-status').textContent = '';
+    var b = billing.budget || {};
+    meter.textContent = b.unlimited
+      ? (b.reason === 'byok' ? 'Running on your own Anthropic key — not metered.' : 'Not metered.')
+      : creditMoney(b.remainingUsd) + ' left of ' + creditMoney(b.allowanceUsd) +
+        '. It works across every app on this domain.';
+
+    if (!billing.available){
+      body.innerHTML = '<p class="muted">Buying credit is not switched on for this deployment.</p>';
+      return;
+    }
+
+    var html = '';
+    if (!billing.member){
+      html += '<p class="muted"><b>' + creditFee(billing.monthlyUsd) + ' a month</b> covers every app here. ' +
+        'Then buy credit at what the calls actually cost, or bring your own Anthropic key.</p>' +
+        '<button class="auth-go" id="member-btn" type="button">Become a member — ' +
+        creditFee(billing.monthlyUsd) + '/month</button>';
+    } else {
+      html += '<p class="muted">Member — ' + creditFee(billing.monthlyUsd) +
+        ' a month. Credit below is sold at what the calls cost.</p>' +
+        '<div class="credit-options">' +
+        (billing.topUps || []).map(function(o){
+          return '<button class="reset-btn" type="button" data-usd="' + Number(o.usd) + '">' +
+            escapeHtml(o.label) + '</button>';
+        }).join('') + '</div>';
+      if (billing.manageable){
+        html += '<button class="reset-btn" type="button" id="portal-btn" style="width:100%; margin-top:8px;">Manage billing</button>';
+      }
+    }
+    body.innerHTML = html;
+
+    var mb = document.getElementById('member-btn');
+    if (mb) mb.addEventListener('click', function(){ startCheckout('/api/id/billing/membership', {}, mb); });
+    var pb = document.getElementById('portal-btn');
+    if (pb) pb.addEventListener('click', function(){ startCheckout('/api/id/billing/portal', {}, pb); });
+    Array.prototype.forEach.call(body.querySelectorAll('[data-usd]'), function(btn){
+      btn.addEventListener('click', function(){
+        startCheckout('/api/id/billing/credit', { usd: Number(btn.getAttribute('data-usd')) }, btn);
+      });
+    });
+  }
+
+  /** Off to Stripe, and back to this page afterwards. */
+  function startCheckout(path, body, btn){
+    var status = document.getElementById('credit-status');
+    if (btn) btn.disabled = true;
+    status.textContent = 'Opening checkout…';
+    var payload = {};
+    for (var k in (body || {})) payload[k] = body[k];
+    payload.returnTo = location.pathname;
+    fetch(path, {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
+    }).then(function(r){
+      return r.json().catch(function(){ return {}; }).then(function(d){
+        if (!r.ok || !d.url) throw new Error(d.detail || d.error || 'Could not open checkout.');
+        location.href = d.url;
+      });
+    }).catch(function(e){
+      status.textContent = e.message;
+      if (btn) btn.disabled = false;
+    });
+  }
+
+  function refreshBilling(){
+    return fetch('/api/id/billing').then(function(r){ return r.json(); }).then(function(d){
+      billing = d; paintCredit(); return d;
+    }).catch(function(){ billing = null; });
+  }
+
+  /** Coming back from Stripe, and the link a 402 carries. `?topup=1` is what
+   *  identity puts in its "out of credit" message now that it is relative, so
+   *  it opens this app's panel rather than sending the reader elsewhere. */
+  function noteBillingReturn(){
+    var q = new URLSearchParams(location.search);
+    var member = q.get('member'), credited = q.get('credited'), topup = q.get('topup');
+    if (!member && !credited && !topup) return;
+    history.replaceState(null, '', location.pathname + location.hash);
+    refreshBilling().then(function(){
+      openAuthPanel();
+      var status = document.getElementById('credit-status');
+      if (member) status.textContent = 'You’re a member — thank you.';
+      else if (credited) status.textContent = 'Credit added.';
+    });
+  }
+
   // ---------- passkeys (Face ID / Touch ID) ----------
   // Native WebAuthn, no library: the browser hands back ArrayBuffers and the
   // server speaks base64url JSON, so these two helpers do the translation.
@@ -1227,6 +1362,8 @@
     if (signIn) signIn.hidden = !show;
     if (or) or.hidden = !show;
     paintSitePassword();
+    paintCredit();
+    refreshBilling();
     setAuthStatus('');
   }
 
@@ -3397,6 +3534,7 @@
 
   function initCapabilities(){
     refreshAuthStatus();
+    refreshBilling().then(noteBillingReturn);
     initSlipSync();
     renderGamesGrid(GAMES_FALLBACK, GAMES_FALLBACK.length + ' games tracked · connecting to live board…');
     renderUga(UGA_FALLBACK);
