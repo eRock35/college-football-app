@@ -289,13 +289,14 @@ app.get('/api/slip', requireLoginSilent, async (req, res) => {
     const data = doc.exists ? doc.data() : null;
     // Last week's slip is stale by definition - don't hand it back.
     if (!data || data.weekKey !== week) {
-      return res.json({ weekKey: week, slip: {}, customPicks: {}, bankroll: '' });
+      return res.json({ weekKey: week, slip: {}, customPicks: {}, bankroll: '', board: boardPrefs(null) });
     }
     res.json({
       weekKey: week,
       slip: data.slip || {},
       customPicks: data.customPicks || {},
       bankroll: data.bankroll || '',
+      board: boardPrefs(data.board),
       updatedAt: data.updatedAt || null,
     });
   } catch (err) {
@@ -399,14 +400,56 @@ app.get('/api/shared-slip/:shareId', async (req, res) => {
   }
 });
 
+/**
+ * How one person has arranged this week's board: what they hid, what they
+ * pinned to the top, the order they put it in, and any card they wrote
+ * themselves.
+ *
+ * It rides on the slip document, which is week-scoped - so an arrangement
+ * expires with the board it arranged. Hiding a game in week 3 should not hide
+ * anything in week 4, because the ids mean different games by then.
+ *
+ * Bounded on the way in. This is a user-writable document that the page reads
+ * back and draws, so an unbounded array here is a way to make somebody's own
+ * board unopenable, and Firestore will not store a nested array at all.
+ */
+const OWN_CARD_MAX = { id: 60, short: 120, line: 400 };
+
+function boardPrefs(raw) {
+  const obj = raw && typeof raw === 'object' ? raw : {};
+  const ids = (v) => (Array.isArray(v) ? v : [])
+    .filter((x) => typeof x === 'string' && x)
+    .map((x) => x.slice(0, OWN_CARD_MAX.id))
+    .slice(0, 200);
+  const text = (v, cap) => String(v === undefined || v === null ? '' : v)
+    .replace(/[<>]/g, '').trim().slice(0, cap);
+  return {
+    hidden: ids(obj.hidden),
+    pinned: ids(obj.pinned),
+    order: ids(obj.order),
+    own: (Array.isArray(obj.own) ? obj.own : []).slice(0, 25).map((c, i) => ({
+      id: text((c && c.id) || `own-${i + 1}`, OWN_CARD_MAX.id),
+      title: text(c && c.title, OWN_CARD_MAX.short),
+      matchup: text(c && c.matchup, OWN_CARD_MAX.short),
+      market: text(c && c.market, OWN_CARD_MAX.short),
+      // Kept as typed. A hand-written card is the one place on this board
+      // where a blank price is honest - someone jotting a lean before the
+      // number is posted - so it is not forced through odds().
+      odds: text(c && c.odds, 24),
+      thesis: text(c && c.thesis, OWN_CARD_MAX.line),
+    })).filter((c) => c.title),
+  };
+}
+
 app.put('/api/slip', requireLoginSilent, async (req, res) => {
   try {
-    const { slip, customPicks, bankroll } = req.body || {};
+    const { slip, customPicks, bankroll, board: arrangement } = req.body || {};
     const week = currentWeekKey();
     await db.collection('user-state').doc(slipDocId(req)).set({
       slip: slip && typeof slip === 'object' ? slip : {},
       customPicks: customPicks && typeof customPicks === 'object' ? customPicks : {},
       bankroll: typeof bankroll === 'string' ? bankroll.slice(0, 32) : '',
+      board: boardPrefs(arrangement),
       weekKey: week,
       updatedAt: new Date().toISOString(),
     });
