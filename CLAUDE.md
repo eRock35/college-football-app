@@ -108,6 +108,31 @@ returns what `create()` would have - but a ten-minute non-streaming call hits
 the SDK's HTTP timeout and is then retried twice, which is how one rebuild
 spent ten minutes failing three times over.
 
+## Credit is bought here, not in DataViz (2026-09-22)
+
+The account sheet's "Manage that account — password, Face ID, credit" sent you
+to DataViz for the credit half, because DataViz was the only service holding
+the Stripe keys. What it sold was never DataViz's: the $5 membership covers
+every app on the domain and the balance spends in every app.
+
+The checkout routes are part of the shared account module now, so this app
+serves them at `/api/id/billing` and `/api/id/billing/{membership,credit,portal}`
+and draws its own section in its own styling. `success_url` is built from this
+app's origin, so a purchase started on the board ends on the board.
+
+**The webhook stays on DataViz.** Stripe delivers to one endpoint, and
+`STRIPE_WEBHOOK_SECRET` has no reason to be on five services. Only creating a
+checkout session spreads.
+
+The section is hidden for someone signed in through this app's own door rather
+than the shared account — that sign-in carries no balance, and offering to top
+up a balance they do not have is a dead end.
+
+**Live right now it shows the fallback:** `stripe-secret-key` and
+`stripe-member-price` are not yet bound to `football-run@`, so the section
+shows the balance and a button out to a service that can sell. Bind them, add
+the two env vars, and the button becomes this app's own with no code change.
+
 ## Signing in with the shared account
 
 The account that covers every app on this domain is mounted at `/api/id` and
