@@ -809,15 +809,21 @@
     <button class="text-toggle-btn" id="own-card-toggle" type="button">Or write your own card</button>
     <div id="own-card-form" hidden>
       <div class="form-group">
-        <label for="own-title">The bet</label>
-        <input type="text" id="own-title" maxlength="120" placeholder="Georgia -24.5" autocomplete="off">
-        <label for="own-matchup" style="margin-top:10px;">Matchup</label>
-        <input type="text" id="own-matchup" maxlength="120" placeholder="Georgia at Arkansas" autocomplete="off">
+        <label for="own-game">Game</label>
+        <select id="own-game"></select>
         <label for="own-market" style="margin-top:10px;">Market</label>
-        <input type="text" id="own-market" maxlength="120" placeholder="Spread" autocomplete="off">
-        <label for="own-odds" style="margin-top:10px;">Price (optional)</label>
-        <input type="text" id="own-odds" maxlength="24" placeholder="-110" autocomplete="off" inputmode="text">
-        <label for="own-thesis" style="margin-top:10px;">Why</label>
+        <select id="own-market">
+          <option value="Spread">Spread</option>
+          <option value="Total">Total</option>
+          <option value="Moneyline">Moneyline</option>
+          <option value="Player prop">Player prop</option>
+          <option value="Other">Other</option>
+        </select>
+        <label for="own-title" style="margin-top:10px;">The bet</label>
+        <input type="text" id="own-title" maxlength="120" placeholder="Georgia -24.5" autocomplete="off">
+        <label for="own-odds" style="margin-top:10px;">Price</label>
+        <input type="text" id="own-odds" maxlength="12" placeholder="-110" autocomplete="off" inputmode="text">
+        <label for="own-thesis" style="margin-top:10px;">Why (optional)</label>
         <input type="text" id="own-thesis" maxlength="400" placeholder="One line on the reason" autocomplete="off">
       </div>
       <button class="auth-go" id="own-card-save" type="button">Add to my board</button>
@@ -2050,7 +2056,8 @@
   function allPicks(){
     return PICKS.map(function(p){ return {kind:'straight', data:p}; })
       .concat(PARLAYS.map(function(p){ return {kind:'parlay', data:p}; }))
-      .concat(customPicksList().map(function(p){ return {kind:'straight', data:p}; }));
+      .concat(customPicksList().map(function(p){ return {kind:'straight', data:p}; }))
+      .concat(ownCardsList().map(function(p){ return {kind:'straight', data:p}; }));
   }
 
   function parlayDecimal(legs){
@@ -2129,7 +2136,7 @@
   function arrangedCards(){
     var own = (arrangement.own || []).map(function(c){
       return { id: c.id, type: 'own', title: c.title, matchup: c.matchup, market: c.market,
-               odds: c.odds, thesis: c.thesis, confidence: 0 };
+               time: c.time, odds: c.odds, thesis: c.thesis, gameId: c.gameId, confidence: 0 };
     });
     var all = own.concat(PICKS);
     var visible = all.filter(function(c){ return !inList(arrangement.hidden, c.id); });
@@ -2188,47 +2195,100 @@
   }
 
   function ownCardHtml(c){
+    // Same anatomy as a researched card, including the slip row and payout.
+    // A hand-written pick that cannot go on your slip is a note, not a card.
+    var meta = [c.time, c.market].filter(Boolean).join(' \u00b7 ');
     return '<article class="pick own" data-pick="' + escapeHtml(c.id) + '">' +
       '<div class="pick-head"><div>' +
         '<span class="pick-kind own">Your card</span>' +
         '<div class="pick-title">' + escapeHtml(c.title) + '</div>' +
         (c.matchup ? '<div class="pick-sub">' + escapeHtml(c.matchup) + '</div>' : '') +
-        (c.market || c.odds ?
-          '<div class="pick-time">' + escapeHtml([c.market, c.odds].filter(Boolean).join(' · ')) + '</div>' : '') +
+        '<div class="pick-time">' + (meta ? escapeHtml(meta) + ' \u00b7 ' : '') +
+          fmtAmerican(c.odds) + '</div>' +
       '</div></div>' +
       (c.thesis ? '<div class="pick-thesis">' + escapeHtml(c.thesis) + '</div>' : '') +
+      '<div class="slip-row">' +
+        switchRowHtml(c.id) +
+        '<div class="stake-row">' + stakeInputHtml(c.id) +
+          '<span class="payout" data-payout-for="' + escapeHtml(c.id) + '"></span></div>' +
+      '</div>' +
       cardToolsHtml(c.id, true) +
     '</article>';
   }
 
+  /** The reader's own cards, in the shape the slip and the payout maths
+   *  already understand. Anything without a numeric price predates the
+   *  structured form and cannot be staked, so it stays off the slip. */
+  function ownCardsList(){
+    return (arrangement.own || []).filter(function(c){ return typeof c.odds === 'number'; });
+  }
+
   function openOwnCardForm(){
     var el = document.getElementById('own-card-form');
-    if (el) el.hidden = !el.hidden;
-    if (el && !el.hidden){
-      var t = document.getElementById('own-title');
-      if (t) { t.value = ''; setTimeout(function(){ try{ t.focus(); }catch(e){} }, 50); }
-      ['own-matchup','own-market','own-odds','own-thesis'].forEach(function(id){
-        var f = document.getElementById(id); if (f) f.value = '';
-      });
+    if (!el) return;
+    el.hidden = !el.hidden;
+    if (el.hidden) return;
+    // The game comes off this week's slate rather than out of a text box, so
+    // a hand-written card names the same matchup the researched ones do -
+    // which is what lets it sit beside them instead of near them.
+    var sel = document.getElementById('own-game');
+    if (sel){
+      sel.innerHTML = GAMES.map(function(g){
+        return '<option value="' + escapeHtml(g.id) + '">' + escapeHtml(g.label) + '</option>';
+      }).join('') + '<option value="">Another game</option>';
     }
+    ['own-title','own-odds','own-thesis'].forEach(function(id){
+      var f = document.getElementById(id); if (f) f.value = '';
+    });
+    var status = document.getElementById('own-card-status');
+    if (status) status.textContent = '';
+    var t = document.getElementById('own-title');
+    if (t) setTimeout(function(){ try{ t.focus(); }catch(e){} }, 50);
+  }
+
+  /** American odds, or null. The payout maths turns a NaN into a blank stake
+   *  box with nothing to explain it, so a price that is not a price is
+   *  refused at the form rather than stored and drawn. */
+  function parseAmerican(raw){
+    var t = String(raw || '').trim().replace(/^\+/, '');
+    if (!t) return null;
+    var n = Number(t);
+    if (!isFinite(n) || n === 0) return null;
+    // Anything between -100 and +100 is not an American price.
+    if (Math.abs(n) < 100) return null;
+    return Math.round(n);
   }
 
   function saveOwnCard(){
     var val = function(id){ return (document.getElementById(id) || {}).value || ''; };
-    var title = val('own-title').trim();
     var status = document.getElementById('own-card-status');
-    if (!title){ if (status) status.textContent = 'Give it a title, at least.'; return; }
+    var say = function(m){ if (status) status.textContent = m; };
+
+    var title = val('own-title').trim();
+    if (!title) return say('Name the bet - "Georgia -24.5".');
+
+    var odds = parseAmerican(val('own-odds'));
+    if (odds === null) return say('Give an American price, like -110 or +145.');
+
+    var gameId = val('own-game');
+    var game = GAMES.filter(function(g){ return g.id === gameId; })[0];
+
     var id = 'own-' + Date.now().toString(36);
     arrangement.own = (arrangement.own || []).concat([{
       id: id,
-      title: title, matchup: val('own-matchup').trim(), market: val('own-market').trim(),
-      odds: val('own-odds').trim(), thesis: val('own-thesis').trim()
+      title: title,
+      matchup: game ? game.label : '',
+      time: game ? game.time : '',
+      market: val('own-market'),
+      odds: odds,
+      thesis: val('own-thesis').trim(),
+      gameId: game ? game.id : ''
     }]);
     // Put it where they can see it. Once any card has been moved there IS an
     // explicit order, and anything not in it sorts to the bottom - so a card
     // someone just wrote would land off the end of the board they wrote it on.
     if ((arrangement.order || []).length) arrangement.order.unshift(id);
-    if (status) status.textContent = '';
+    say('');
     var form = document.getElementById('own-card-form');
     if (form) form.hidden = true;
     saveArrangement();
@@ -2447,6 +2507,7 @@
     PICKS.forEach(function(p){ computeRow(p.id, p.odds); });
     PARLAYS.forEach(function(p){ computeRow(p.id, decimalToAmerican(parlayDecimal(p.legs)).replace('+','')); });
     customPicksList().forEach(function(p){ computeRow(p.id, p.odds); });
+    ownCardsList().forEach(function(p){ computeRow(p.id, p.odds); });
     saveSlip(slipState);
     renderSlipTab();
   }
@@ -2699,8 +2760,13 @@
       textLines.push(x.data.title + ' (' + kindLabel + ')');
       textLines.push(x.kind === 'straight' ? '  ' + metaText : metaText);
       textLines.push('  Stake ' + fmtMoney(s.stake) + ' -> to win ' + fmtMoney(toWin) + ' (returns ' + fmtMoney(s.stake + toWin) + ')');
-      textLines.push('  Why: ' + x.data.why.replace(/<[^>]+>/g, ''));
-      textLines.push('  Risk: ' + x.data.risk.replace(/<[^>]+>/g, ''));
+      // Not every card has reasoning. A card written by hand has none, and a
+      // game added from All Games may have none either - and the same two
+      // fields are already guarded where the share snapshot is built, twenty
+      // lines up. Unguarded here, placing such a card threw on every slip
+      // render and took the copyable text with it.
+      if (x.data.why) textLines.push('  Why: ' + String(x.data.why).replace(/<[^>]+>/g, ''));
+      if (x.data.risk) textLines.push('  Risk: ' + String(x.data.risk).replace(/<[^>]+>/g, ''));
       textLines.push('');
     });
 

@@ -414,6 +414,14 @@ app.get('/api/shared-slip/:shareId', async (req, res) => {
  * board unopenable, and Firestore will not store a nested array at all.
  */
 const OWN_CARD_MAX = { id: 60, short: 120, line: 400 };
+const OWN_MARKETS = new Set(['Spread', 'Total', 'Moneyline', 'Player prop', 'Other']);
+
+/** American odds as a number, or null. Anything inside -100..+100 is not an
+ *  American price, whatever it parses to. */
+function american(value) {
+  const n = Number(String(value === undefined || value === null ? '' : value).trim().replace(/^\+/, ''));
+  return Number.isFinite(n) && Math.abs(n) >= 100 ? Math.round(n) : null;
+}
 
 function boardPrefs(raw) {
   const obj = raw && typeof raw === 'object' ? raw : {};
@@ -431,13 +439,21 @@ function boardPrefs(raw) {
       id: text((c && c.id) || `own-${i + 1}`, OWN_CARD_MAX.id),
       title: text(c && c.title, OWN_CARD_MAX.short),
       matchup: text(c && c.matchup, OWN_CARD_MAX.short),
-      market: text(c && c.market, OWN_CARD_MAX.short),
-      // Kept as typed. A hand-written card is the one place on this board
-      // where a blank price is honest - someone jotting a lean before the
-      // number is posted - so it is not forced through odds().
-      odds: text(c && c.odds, 24),
+      time: text(c && c.time, OWN_CARD_MAX.short),
+      // One of the kinds the board already knows, so a hand-written card can
+      // be filtered and read beside a researched one rather than carrying
+      // whatever the reader typed.
+      market: OWN_MARKETS.has(text(c && c.market, 24)) ? text(c && c.market, 24) : 'Other',
+      // A real American price, or null. The payout maths turns a NaN into a
+      // blank stake box with nothing to explain it, and a card that cannot be
+      // staked is a note rather than a card - so a bad price is dropped here
+      // and the client refuses it at the form.
+      odds: american(c && c.odds),
+      // The slate game this is about, so the card names the same matchup the
+      // researched ones do.
+      gameId: text(c && c.gameId, OWN_CARD_MAX.id),
       thesis: text(c && c.thesis, OWN_CARD_MAX.line),
-    })).filter((c) => c.title),
+    })).filter((c) => c.title && c.odds !== null),
   };
 }
 
