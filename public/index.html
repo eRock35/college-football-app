@@ -1169,19 +1169,32 @@
     }
 
     var html = '';
+    // The membership is NOT AI. It is the fee for the apps; the AI is bought on
+    // top or brought yourself. Someone who pays $5 expecting tokens and finds
+    // an empty balance has been mis-sold, however true the small print was.
     if (!billing.member){
-      html += '<p class="muted"><b>' + creditFee(billing.monthlyUsd) + ' a month</b> covers every app here. ' +
-        'Then buy credit at what the calls actually cost, or bring your own Anthropic key.</p>' +
+      html += '<p class="muted">Two separate things, and you need both:</p>' +
+        '<p class="muted"><b>1. Membership, ' + creditFee(billing.monthlyUsd) + ' a month.</b> ' +
+        'The fee for the apps. <b>It does not include any AI.</b></p>' +
+        '<p class="muted"><b>2. Credit, bought on top.</b> Research spends credit, sold at what the ' +
+        'calls actually cost. Or bring your own Anthropic key and pay Anthropic directly instead.</p>' +
         '<button class="auth-go" id="member-btn" type="button">Become a member — ' +
-        creditFee(billing.monthlyUsd) + '/month</button>';
+        creditFee(billing.monthlyUsd) + '/month</button>' +
+        '<p class="muted">Credit is the next step after this one.</p>';
     } else {
-      html += '<p class="muted">Member — ' + creditFee(billing.monthlyUsd) +
-        ' a month. Credit below is sold at what the calls cost.</p>' +
-        '<div class="credit-options">' +
-        (billing.topUps || []).map(function(o){
-          return '<button class="reset-btn" type="button" data-usd="' + Number(o.usd) + '">' +
-            escapeHtml(o.label) + '</button>';
-        }).join('') + '</div>';
+      var byokOn = billing.byok && billing.byok.present;
+      html += '<p class="muted">Member — ' + creditFee(billing.monthlyUsd) + ' a month for the apps. ' +
+        (byokOn
+          ? 'Your own key covers the AI, so there is nothing to buy here.'
+          : '<b>That fee is not AI</b> — research spends credit, which is bought below.') + '</p>';
+      if (!byokOn){
+        html += '<div class="credit-options">' +
+          (billing.topUps || []).map(function(o){
+            return '<button class="reset-btn" type="button" data-usd="' + Number(o.usd) + '">' +
+              escapeHtml(o.label) + '</button>';
+          }).join('') + '</div>' +
+          '<p class="muted">Sold at cost — no markup. It never expires and works in every app.</p>';
+      }
       if (billing.manageable){
         html += '<button class="reset-btn" type="button" id="portal-btn" style="width:100%; margin-top:8px;">Manage billing</button>';
       }
