@@ -7,6 +7,8 @@ const { createPasskeyAuth } = require('./auth');
 const analytics = require('./analytics');
 const sitepass = require('./sitepass');
 const board = require('./board');
+const teams = require('./teams');
+const fan = require('./fan');
 const identityLib = require('./identity');
 const identityStore = require('./identity-store');
 
@@ -460,6 +462,140 @@ app.get('/api/uga', async (req, res) => {
     res.status(500).json({ error: 'Failed to load My Dawgs content.' });
   }
 });
+
+/* ---------- My Team: the tab that used to be Georgia, hardcoded ----------
+ *
+ * The tab was "My Dawgs": a --uga-red in the stylesheet, a UGA_FALLBACK in the
+ * page and a `fan/uga` document. Right for one fan, wrong for everyone else.
+ *
+ * The shape that makes this affordable: a team's page is cached under
+ * `fan/<teamId>` and SHARED by everyone who picks that team. Cost scales with
+ * teams in use, not with users - the second Georgia Tech fan pays nothing, and
+ * neither does the hundredth. Whoever triggers a refresh spends their own
+ * credit, which is why the route is behind requireBudget rather than behind
+ * the owner's allowlist.
+ */
+
+app.get('/api/teams', (_req, res) => {
+  res.json({ conferences: teams.list(), default: teams.DEFAULT_TEAM });
+});
+
+/** Durable per-user settings. Deliberately NOT the slip document: that one is
+ *  week-scoped and is handed back empty every Tuesday, which is right for a
+ *  slip and would silently forget which team someone supports. */
+function prefsDocId(req) {
+  const me = currentUser(req);
+  return me ? me.uid : null;
+}
+
+app.get('/api/prefs', requireLoginSilent, async (req, res) => {
+  try {
+    const id = prefsDocId(req);
+    if (!id) return res.json({ team: teams.DEFAULT_TEAM });
+    const doc = await db.collection('prefs').doc(id).get();
+    const data = doc.exists ? doc.data() : {};
+    res.json({ team: teams.validId(data.team) || teams.DEFAULT_TEAM });
+  } catch (err) {
+    console.error('GET /api/prefs', err);
+    res.status(500).json({ error: 'Failed to load your settings.' });
+  }
+});
+
+app.put('/api/prefs', requireLoginSilent, async (req, res) => {
+  try {
+    const id = prefsDocId(req);
+    if (!id) return res.status(401).json({ error: 'not signed in' });
+    // An unknown id must never become a document key: a typo in a request
+    // would otherwise create a `fan/<junk>` row nothing will ever clean up.
+    const team = teams.validId((req.body || {}).team);
+    if (!team) return res.status(400).json({ error: 'Not a team I know.' });
+    await db.collection('prefs').doc(id).set({ team, updatedAt: new Date().toISOString() }, { merge: true });
+    res.json({ team });
+  } catch (err) {
+    console.error('PUT /api/prefs', err);
+    res.status(500).json({ error: 'Failed to save your team.' });
+  }
+});
+
+/** A team's page. Open, like the rest of the reading surface - and `researched`
+ *  false is an honest answer, not an error: most teams have never been looked
+ *  up, and the tab says so and offers the button rather than faking a season. */
+app.get('/api/fan/:team', async (req, res) => {
+  try {
+    const id = teams.validId(req.params.team);
+    if (!id) return res.status(404).json({ error: 'Not a team I know.' });
+    const doc = await db.collection('fan').doc(id).get();
+    const meta = teams.get(id);
+    if (!doc.exists) return res.json({ team: id, meta, researched: false });
+    res.json({ ...doc.data(), team: id, meta, researched: true });
+  } catch (err) {
+    console.error('GET /api/fan/:team', err);
+    res.status(500).json({ error: 'Failed to load that team.' });
+  }
+});
+
+// How long a team page is considered current. A rank and a record move once a
+// week; a schedule barely moves at all. Re-researching on every visit would
+// spend somebody's credit to learn the same thing.
+const TEAM_FRESH_HOURS = 12;
+
+app.post('/api/fan/:team/research', requireLoginSilent, identity.requireBudget, identity.requireDailyCap,
+  async (req, res) => {
+    try {
+      const id = teams.validId(req.params.team);
+      if (!id) return res.status(404).json({ error: 'Not a team I know.' });
+      const meta = teams.get(id);
+      const ref = db.collection('fan').doc(id);
+
+      // Someone else may have just paid for this. Handing back their answer
+      // rather than buying it again is the whole point of a shared cache.
+      const existing = await ref.get();
+      if (existing.exists) {
+        const age = Date.now() - Date.parse(existing.data().lastChecked || 0);
+        if (Number.isFinite(age) && age < TEAM_FRESH_HOURS * 3600 * 1000) {
+          return res.json({ ...existing.data(), team: id, meta, researched: true, cached: true });
+        }
+      }
+
+      const season = new Date().getFullYear();
+      const raw = await runStructuredResearch({
+        user: req.user,
+        maxTokens: 12000,
+        systemPrompt:
+          'You research one college football team and return ONE JSON object and nothing else. '
+          + 'Search the web for current information. Never invent a game, a score or a date: leave a '
+          + 'field empty rather than guessing at it.',
+        prompt: [
+          `Research ${meta.name} (${meta.mascot}), ${meta.conf}, for the ${season} season.`,
+          '',
+          'Return exactly this JSON object:',
+          '{',
+          '  "rank": "#2 or empty string if unranked",',
+          '  "record": "2-0",',
+          '  "confRecord": "0-0 SEC",',
+          '  "nextGame": { "opponent": "at Arkansas", "kickoffISO": "2026-09-19T16:00:00Z",',
+          '                "tv": "ABC", "line": "Georgia -24.5" },',
+          '  "schedule": [ { "wk": "Sep 5", "opp": "Tennessee State", "loc": "home|away|neutral|bye",',
+          '                  "result": "W 63-3 or empty if unplayed", "current": true for THIS week only,',
+          '                  "ranked": true if the opponent is ranked, "rivalry": true for a rivalry game } ],',
+          '  "storyline": ["2 to 4 paragraphs on where the season stands: form, injuries, what to watch."]',
+          '}',
+          '',
+          'The full regular-season schedule, in order, including bye weeks. Mark exactly one row current.',
+          'kickoffISO must be a real UTC instant or an empty string - the page runs a live countdown off it.',
+        ].join('\n'),
+      });
+
+      // Validated BEFORE it is written, so a bad run leaves the last good
+      // document serving rather than replacing it with a broken tab.
+      const page = fan.validate({ ...raw, lastChecked: new Date().toISOString() }, id);
+      await ref.set({ ...page, researchedBy: (currentUser(req) || {}).uid || null });
+      res.json({ ...page, meta, researched: true, cached: false });
+    } catch (err) {
+      console.error('POST /api/fan/:team/research', err);
+      res.status(500).json({ error: err.message || 'Could not research that team.' });
+    }
+  });
 
 /* ---------- the board: slate, best bets, last week's results ---------- */
 
