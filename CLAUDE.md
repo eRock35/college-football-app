@@ -128,10 +128,19 @@ The section is hidden for someone signed in through this app's own door rather
 than the shared account — that sign-in carries no balance, and offering to top
 up a balance they do not have is a dead end.
 
-**Live right now it shows the fallback:** `stripe-secret-key` and
-`stripe-member-price` are not yet bound to `football-run@`, so the section
-shows the balance and a button out to a service that can sell. Bind them, add
-the two env vars, and the button becomes this app's own with no code change.
+`stripe-secret-key` and `stripe-member-price` were bound to `football-run@` on
+2026-09-22 and both env vars are mounted, so this app sells for itself. A
+service booted WITHOUT them still behaves: `topUpUrl()` and the billing view's
+`elsewhere` field name a service that can sell, so the button is a way out
+rather than a dead end.
+
+The key is a **restricted** Stripe key (`rk_live_`), which is what makes it
+reasonable for five services to hold one. Replace it only with another
+restricted key.
+
+**Nothing has been bought through it yet** — the live account had no Checkout
+Session at all as of 2026-09-22 — so the key's *write* permission is unproven.
+The first purchase is the test.
 
 ## Signing in with the shared account
 
