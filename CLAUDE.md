@@ -108,6 +108,65 @@ returns what `create()` would have - but a ten-minute non-streaming call hits
 the SDK's HTTP timeout and is then retried twice, which is how one rebuild
 spent ten minutes failing three times over.
 
+## My Team, and a board each reader arranges (2026-09-22)
+
+The "My Dawgs" tab was Georgia, hardcoded: a `--uga-red` in the stylesheet, a
+`UGA_FALLBACK` in the page, a `fan/uga` document. Right for one fan, wrong for
+everyone else.
+
+**The shape that makes 132 teams affordable is a shared cache.** A team's page
+lives at `fan/<id>` and is read by everyone who follows that team, so cost
+scales with *teams in use* rather than with users — the second Michigan fan
+pays nothing. Whoever triggers a refresh spends their own credit, which is why
+`POST /api/fan/:team/research` sits behind `requireLoginSilent` +
+`requireBudget` + `requireDailyCap` rather than behind `requireResearch`.
+`TEAM_FRESH_HOURS` (12) is what stops a second visitor re-buying the same
+answer.
+
+- `teams.js` — every FBS team, **static**. A dropdown of 132 names is not worth
+  a model call, and a team's name and colours do not change week to week; only
+  its record and next game do, and those are what gets researched. Georgia
+  keeps the id `uga` rather than `georgia` because that document already holds
+  real content and renaming it would throw that away for invisible consistency.
+- `teams.validId()` is the **only** way a team id reaches Firestore. Without
+  it a typo in a URL creates a `fan/<junk>` row nothing will ever clean up.
+- `fan.js` — `board.js` for this tab, and for the same reason: `validate()`
+  runs on the model's **proposal**, so a bad run leaves the last good page
+  serving rather than replacing it with a broken tab. **No seed, deliberately**
+  — a team page can honestly say "nobody has looked this up yet" and offer the
+  button, and 130 invented schedules would be worse than an honest gap.
+- The choice lives in `prefs/<uid>`, **not** on the slip: the slip is
+  week-scoped and is handed back empty every Tuesday, which is right for a slip
+  and would silently forget who someone supports.
+
+### The Top 25
+
+`rankings` is its own array on the board, because "who is ranked and what are
+they doing Saturday" is a different question from "what should I back". A rank
+that is not 1..25 is refused (`"#3"`, `0` and `41` are all a model failing to
+give a rank), a second team at the same position is dropped, and a bye is a row
+with no game. **Optional**: every board stored before this has none, and
+refusing those would blank the front page to add a section to it.
+
+### Arranging it
+
+Pin, hide, move, and hand-written cards live on the **slip** document —
+week-scoped, so an arrangement expires with the board it arranged, since card
+ids mean different games next week. `boardPrefs()` on the server bounds all of
+it: this is a user-writable document the page reads back and draws.
+
+A card never moved keeps its original position *behind* anything that was;
+sorting unlisted cards first would reshuffle the board every time one thing
+moved.
+
+`POST /api/research/add-game` is open to any member on their own credit now,
+for the same reason team research is: the result lands in the **shared** games
+collection, so one person paying to cover a game covers it for everyone.
+
+`/api/chat` and `/api/research/custom` are still owner-only. They answer
+open-ended questions rather than filling a known shape, and nobody asked for
+them to be opened.
+
 ## Credit is bought here, not in DataViz (2026-09-22)
 
 The account sheet's "Manage that account — password, Face ID, credit" sent you
