@@ -802,7 +802,15 @@ app.post('/api/research/custom', requireResearch, identity.requireBudget, async 
   }
 });
 
-app.post('/api/research/add-game', requireResearch, identity.requireBudget, async (req, res) => {
+// Adding a game the board missed.
+//
+// This was the owner's alone. It is now any signed-in member, on their own
+// credit - the same reasoning as researching a team: the result lands in the
+// SHARED games collection, so one person paying to cover a game covers it for
+// everyone, and the budget is what bounds the spend rather than an allowlist.
+// The owner still passes, by session or by site password.
+app.post('/api/research/add-game', requireLoginSilent, identity.requireBudget, identity.requireDailyCap,
+  async (req, res) => {
   try {
     const { query } = req.body || {};
     if (!query) {
@@ -950,10 +958,17 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
         '"Spread \u00b7 Team -3.5", "odds": -110, "confidence": 1-4, "thesis": "one sentence", "why": ' +
         '"a full paragraph of reasoning", "risk": "what would break this"}], "parlays": [{"id": ' +
         '"short-slug", "title": "...", "confidence": 1-4, "thesis": "one sentence", "legs": [{"game": ' +
-        '"Away at Home", "market": "Team -3.5", "odds": -110}], "why": "...", "risk": "..."}]}. ' +
-        'Give 6-10 games, 5-8 picks and 2-3 parlays. Every parlay needs at least two legs. Odds are ' +
-        'American and numeric. Only include games that have NOT yet been played. Never invent a line, an ' +
-        'injury or a score - if a line is not posted yet, say so in the market field.',
+        '"Away at Home", "market": "Team -3.5", "odds": -110}], "why": "...", "risk": "..."}], ' +
+        // The poll, which is a different question from the best bets: "who is
+        // ranked and what are they doing on Saturday" rather than "what should
+        // I back". A ranked team on a bye is a real row with an empty game.
+        '"rankings": [{"rank": 1-25, "team": "Texas", "record": "3-0", "game": "vs Michigan State", ' +
+        '"time": "Sat 7:30p ET", "line": "Texas -29.5", "gameId": "the id of the matching slate game, ' +
+        'or an empty string"}]}. ' +
+        'Give 6-10 games, 5-8 picks and 2-3 parlays, and ALL 25 rows of the current AP Top 25 with each ' +
+        'ranked team\'s game this week (empty game for a bye). Every parlay needs at least two legs. ' +
+        'Odds are American and numeric. Only include games that have NOT yet been played. Never invent a ' +
+        'line, an injury or a score - if a line is not posted yet, say so in the market field.',
       prompt:
         `Today is ${new Date().toISOString().slice(0, 10)}. Build the board for the games being played ` +
         'this coming weekend. These games are finished and must NOT appear again:\n' +
@@ -979,7 +994,8 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
     await db.collection('control').doc('status').set({ lastRunAt: next.generatedAt, boardWeek: week }, { merge: true });
 
     res.json({ weekKey: week, games: next.games.length, picks: next.picks.length,
-               parlays: next.parlays.length, results: next.results.length });
+               parlays: next.parlays.length, results: next.results.length,
+               rankings: next.rankings.length });
   } catch (err) {
     console.error('POST /api/research/weekly-board', err);
     res.status(500).json({ error: err.message || 'Could not rebuild the board.' });

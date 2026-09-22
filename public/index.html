@@ -354,6 +354,20 @@
   .team-option-name{flex:1; font-weight:600; font-size:15px;}
   .team-option-mascot{font-size:13px; color:var(--text-faint);}
   .team-footer{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:12px;}
+  .top25{background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; margin-top:12px;}
+  .top25-head{display:flex; align-items:center; justify-content:space-between; width:100%; min-height:48px;
+    padding:0 16px; border:0; background:transparent; color:var(--text); font:inherit; cursor:pointer;}
+  .top25-head .chev{color:var(--text-faint); transition:transform .18s ease;}
+  .top25-head[aria-expanded="true"] .chev{transform:rotate(90deg);}
+  .top25-row{display:flex; align-items:center; gap:10px; padding:9px 16px; box-shadow:inset 0 1px 0 var(--sep);}
+  .top25-row .rk{width:26px; flex:0 0 auto; font-variant-numeric:tabular-nums; font-weight:700; color:var(--text-faint); font-size:13px;}
+  .top25-row .tm{font-weight:600; font-size:15px; min-width:0;}
+  .top25-row .rec{font-size:12.5px; color:var(--text-faint);}
+  .top25-row .gm{flex:1; display:flex; flex-direction:column; align-items:flex-end; gap:1px;
+    text-align:right; font-size:13.5px; color:var(--label-2); min-width:0;}
+  .top25-row .gm .ln{font-size:12px; color:var(--text-faint);}
+  .top25-row.bye .gm{font-style:italic; color:var(--text-faint);}
+  .top25-row .gm .ln{color:var(--text-faint);}
   .credit-options .reset-btn{padding:0 6px; font-size:14px; width:100%;}
   .text-toggle-btn{
     min-height:44px; padding:0 6px; border:none; background:transparent;
@@ -766,13 +780,21 @@
     <p class="board-note" id="board-note" hidden></p>
   </div>
   <section class="results-strip" id="results-strip" hidden aria-label="How last week finished"></section>
+  <!-- The poll. A different question from the best bets: who is ranked and
+       what are they doing on Saturday, rather than what to back. -->
+  <section class="top25" id="top25" hidden aria-label="This week's Top 25">
+    <button class="top25-head" id="top25-toggle" type="button" aria-expanded="false" aria-controls="top25-list">
+      <b>Top 25 this week</b><span class="chev" aria-hidden="true">›</span>
+    </button>
+    <div class="top25-list" id="top25-list" hidden></div>
+  </section>
   <div class="add-card-block">
-    <div class="add-card-label">Add a game</div>
+    <div class="add-card-label">Add a game the board missed</div>
     <div class="add-card-row">
       <input type="search" id="card-search-input" placeholder="Search any team or matchup…" maxlength="120" enterkeyhint="search" autocomplete="off" autocapitalize="words" aria-label="Search any team or matchup">
       <button class="refresh-btn" id="card-search-btn" type="button">Find</button>
     </div>
-    <div class="refresh-meta" id="card-search-status"></div>
+    <div class="refresh-meta" id="card-search-status">Researched on the spot and added for everyone. Spends your own AI credit.</div>
   </div>
   <div class="card-list dk-grid" id="card-list"></div>
 </section>
@@ -969,7 +991,7 @@
   // page sat on the September 20 slate with every game on it already played.
   // The server owns the board now (board.js is the seed, Firestore holds the
   // current one) and the page draws whatever it is handed.
-  var GAMES = [], PICKS = [], PARLAYS = [], RESULTS = [];
+  var GAMES = [], PICKS = [], PARLAYS = [], RESULTS = [], RANKINGS = [];
   var BOARD_CACHE_KEY = 'cfb-board-v1';
 
   var FUTURES_NC = [
@@ -3248,18 +3270,23 @@
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({query: query})
     }).then(function(r){
-      if (r.status === 401){ var e = new Error('auth'); e.code = 'not_granted'; throw e; }
-      if (r.status === 403){ var e403 = new Error('perm'); e403.code = 'not_permitted'; throw e403; }
-      return r.json().then(function(d){
-        if (!r.ok){ var e2 = new Error(d.error || 'failed'); e2.code = 'error'; throw e2; }
+      return r.json().catch(function(){ return {}; }).then(function(d){
+        // Adding a game is open to any member now, so the interesting failures
+        // are "no account" and "no credit" - each of which has something the
+        // reader can actually do about it.
+        if (r.status === 401){ var e = new Error('Sign in to add a game \u2014 it spends your own AI credit.'); throw e; }
+        if (r.status === 402){ var e2 = new Error(d.error || 'You are out of AI credit.'); e2.outOfCredit = true; throw e2; }
+        if (!r.ok) throw new Error(d.error || 'Couldn\u2019t research that \u2014 try again in a moment.');
         return d;
       });
     }).then(function(d){
-      if (statusEl) statusEl.textContent = 'Added ' + (d.game && d.game.label ? d.game.label : query) + '.';
+      if (statusEl) statusEl.textContent = 'Added ' + (d.game && d.game.label ? d.game.label : query) +
+        ' \u2014 it is on the board for everyone now.';
       if (dbCap) subscribeGames();
     }).catch(function(err){
       if (btn) btn.disabled = false;
-      if (statusEl) statusEl.textContent = err.code === 'not_granted' ? 'Log in to research and add a new game.' : 'Couldn’t research that — try again in a moment.';
+      if (statusEl) statusEl.textContent = err.message;
+      if (err.outOfCredit) openAuthPanel();
     });
   }
 
@@ -3273,6 +3300,14 @@
       if (e.target.closest('#change-team')) { openTeamPicker(); return; }
       var go = e.target.closest('#research-team');
       if (go) researchTeam(go);
+    });
+    // The Top 25, and jumping from a ranked team to its card on the slate.
+    var t25 = document.getElementById('top25-toggle');
+    if (t25) t25.addEventListener('click', function(){
+      var list = document.getElementById('top25-list');
+      var open = this.getAttribute('aria-expanded') === 'true';
+      this.setAttribute('aria-expanded', String(!open));
+      if (list) list.hidden = open;
     });
     var pickerList = document.getElementById('team-picker-list');
     if (pickerList) pickerList.addEventListener('click', function(e){
@@ -3840,8 +3875,10 @@
     PICKS = b.picks || [];
     PARLAYS = b.parlays || [];
     RESULTS = b.results || [];
+    RANKINGS = b.rankings || [];
     renderSlate();
     renderResults();
+    renderTop25();
     renderCards();
     refreshAllRows();
     var note = document.getElementById('board-note');
@@ -3852,6 +3889,32 @@
       note.hidden = !b.stale;
       note.textContent = b.stale ? 'This is last week\u2019s board \u2014 the new one has not been built yet.' : '';
     }
+  }
+
+  /** The Top 25, collapsed by default. Twenty-five rows above the cards would
+   *  push the thing people came for off the screen; a header that says how
+   *  many is enough to tell them it is there. */
+  function renderTop25(){
+    var box = document.getElementById('top25');
+    var list = document.getElementById('top25-list');
+    if (!box || !list) return;
+    if (!RANKINGS.length){ box.hidden = true; list.innerHTML = ''; return; }
+    box.hidden = false;
+    list.innerHTML = RANKINGS.map(function(r){
+      // Opponent on its own line, line and time muted beneath. One run-on
+      // string wraps into a ragged second line at phone width and reads as a
+      // layout bug rather than as two facts.
+      var sub = [r.line, r.time].filter(Boolean).join(' \u00b7 ');
+      var game = r.game
+        ? escapeHtml(r.game) + (sub ? '<span class="ln">' + escapeHtml(sub) + '</span>' : '')
+        : 'Bye';
+      return '<div class="top25-row' + (r.game ? '' : ' bye') + '">' +
+        '<span class="rk">' + r.rank + '</span>' +
+        '<span class="tm">' + escapeHtml(r.team) + '</span>' +
+        (r.record ? '<span class="rec">' + escapeHtml(r.record) + '</span>' : '') +
+        '<span class="gm">' + game + '</span>' +
+      '</div>';
+    }).join('');
   }
 
   function renderResults(){
