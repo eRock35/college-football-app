@@ -148,6 +148,42 @@ const jar = (r) => (r.headers.getSetCookie() || []).map((c) => c.split(';')[0]).
   r = await send('PUT', '/api/prefs', { team: '../evil' }, cookie);
   ok('an unknown team is refused rather than stored', r.status === 400, String(r.status));
 
+  // --- adding a game the board missed --------------------------------------
+  // This was the owner's alone. The result lands in the SHARED games
+  // collection, so one member paying to cover a game covers it for everyone.
+  reply = { id: 'x-y', label: 'X at Y', home: 'Y', away: 'X', kickoff: 'Sat 3:30p ET',
+            tag: 'interesting', market: 'Y -3 (-110)', pick: 'Y -3', pickConfidence: 3,
+            summary: 'A sentence.', why: 'A paragraph.' };
+  const noAccount = await send('POST', '/api/research/add-game', { query: 'X at Y' });
+  ok('adding a game needs an account', noAccount.status === 401, String(noAccount.status));
+
+  r = await send('POST', '/api/research/add-game', { query: 'X at Y' }, cookie);
+  ok('a member who is not the owner may add a game', r.status === 200, String(r.status));
+  ok('...and it landed where everyone reads it',
+      Boolean(h.bag('college-football-app').get('games/x-y')),
+      JSON.stringify(h.bag('college-football-app').get('games/x-y')));
+
+  // --- the Top 25 ----------------------------------------------------------
+  const board = require(require('path').join(__dirname, '..', 'board.js'));
+  const withPoll = board.validate({
+    ...board.SEED,
+    rankings: [
+      { rank: 3, team: 'Notre Dame', record: '3-0', game: 'vs Michigan State' },
+      { rank: 1, team: 'Texas', record: '3-0' },
+      { rank: 3, team: 'Second At Three', record: '0-0' },
+    ],
+  });
+  ok('the poll comes back in rank order', withPoll.rankings.map((x) => x.rank).join(',') === '1,3',
+      withPoll.rankings.map((x) => x.rank).join(','));
+  ok('...with a second team at one rank dropped', withPoll.rankings.length === 2);
+  ok('...and a bye is a row with no game', withPoll.rankings[0].game === '');
+  for (const bad of [{ rank: 0 }, { rank: 26 }, { rank: '#3' }, {}]) {
+    let threw = false;
+    try { board.validate({ ...board.SEED, rankings: [{ team: 'T', ...bad }] }); } catch (e) { threw = true; }
+    ok(`a poll position of ${JSON.stringify(bad.rank)} is refused`, threw);
+  }
+  ok('a board with no poll is still a board', board.validate(board.SEED).rankings.length === 0);
+
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);
 })();

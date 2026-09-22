@@ -336,6 +336,35 @@ function parlay(raw, i) {
   };
 }
 
+/**
+ * One row of the Top 25: a ranked team and who it plays this week.
+ *
+ * This is the poll, not the best bets - "who is ranked, and what are they
+ * doing on Saturday" is the question the board could not answer, and it is a
+ * different question from "what should I bet". A ranked team on a bye is a
+ * real row with no game, so `game` is optional and a blank one renders as a
+ * bye rather than as a missing field.
+ */
+function ranked(raw, i) {
+  const team = clean(raw && raw.team, MAX.short);
+  if (!team) throw new Error(`ranking ${i + 1} has no team`);
+  const n = Math.round(Number(raw.rank));
+  // A poll position is 1..25. A model that returns "#3" or 0 or 41 is not
+  // giving a rank, and a list that cannot be ordered is not a poll.
+  if (!(n >= 1 && n <= 25)) throw new Error(`ranking for "${team}" has no usable position`);
+  return {
+    rank: n,
+    team,
+    record: clean(raw.record, 24),
+    game: clean(raw.game, MAX.short),
+    time: clean(raw.time, MAX.short),
+    line: clean(raw.line, MAX.short),
+    // Ties a row to a card on the slate, so "who plays this week" and "what to
+    // bet" agree about which game they mean.
+    gameId: clean(raw.gameId, MAX.id),
+  };
+}
+
 const OUTCOMES = new Set(['win', 'loss', 'push', 'void']);
 
 /** How last week's bet finished. Unlike the rest of the board this is a claim
@@ -370,6 +399,17 @@ function validate(raw) {
   const picks = (Array.isArray(raw.picks) ? raw.picks : []).map(pick);
   const parlays = (Array.isArray(raw.parlays) ? raw.parlays : []).map(parlay);
   const results = (Array.isArray(raw.results) ? raw.results : []).map(result);
+
+  // The poll, sorted and de-duplicated. Optional: every board stored before
+  // this existed has none, and refusing those would blank the front page to
+  // add a section to it. Two teams at #7 is a poll nobody can read, so the
+  // later one is dropped rather than shown.
+  const seenRank = new Set();
+  const rankings = (Array.isArray(raw.rankings) ? raw.rankings : [])
+    .map(ranked)
+    .filter((r) => (seenRank.has(r.rank) ? false : seenRank.add(r.rank)))
+    .sort((a, b) => a.rank - b.rank);
+
   if (!games.length) throw new Error('board has no games');
   if (!picks.length) throw new Error('board has no picks');
 
@@ -385,7 +425,7 @@ function validate(raw) {
   return {
     weekKey: clean(raw.weekKey, MAX.id),
     generatedAt: clean(raw.generatedAt, MAX.id) || new Date().toISOString(),
-    games, picks, parlays, results,
+    games, picks, parlays, results, rankings,
   };
 }
 
