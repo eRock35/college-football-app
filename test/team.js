@@ -192,8 +192,12 @@ const jar = (r) => (r.headers.getSetCookie() || []).map((c) => c.split(';')[0]).
     board: {
       hidden: ['msu-nd'], pinned: ['lsu-om'], order: ['lsu-om', 'msu-nd'],
       own: [{ id: 'own-1', title: 'Vandy +17.5 <script>', matchup: 'Vanderbilt at Alabama',
-              market: 'Spread', odds: '-105', thesis: 'Backdoor cover machine.' },
-            { title: '' }],
+              market: 'Spread', odds: '-105', thesis: 'Backdoor cover machine.',
+              gameId: 'vandy-bama', time: 'Sat 7:00p ET' },
+            { title: '' },
+            { title: 'No price', odds: '' },
+            { title: 'Silly price', odds: '3' },
+            { title: 'Made-up market', odds: -110, market: 'Vibes' }],
     },
   }, cookie);
   ok('an arrangement saves with the slip', r.status === 200, String(r.status));
@@ -202,7 +206,20 @@ const jar = (r) => (r.headers.getSetCookie() || []).map((c) => c.split(';')[0]).
   const back = await r.json();
   ok('...and comes back', back.board.hidden[0] === 'msu-nd' && back.board.pinned[0] === 'lsu-om');
   ok('...with the order intact', back.board.order.join(',') === 'lsu-om,msu-nd');
-  ok('...and one card, the one with a title', back.board.own.length === 1);
+  // A card has to be stakeable to be a card: a title AND a real American
+  // price. The two without one are notes, and drawing them would give the
+  // reader a stake box whose payout is NaN with nothing to explain it.
+  // A card has to be stakeable: a title AND a real American price. The one
+  // with no title and the two with no usable price are notes, not cards. A
+  // made-up MARKET is not disqualifying - it normalises to Other.
+  ok('...keeping only the cards that can actually be staked', back.board.own.length === 2,
+      JSON.stringify(back.board.own.map((c) => c.title)));
+  ok('...dropping a price that is not an American price', 
+      !back.board.own.some((c) => c.title === 'Silly price' || c.title === 'No price'),
+      JSON.stringify(back.board.own.map((c) => c.title)));
+  ok('...with the price stored as a number, not as typed', back.board.own[0].odds === -105,
+      JSON.stringify(back.board.own[0].odds));
+  ok('...and the slate game it is about', back.board.own[0].gameId === 'vandy-bama');
   // These are drawn straight into innerHTML, same as every other card.
   ok('...with angle brackets stripped from what the reader typed',
       back.board.own[0].title === 'Vandy +17.5 script', back.board.own[0].title);
@@ -215,7 +232,16 @@ const jar = (r) => (r.headers.getSetCookie() || []).map((c) => c.split(';')[0]).
   r = await send('GET', '/api/slip', undefined, cookie);
   const capped = (await r.json()).board;
   ok('a huge arrangement is capped rather than stored', capped.hidden.length === 200, String(capped.hidden.length));
-  ok('...and so are hand-written cards', capped.own.length === 25, String(capped.own.length));
+  // Those 100 all had a title and no price, so none of them is a card.
+  ok('...and priceless cards are dropped rather than drawn', capped.own.length === 0, String(capped.own.length));
+
+  // A market the board does not know becomes Other rather than whatever was
+  // typed, so a card can be read beside a researched one.
+  r = await send('PUT', '/api/slip', { slip: {}, customPicks: {}, bankroll: '',
+    board: { own: [{ title: 'A bet', odds: -110, market: 'Vibes' }] } }, cookie);
+  r = await send('GET', '/api/slip', undefined, cookie);
+  ok('an unknown market is normalised, not stored',
+      (await r.json()).board.own[0].market === 'Other');
 
   // Rubbish in the shape must not become a rendered card.
   r = await send('PUT', '/api/slip', {
