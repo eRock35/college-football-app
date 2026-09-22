@@ -1159,7 +1159,12 @@
         '. It works across every app on this domain.';
 
     if (!billing.available){
-      body.innerHTML = '<p class="muted">Buying credit is not switched on for this deployment.</p>';
+      // No Stripe key on this service, so it cannot take the payment. Name
+      // one that can rather than dead-ending; goes away once the key is here.
+      body.innerHTML = billing.elsewhere
+        ? '<a class="auth-go" href="' + escapeHtml(billing.elsewhere) +
+          '" style="text-decoration:none; text-align:center; line-height:50px;">Membership and credit</a>'
+        : '<p class="muted">Buying credit is not switched on yet.</p>';
       return;
     }
 
