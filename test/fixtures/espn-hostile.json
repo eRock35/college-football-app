@@ -1,0 +1,52 @@
+{
+ "leagues": [{"id": "23", "abbreviation": "NCAAF"}],
+ "events": [
+  {
+   "id": "401752901",
+   "date": "2026-09-26T23:00Z",
+   "name": "<script>alert(1)</script>",
+   "competitions": [{
+    "id": "401752901",
+    "date": "2026-09-26T23:00Z",
+    "venue": {"fullName": "<img src=x onerror=alert(1)>Stadium"},
+    "competitors": [
+     {"id": "61", "homeAway": "home", "score": "21",
+      "team": {"id": "61", "location": "Georgia", "name": "Bulldogs", "abbreviation": "UGA<b>", "displayName": "Georgia Bulldogs", "shortDisplayName": "Georgia", "color": "red;background:url(x)"},
+      "linescores": [{"value": 7}, {"value": "7"}, {"value": 7}],
+      "curatedRank": {"current": 2},
+      "records": [{"summary": "3-0"}]},
+     {"id": "8", "homeAway": "away", "score": "14",
+      "team": {"id": "8", "location": "\"><svg onload=alert(1)>", "name": {"evil": true}, "abbreviation": ["A"], "displayName": "Arkansas Razorbacks", "color": "9c1831"},
+      "linescores": [{"value": 7}, {"value": 7}, {"value": "x"}],
+      "curatedRank": {"current": 0},
+      "records": [{"summary": "<i>2-2</i>"}]}
+    ],
+    "status": {"displayClock": "7:12<script>", "period": 3, "type": {"name": "STATUS_IN_PROGRESS", "state": "in", "shortDetail": "7:12 - 3rd<script>alert(1)</script>"}},
+    "situation": {"possession": "61", "isRedZone": "yes", "downDistanceText": "2nd & 6 <a href=javascript:alert(1)>x</a>",
+      "lastPlay": {"text": "A very long play description   with a line separator and \u0000 a null and <b>markup</b> ................................................................................................................................................................................................................................................................................................................................"}},
+    "broadcasts": [{"names": ["ABC", {"x": 1}, "<script>"]}],
+    "odds": [{"details": "UGA -24.5", "overUnder": "1e9"}]
+   }]
+  },
+  {"id": "401752901", "competitions": [{"competitors": []}]},
+  {"id": "../../etc/passwd", "competitions": [{}]},
+  {"id": 401752902, "date": "not a date", "competitions": [{"date": "yesterday",
+    "competitors": [
+     {"homeAway": "home", "score": "NaN", "team": {"location": "Ohio State"}},
+     {"homeAway": "away", "score": "3", "team": {"location": "Kent State"}}],
+    "status": {"period": "3", "displayClock": "5:00", "type": {"state": "in", "name": "STATUS_IN_PROGRESS"}}}]},
+  {"id": "401752903", "competitions": [{
+    "competitors": [
+     {"homeAway": "home", "score": 999999, "team": {"location": "Texas"}},
+     {"homeAway": "home", "score": "3", "team": {"location": "Texas Tech"}}],
+    "status": {"type": {"state": "post"}}}]},
+  {"id": "401752904", "competitions": [{
+    "competitors": [
+     {"homeAway": "home", "score": "10", "team": {"location": "Clemson"}},
+     {"homeAway": "away", "score": "7", "team": {"location": "Duke"}}],
+    "status": {"type": {"state": "wat", "name": "STATUS_UNKNOWN"}}}]},
+  null,
+  "a string where an event should be",
+  42
+ ]
+}

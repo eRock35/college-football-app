@@ -9,6 +9,7 @@ const sitepass = require('./sitepass');
 const board = require('./board');
 const teams = require('./teams');
 const fan = require('./fan');
+const live = require('./live');
 const identityLib = require('./identity');
 const identityStore = require('./identity-store');
 
@@ -677,6 +678,76 @@ app.get('/api/board', async (_req, res) => {
     console.error('GET /api/board', err);
     const fallback = board.seed();
     res.json({ ...fallback, stale: true, seeded: true, error: 'stored board was unreadable' });
+  }
+});
+
+/* ---------- live scores (2026-09-25) ----------
+ *
+ * One shared scoreboard, cached in memory for 20 s, so a Saturday full of
+ * viewers costs one upstream fetch per 20 s. Filled by whichever request finds
+ * it stale - there is no timer, because this service is billed per request and
+ * anything running between requests stalls (see CLAUDE.md, "Billed per
+ * request"). Every failure is a 200 saying live scores are unavailable: this
+ * decorates the board and must never break it. No model call anywhere here.
+ */
+const liveFeed = live.createFeed({
+  // Resolved on every call rather than captured, so the test suite can stand
+  // a fake in front of the upstream while its own requests still go through.
+  fetch: (...args) => globalThis.fetch(...args),
+});
+
+// The reader's team, from prefs/<uid>. The page polls every 20 s on a game
+// day, so the answer is held for a minute rather than read from Firestore on
+// every poll. Signed out: no team - the ticker is not personal until you are.
+const liveTeamCache = new Map();
+async function liveTeamFor(req) {
+  const id = prefsDocId(req);
+  if (!id) return null;
+  const hit = liveTeamCache.get(id);
+  if (hit && Date.now() - hit.at < 60 * 1000) return hit.team;
+  let team = null;
+  try {
+    const doc = await db.collection('prefs').doc(id).get();
+    // Only a team they actually chose. The My Team tab falls back to Georgia
+    // for someone who never picked; pinning Georgia on their ticker would be
+    // telling a stranger who they support.
+    team = teams.validId(doc.exists ? doc.data().team : null);
+  } catch (err) {
+    console.error('live: prefs read failed', err.message);
+  }
+  if (liveTeamCache.size > 5000) liveTeamCache.clear();
+  liveTeamCache.set(id, { at: Date.now(), team });
+  return team;
+}
+
+app.get('/api/live', async (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    res.json(live.publicView(await liveFeed.get()));
+  } catch (err) {
+    console.error('GET /api/live', err);
+    res.json({ available: false, message: live.UNAVAILABLE });
+  }
+});
+
+/**
+ * The scoreboard ordered for this reader, plus where each play on their slip
+ * stands. The page sends the plays it is drawing as placed: a signed-out
+ * reader's slip exists only in their browser, and a signed-in one may have an
+ * edit the server has not seen yet. Nothing is stored; it is arithmetic on the
+ * cached feed.
+ */
+app.post('/api/live/slip', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    const result = await liveFeed.get();
+    const teamId = await liveTeamFor(req);
+    if (!result.available) return res.json({ ...live.publicView(result), team: teamId, slip: [] });
+    const slip = live.slipStatus((req.body || {}).items, result.all);
+    res.json({ ...live.publicView(result, { teamId, slipIds: live.slipGameIds(slip) }), team: teamId, slip });
+  } catch (err) {
+    console.error('POST /api/live/slip', err);
+    res.json({ available: false, message: live.UNAVAILABLE, slip: [] });
   }
 });
 

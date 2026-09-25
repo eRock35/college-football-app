@@ -209,6 +209,100 @@ rather than instead of it. The original door stays as the fallback; the shared
 one carries research access, credit and the passkey, because those live on the
 account rather than in any one app.
 
+## Live scores, a live slip and swing alerts (2026-09-25)
+
+A live layer on top of the board, with no model call anywhere in it:
+
+- **Ticker** at the top of Today's Card: every FBS game live today, plus the
+  reader's own games whatever their state (all of today's when nothing is
+  live; "No FBS games today · next kickoff …" when there are none). Ordered
+  the reader's team (from `prefs/<uid>`, only a team they actually chose, so
+  never a default Georgia; signed-out readers have none), then games on
+  their slip, then games with a Top 25 team, then the rest. Live before
+  upcoming before final within each group. Tap a game for a sheet with the
+  line score, situation, last play, leaders and their slip on that game.
+- **Live slip**: "covering by 3" / "needs 4 more to cover (3 to push)",
+  "on pace for 61 (over 54.5)", "leading by 7"; parlays leg by leg and
+  "2 of 3 legs hitting · 1 to play"; won / lost / push once final. On the
+  home view ("Your slip is sweating") and under each play on the Slip tab.
+- **Swing alerts**: an in-app banner (no push, no mail - there is no sender)
+  when a game that is the reader's has a lead change, a score in the 4th or
+  overtime, or goes final, and when a slip leg flips between hitting and
+  missing. The first poll alerts nothing, a leg flip rides on the banner for
+  the score that caused it, at most three show, and each carries a key naming
+  the event so it is never said twice.
+- **Game day**: when anything is live the board leads with the scoreboard
+  (`body.gameday`), and the card's static intro paragraph steps aside.
+
+### The source is one module, and untrusted
+
+`live.js` owns the upstream: ESPN's public scoreboard JSON
+(`site.api.espn.com/.../college-football/scoreboard?groups=80&limit=300`),
+keyless and **unofficial** - it can change shape or disappear without notice.
+Every field is picked out by name, type-checked, bounded and stripped of `<>`
+and control characters; the page escapes all of it again with
+`LiveCore.esc()` (which escapes quotes - the older `escapeHtml()` does not, so
+it is not used for feed data). Any failure - network, status, non-JSON, a
+body over 6 MB, no `events`, a 6 s timeout - becomes a 200 with
+`{available:false, message:"Live scores unavailable"}`. A feed that fails
+after a good read serves the last good board, marked stale, for 10 minutes.
+
+**Swapping to CollegeFootballData** (keyed, documented, rate-limited; check
+which of its tiers carries live scoreboard data before relying on it) means replacing
+`fetchScoreboard` and `normaliseEvent` to emit the same game shape, and adding
+its key as a Secret Manager secret bound to `football-run@`. Nothing
+downstream knows where a score came from. The summary endpoint
+(`/summary?event=`) is not used: the scoreboard already carries line scores,
+leaders and the last play, and one fetch per game per viewer is exactly the
+cost the shared cache exists to avoid.
+
+### Cost: one upstream fetch per 20 seconds, however many are watching
+
+`createFeed()` caches the normalised scoreboard in memory for 20 s and shares
+one in-flight fetch between concurrent callers; failures are cached for the
+same window. It is filled by whichever request finds it stale - **no
+`setInterval`, no background refresh**, because this service is billed per
+request (see "Billed per request" in `eriks-projects/DEPLOY.md`). The page
+polls every 20 s while a game is live and the tab is visible, every 5 min
+otherwise, and stops while hidden; a slip edit asks again after 0.8 s.
+
+### Routes
+
+- `GET /api/live` - open. Today's games, ordered for nobody; `no-store`.
+- `POST /api/live/slip` `{items:[{id, kind, title, matchup, market, legs}]}` -
+  open. The scoreboard ordered for this reader plus `slip` statuses. The page
+  sends the plays it is drawing as placed rather than the server reading
+  `user-state`: a signed-out slip exists only in the browser, a signed-in one
+  may have an edit not yet synced, and it saves a Firestore read per poll.
+  Nothing is stored. 30 plays, 12 legs, bounded strings. The reader's team is
+  read from `prefs/<uid>` and held in memory for a minute.
+
+### Matching a pick to a game: certain, or nothing
+
+A wrong status is worse than none, so matching is exact-key only. `teamKey()`
+folds case, accents (San José), apostrophes (Hawai'i), `&` (Texas A&M) and
+"St" -> "State"; `ALIASES` in `live.js` adds the spellings the feed and slips
+use ("App State", "UL Monroe", "Pitt", "Vandy"), and letters that name two
+schools (OSU, UT, KSU, ISU...) are deliberately absent. A key two teams would
+claim is dropped, and the suite asserts there are none. A bet is refused when
+it is not a full-game side, total or moneyline (halves, quarters, team totals,
+props), when its declared market contradicts what it says, when its side is
+not in the named matchup, or when the teams match anything other than exactly
+one game. An unmatched play simply shows no live status. Teams outside
+`teams.js` (FCS opponents, programs new to FBS) still show on the ticker under
+the feed's name; picks on them never match.
+
+### Files
+
+`live.js` (source, normaliser, matching, maths, cache), `public/live-core.js`
+(browser + CommonJS: escaping, labels, swing detection, dedupe),
+`test/live.js`, fixtures in `test/fixtures/espn-*.json` (hand-written in the
+real response shape: a Saturday night, twenty seconds later, all finals, a
+Tuesday, and a hostile feed). `test/boot-live.js` boots the app in memory on a
+fixture for looking at it in a browser (`LIVE_FIXTURE=live|live-next|finals|
+no-games|down`, or `LIVE_FIXTURE_CTL=<file>` to switch while running); it
+shifts the fixture's Saturday to today in Eastern time.
+
 ## Commit and PR conventions
 
 **Never put a Claude session link in anything pushed to GitHub.** No

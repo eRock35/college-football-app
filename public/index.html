@@ -729,6 +729,127 @@
   .ask-answer p:last-child, .chat-msg p:last-child{margin-bottom:0;}
   .ask-answer > *:first-child, .chat-msg > *:first-child{margin-top:0;}
 
+  /* ---- Live: ticker, sweat panel, game sheet, swing alerts (2026-09-25) ----
+     Everything here is drawn from an unofficial feed through LiveCore.esc(). */
+  .live-root{margin-top:4px;}
+  .live-root:empty{display:none;}
+  .live-head{display:flex; align-items:center; gap:8px; margin:6px 0 8px; min-height:22px;}
+  .live-head b{font-size:17px; letter-spacing:-.01em;}
+  .live-head .sub{font-size:13px; color:var(--text-faint); margin-left:auto; font-variant-numeric:tabular-nums; text-align:right;}
+  .live-head .sub.stale{color:var(--warning);}
+  .live-dot{width:8px; height:8px; border-radius:50%; background:var(--negative); flex:0 0 auto; animation:live-pulse 1.6s ease-in-out infinite;}
+  @keyframes live-pulse{0%,100%{opacity:1;} 50%{opacity:.35;}}
+  .live-off{font-size:13px; color:var(--text-faint); padding:6px 0 8px;}
+  .live-strip{display:flex; gap:8px; overflow-x:auto; padding:2px 16px 8px; margin:0 -16px; scrollbar-width:none; -webkit-overflow-scrolling:touch; scroll-snap-type:x proximity;}
+  .live-strip::-webkit-scrollbar{display:none;}
+  .live-chip{
+    flex:0 0 auto; width:168px; text-align:left; border:none; background:var(--surface); border-radius:12px;
+    box-shadow:var(--shadow); padding:9px 11px 10px; cursor:pointer; color:var(--text); font-variant-numeric:tabular-nums;
+    scroll-snap-align:start; transition:transform .12s ease;
+  }
+  .live-chip:active{transform:scale(.97);}
+  .live-chip.team{box-shadow:inset 3px 0 0 var(--team), var(--shadow);}
+  :root[data-theme="dark"] .live-chip, :root[data-theme="dark"] .sweat{box-shadow:inset 0 0 0 1px var(--border);}
+  :root[data-theme="dark"] .live-chip.team{box-shadow:inset 3px 0 0 var(--team), inset 0 0 0 1px var(--border);}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .live-chip, :root:not([data-theme="light"]) .sweat{box-shadow:inset 0 0 0 1px var(--border);}
+    :root:not([data-theme="light"]) .live-chip.team{box-shadow:inset 3px 0 0 var(--team), inset 0 0 0 1px var(--border);}
+  }
+  .live-chip .st{display:flex; justify-content:space-between; gap:6px; font-size:11.5px; font-weight:600; color:var(--text-faint); text-transform:uppercase; letter-spacing:.03em; margin-bottom:5px; white-space:nowrap;}
+  .live-chip .st .tv{overflow:hidden; text-overflow:ellipsis;}
+  .live-chip .st.on{color:var(--negative);}
+  .live-chip .row{display:flex; align-items:center; gap:6px; font-size:15px; line-height:1.4;}
+  .live-chip .rk{font-size:11px; color:var(--text-faint); min-width:13px; text-align:right;}
+  .live-chip .nm{flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500;}
+  .live-chip .sc{font-weight:600; min-width:22px; text-align:right;}
+  .live-chip .row.lead .nm, .live-chip .row.lead .sc{font-weight:700;}
+  .live-chip .row.trail .sc, .live-chip .row.trail .nm{color:var(--label-2);}
+  .ball{width:7px; height:7px; border-radius:50%; background:var(--positive); flex:0 0 auto;}
+  .ball.none{background:transparent;}
+  .live-tags{display:flex; gap:4px; margin-top:6px; flex-wrap:wrap; min-height:0;}
+  .live-tags:empty{display:none;}
+  .ltag{font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:2px 6px; border-radius:5px; background:var(--fill); color:var(--label-2);}
+  .ltag.rz{background:var(--negative-soft); color:var(--negative);}
+  /* Not the team's own colour: a dark brand red on a dark surface is
+     unreadable, and the chip already carries a stripe in that colour. */
+  .ltag.team{background:var(--fill-2); color:var(--text);}
+  .ltag.slip{background:var(--accent-soft); color:var(--tint);}
+  .live-all{padding:0 2px; margin:-2px 0 6px; font-size:14px; min-height:32px;}
+  .sweat-all{padding:0; min-height:44px; font-size:14px; border-top:1px solid var(--sep); width:100%; text-align:left; border-radius:0;}
+  .live-more{flex:0 0 auto; align-self:stretch; border:none; border-radius:12px; background:var(--fill); color:var(--tint); font-weight:600; font-size:14px; padding:0 14px; cursor:pointer;}
+  /* Game day: the scoreboard leads the home view, and the static intro that
+     describes the card steps aside for it. */
+  body.gameday #panel-card .intro > p:first-child{display:none;}
+  @media (min-width:900px){
+    .live-root.gameday .live-strip{display:grid; grid-template-columns:repeat(auto-fill, minmax(176px, 1fr)); overflow:visible; margin:0; padding:2px 0 8px;}
+    .live-root.gameday .live-chip{width:auto;}
+  }
+
+  .sweat{background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:12px 14px 4px; margin:4px 0 6px;}
+  .sweat-head{display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-bottom:4px;}
+  .sweat-head b{font-size:16px;}
+  .sweat-head span{font-size:13px; color:var(--text-faint); font-variant-numeric:tabular-nums; text-align:right;}
+  @media (min-width:900px){ .sweat-rows{display:grid; grid-template-columns:1fr 1fr; column-gap:28px;} }
+  .sweat-row{display:flex; gap:10px; align-items:flex-start; width:100%; padding:10px 0; border:none; border-top:1px solid var(--sep); background:none; color:var(--text); text-align:left; cursor:pointer; font:inherit;}
+  .sweat-row .t{min-width:0; flex:1;}
+  .sweat-row .t b{display:block; font-size:15px; font-weight:600;}
+  .sweat-row .d{display:block; font-size:13.5px; color:var(--label-2); line-height:1.4; margin-top:1px;}
+  .sweat-row .s{display:block; font-size:12.5px; color:var(--text-faint); font-variant-numeric:tabular-nums; margin-top:1px;}
+  .sweat-legs{list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:4px;}
+  .sweat-legs li{display:flex; gap:8px; align-items:baseline; font-size:13px; color:var(--label-2);}
+  .sweat-legs li .pill{font-size:9.5px; padding:2px 5px;}
+  .pill{flex:0 0 auto; display:inline-block; min-width:62px; text-align:center; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:3px 7px; border-radius:6px; background:var(--fill); color:var(--label-2); margin-top:2px;}
+  .pill.hitting, .pill.won{background:var(--positive-soft); color:var(--positive);}
+  .pill.missing, .pill.lost{background:var(--negative-soft); color:var(--negative);}
+  .live-status{margin-top:10px; padding:10px 12px; border-radius:10px; background:var(--surface-2); display:flex; gap:10px; align-items:flex-start; font-size:14px; line-height:1.4;}
+  .live-status:empty{display:none;}
+  .live-status .t{min-width:0;}
+  .live-status .s{display:block; font-size:12.5px; color:var(--text-faint); font-variant-numeric:tabular-nums;}
+
+  /* The game sheet */
+  .gs-status{font-size:12px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-faint); margin:0 0 4px; font-variant-numeric:tabular-nums;}
+  .gs-status.on{color:var(--negative);}
+  .gs-score{background:var(--surface-2); border-radius:14px; padding:4px 14px; margin:10px 0 12px;}
+  .gs-team{display:flex; align-items:center; gap:8px; min-height:48px; font-variant-numeric:tabular-nums;}
+  .gs-team + .gs-team{border-top:1px solid var(--sep);}
+  .gs-team .dot{width:10px; height:10px; border-radius:50%; flex:0 0 auto;}
+  .gs-team .rk{font-size:12px; color:var(--text-faint);}
+  .gs-team .nm{font-size:17px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .gs-team .rec{font-size:12.5px; color:var(--text-faint);}
+  .gs-team .big{margin-left:auto; font-size:28px; font-weight:700; letter-spacing:-.02em;}
+  .gs-team.trail .big{color:var(--label-2);}
+  .gs-lines{width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums; margin-bottom:12px;}
+  .gs-lines th{font-size:11px; font-weight:600; color:var(--text-faint); text-transform:uppercase; padding:4px 0; text-align:center;}
+  .gs-lines td{padding:6px 0; text-align:center; border-top:1px solid var(--sep); color:var(--label-2);}
+  .gs-lines th:first-child, .gs-lines td:first-child{text-align:left;}
+  .gs-lines td:last-child{font-weight:700; color:var(--text);}
+  /* Feed text can be one unbroken run of characters; it must wrap, not push
+     the sheet sideways. */
+  .gs-block, .gs-foot, .sweat-row .t, .live-status .t, .live-alert .body{overflow-wrap:anywhere;}
+  .gs-block{background:var(--surface-2); border-radius:12px; padding:10px 12px; margin-bottom:10px; font-size:14.5px; line-height:1.45;}
+  .gs-block .k{font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-faint); margin-bottom:3px;}
+  .gs-lead{display:flex; gap:8px; align-items:baseline; padding:3px 0;}
+  .gs-lead .c{font-size:12px; color:var(--text-faint); width:74px; flex:0 0 auto;}
+  .gs-lead .v{color:var(--label-2); font-size:13.5px;}
+  .gs-foot{font-size:12.5px; color:var(--text-faint); margin:6px 0 12px; line-height:1.5;}
+
+  /* Swing alerts: in-app only - there is no push and no mail sender here. */
+  .live-alerts{position:fixed; left:50%; top:calc(env(safe-area-inset-top,0px) + 10px); transform:translateX(-50%); z-index:66;
+    width:min(440px, calc(100% - 24px)); display:flex; flex-direction:column; gap:8px; pointer-events:none;}
+  .live-alert{pointer-events:auto; display:flex; gap:6px; align-items:flex-start; background:var(--surface); color:var(--text);
+    border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.22), inset 4px 0 0 var(--tint); padding:10px 4px 10px 16px; animation:alert-in .28s cubic-bezier(.2,.8,.2,1);}
+  :root[data-theme="dark"] .live-alert{background:var(--surface-2);}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .live-alert{background:var(--surface-2);} }
+  .live-alert.lead{box-shadow:0 10px 30px rgba(0,0,0,.22), inset 4px 0 0 var(--warning);}
+  .live-alert.hitting{box-shadow:0 10px 30px rgba(0,0,0,.22), inset 4px 0 0 var(--positive);}
+  .live-alert.missing{box-shadow:0 10px 30px rgba(0,0,0,.22), inset 4px 0 0 var(--negative);}
+  .live-alert .body{flex:1; min-width:0; border:none; background:none; color:inherit; font:inherit; text-align:left; padding:0; cursor:pointer;}
+  .live-alert .body b{display:block; font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--label-2);}
+  .live-alert .body span{display:block; font-size:15px; line-height:1.35; margin-top:1px;}
+  .live-alert .x{flex:0 0 auto; width:40px; height:40px; margin-top:-6px; border:none; background:none; color:var(--text-faint); font-size:22px; line-height:1; cursor:pointer; border-radius:20px;}
+  .live-alert .x:active{background:var(--fill);}
+  @keyframes alert-in{from{opacity:0; transform:translateY(-10px);} to{opacity:1; transform:none;}}
+
   @media (prefers-reduced-motion: reduce){
     *{transition:none!important; animation:none!important;}
   }
@@ -783,6 +904,10 @@
 
 <main>
 <section role="tabpanel" id="panel-card" aria-labelledby="tab-card">
+  <!-- Live scores. Filled from /api/live/slip; empty until the first answer,
+       and a quiet "unavailable" line rather than anything louder if the feed
+       is down - it decorates the board and must never break it. -->
+  <section class="live-root" id="live-root" aria-label="Live scores"></section>
   <div class="intro">
     <p>Plays off Saturday's board — straight bets and 3-leg parlays — built from DraftKings-market lines and this week's injury and personnel notes. Confidence dots reflect how much the number, not just the winner, is in our favor.</p>
     <div class="slate-strip" id="slate-strip"></div>
@@ -1013,7 +1138,9 @@
 
 <div class="sheet" id="dyn-sheet" role="dialog" aria-modal="true" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="live-alerts" id="live-alerts" role="status" aria-live="polite"></div>
 
+<script src="/live-core.js"></script>
 <script>
 (function(){
   "use strict";
@@ -2510,6 +2637,7 @@
     ownCardsList().forEach(function(p){ computeRow(p.id, p.odds); });
     saveSlip(slipState);
     renderSlipTab();
+    liveSlipChanged();
   }
 
   function renderSlipTab(){
@@ -2628,7 +2756,9 @@
     }).filter(Boolean);
     if (!liveGames.length) return '';
     return '<div class="slip-live">' +
-      '<div class="slip-live-label">Live</div>' +
+      // "Latest research", not "Live": the live score sits just above this
+      // now, and two blocks both called Live would contradict each other.
+      '<div class="slip-live-label">Latest research</div>' +
       liveGames.map(function(g){
         return '<div class="slip-live-row"><b>' + g.label + ':</b> ' + (g.summary || 'No live update yet') + ' <span class="slip-live-time">(' + relativeTime(g.lastChecked) + ')</span></div>';
       }).join('') +
@@ -2753,6 +2883,7 @@
         '<div class="research-meta">' + metaHtml + '</div>' +
         '<p>' + x.data.why + '</p>' +
         '<div class="risk-line">Stake ' + fmtMoney(s.stake) + ' &rarr; to win ' + fmtMoney(toWin) + ' (returns ' + fmtMoney(s.stake + toWin) + '). Risk: ' + x.data.risk + '</div>' +
+        '<div class="live-status" data-live-for="' + liveEsc(id) + '">' + liveStatusInner(id) + '</div>' +
         slipLiveHtml(id) +
         (id.indexOf('game-') === 0 ? '<button class="text-toggle-btn" data-remove-slip="' + id.slice(5) + '" type="button">Remove from slip</button>' : '') +
       '</div>';
@@ -4113,6 +4244,7 @@
     subscribeStatus();
     subscribeChangelog();
     subscribeAsks();
+    startLive();
 
     // Per-game chat, backed by this app's own gated /api/chat route.
     // Matches the shape sendChat() expects from the Artifact "sample"
@@ -4140,6 +4272,364 @@
         return {text: text};
       });
     };
+  }
+
+  // ---------- live scores (2026-09-25) ----------
+  //
+  // One poll feeds everything live: POST /api/live/slip sends the plays this
+  // page is drawing as placed and gets back today's scoreboard (ordered for
+  // this reader: their team, their slip, the Top 25) plus where each play
+  // stands. Every 20 s while a game is live and the tab is visible, every
+  // 5 min otherwise, and not at all while hidden. The server holds one shared
+  // copy of the feed for 20 s, so polling here costs it nothing upstream.
+  //
+  // The feed is unofficial and untrusted: everything from it is drawn through
+  // LiveCore.esc(), which escapes quotes too, never the text-only escapeHtml().
+  var LC = window.LiveCore;
+  var live = {
+    resp: null, snap: null, timer: null, lastAt: 0, lastGoodAt: 0, inflight: false,
+    bySlip: {}, sheetId: null, showAll: false, seen: null, debounce: null
+  };
+  var LIVE_PILL = { hitting: 'Hitting', missing: 'Missing', push: 'Push', pending: 'Too early', won: 'Won', lost: 'Lost', 'void': 'Off' };
+  /** A leg that has not kicked off is "Later", not "Too early" - that one
+   *  means a total whose game is on but too young for a pace. */
+  function pillLabel(x){
+    if (!x || !x.matched) return '\u2014';
+    if (x.state === 'pre') return 'Later';
+    return LIVE_PILL[x.outcome] || '';
+  }
+  function legsHtml(s){
+    return '<ul class="sweat-legs">' + (s.legs || []).map(function(l){
+      return '<li><span class="pill ' + liveEsc(l.matched ? l.outcome : 'void') + '">' + liveEsc(pillLabel(l)) + '</span>' +
+        '<span>' + liveEsc(l.market) + ' \u00b7 ' + liveEsc(!l.matched ? 'not tracked' : l.state === 'pre' ? 'not started' : l.text) + '</span></li>';
+    }).join('') + '</ul>';
+  }
+
+  function liveEsc(s){ return LC ? LC.esc(s) : escapeHtml(s); }
+  function liveTime(iso){
+    var d = new Date(iso);
+    return isNaN(d) ? '' : d.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
+  }
+  function liveDay(iso){
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString([], {weekday: 'short'}) + ' ' + liveTime(iso);
+  }
+  function liveColor(c){ return /^#[0-9a-f]{6}$/i.test(String(c || '')) ? c : 'var(--fill-2)'; }
+
+  /** The placed plays, in the shape the server reads. */
+  function liveSlipItems(){
+    return allPicks().filter(function(x){ return slipState[x.data.id] && slipState[x.data.id].placed; })
+      .slice(0, 30)
+      .map(function(x){
+        var d = x.data;
+        if (x.kind === 'parlay') return { id: d.id, kind: 'parlay', title: d.title,
+          legs: (d.legs || []).map(function(l){ return { game: l.game, market: l.market }; }) };
+        return { id: d.id, kind: 'straight', title: d.title, matchup: d.matchup || '', market: d.market || '' };
+      });
+  }
+
+  function liveGameById(id){
+    var games = (live.resp && live.resp.games) || [];
+    for (var i = 0; i < games.length; i++) if (games[i].id === id) return games[i];
+    return null;
+  }
+
+  function pollLive(){
+    if (live.inflight || !LC) return;
+    live.inflight = true;
+    fetch('/api/live/slip', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ items: liveSlipItems() })
+    })
+      .then(function(r){ if (!r.ok) throw new Error('status ' + r.status); return r.json(); })
+      .then(function(resp){ applyLive(resp && typeof resp === 'object' ? resp : { available: false }); })
+      .catch(function(){
+        // Our own network blinked. A board from a minute ago is still worth
+        // showing; one from longer ago is not, and says so.
+        if (!live.resp || Date.now() - live.lastGoodAt > 120000) applyLive({ available: false, message: 'Live scores unavailable' });
+      })
+      .then(function(){ live.inflight = false; live.lastAt = Date.now(); scheduleLive(); });
+  }
+
+  function scheduleLive(){
+    if (live.timer) clearTimeout(live.timer);
+    live.timer = null;
+    if (document.hidden || !LC) return;
+    live.timer = setTimeout(pollLive, LC.pollDelay(live.resp));
+  }
+
+  /** The slip changed: ask again soon, so a play just placed shows its status
+   *  without waiting out a five-minute poll. */
+  function liveSlipChanged(){
+    if (!live.resp || !LC) return;
+    if (live.debounce) clearTimeout(live.debounce);
+    live.debounce = setTimeout(function(){ live.debounce = null; pollLive(); }, 800);
+  }
+
+  function applyLive(resp){
+    live.resp = resp;
+    live.bySlip = {};
+    if (resp.available){
+      live.lastGoodAt = Date.now();
+      (resp.slip || []).forEach(function(s){ live.bySlip[s.id] = s; });
+      var snap = LC.snapshot(resp, live.snap);
+      var fresh = live.seen.fresh(LC.detectSwings(live.snap, snap));
+      live.snap = snap;
+      // Ranked most important first; three at most, and the third says how
+      // many more there were rather than burying the first under them.
+      var shownAlerts = fresh.slice(0, 3);
+      if (fresh.length > 3) shownAlerts[2] = Object.assign({}, shownAlerts[2], { title: shownAlerts[2].title + ' \u00b7 +' + (fresh.length - 3) + ' more' });
+      shownAlerts.forEach(showLiveAlert);
+    }
+    document.body.classList.toggle('gameday', !!(resp.available && resp.anyLive));
+    renderLive();
+    paintSlipLive();
+    if (live.sheetId) renderLiveSheet(live.sheetId);
+  }
+
+  function chipHtml(g){
+    var st = LC.clockLabel(g, liveTime);
+    var row = function(side){
+      var t = g[side], other = g[side === 'home' ? 'away' : 'home'];
+      var cls = (typeof t.score === 'number' && typeof other.score === 'number')
+        ? (t.score > other.score ? ' lead' : t.score < other.score ? ' trail' : '') : '';
+      return '<span class="row' + cls + '">' +
+        '<span class="rk">' + (t.rank ? t.rank : '') + '</span>' +
+        '<span class="nm">' + liveEsc(t.name) + '</span>' +
+        '<span class="ball' + (g.possession === side ? '' : ' none') + '"' + (g.possession === side ? ' title="Has the ball"' : '') + '></span>' +
+        '<span class="sc">' + (typeof t.score === 'number' ? t.score : '') + '</span>' +
+      '</span>';
+    };
+    var tags = '';
+    if (g.redZone) tags += '<span class="ltag rz">Red zone</span>';
+    if (g.mine === 'team') tags += '<span class="ltag team">Your team</span>';
+    else if (g.mine === 'slip') tags += '<span class="ltag slip">On your slip</span>';
+    var label = g.away.name + (typeof g.away.score === 'number' ? ' ' + g.away.score : '') + ' at ' +
+      g.home.name + (typeof g.home.score === 'number' ? ' ' + g.home.score : '') + ', ' + st +
+      (g.possession ? ', ' + g[g.possession].name + ' ball' : '') + (g.redZone ? ', red zone' : '');
+    return '<button class="live-chip' + (g.mine === 'team' ? ' team' : '') + '" type="button" data-live-game="' + liveEsc(g.id) + '" aria-label="' + liveEsc(label) + '">' +
+      '<span class="st' + (g.live ? ' on' : '') + '"><span>' + liveEsc(st) + '</span><span class="tv">' + liveEsc((g.tv || [])[0] || '') + '</span></span>' +
+      row('away') + row('home') +
+      '<span class="live-tags">' + tags + '</span>' +
+    '</button>';
+  }
+
+  /** The plays whose games are live or done, for the home view. */
+  function sweatRows(){
+    return ((live.resp && live.resp.slip) || []).filter(function(s){ return s.matched && (s.state === 'live' || s.state === 'final'); });
+  }
+
+  function sweatHtml(){
+    // Live plays first - they are the ones sweating - then the settled.
+    var every = sweatRows().sort(function(a, b){ return (a.state === 'live' ? 0 : 1) - (b.state === 'live' ? 0 : 1); });
+    if (!every.length) return '';
+    var all = every.length;
+    // The counts are of the whole slip, not of the rows that fit.
+    var rows = every;
+    var liveN = rows.filter(function(s){ return s.state === 'live'; }).length;
+    var hitting = rows.filter(function(s){ return s.state === 'live' && s.outcome === 'hitting'; }).length;
+    var won = rows.filter(function(s){ return s.outcome === 'won'; }).length;
+    var lost = rows.filter(function(s){ return s.outcome === 'lost'; }).length;
+    var head = [];
+    if (liveN) head.push(hitting + ' of ' + liveN + ' hitting');
+    if (won) head.push(won + ' won');
+    if (lost) head.push(lost + ' lost');
+    var cap = window.matchMedia && window.matchMedia('(min-width: 900px)').matches ? 6 : 4;
+    var visible = live.showAllSlip ? every : every.slice(0, cap);
+    return '<div class="sweat">' +
+      '<div class="sweat-head"><b>' + (liveN ? 'Your slip is sweating' : 'Your slip today') + '</b><span>' + liveEsc(head.join(' · ')) + '</span></div>' +
+      '<div class="sweat-rows">' + visible.map(function(s){
+        var legs = s.kind === 'parlay' ? legsHtml(s) : '';
+        var gid = s.gameId || (s.gameIds || [])[0] || '';
+        return '<button class="sweat-row" type="button"' + (gid ? ' data-live-game="' + liveEsc(gid) + '"' : '') + '>' +
+          '<span class="pill ' + liveEsc(s.outcome) + '">' + liveEsc(pillLabel(s)) + '</span>' +
+          '<span class="t"><b>' + liveEsc(s.title) + '</b><span class="d">' + liveEsc(s.text) + '</span>' +
+            (s.detail ? '<span class="s">' + liveEsc(s.detail) + '</span>' : '') + legs + '</span>' +
+        '</button>';
+      }).join('') + '</div>' +
+      (all > visible.length ? '<button class="text-toggle-btn sweat-all" type="button" data-live-slip-all>Show all ' + all + ' plays</button>' : '') +
+    '</div>';
+  }
+
+  function renderLive(){
+    var root = document.getElementById('live-root');
+    if (!root) return;
+    var r = live.resp;
+    root.classList.remove('gameday');
+    if (!r) { root.innerHTML = ''; return; }
+    if (!r.available){
+      root.innerHTML = '<div class="live-off">' + liveEsc(r.message || 'Live scores unavailable') + '</div>';
+      return;
+    }
+    var games = r.games || [];
+    if (!games.length){
+      root.innerHTML = '<div class="live-off">No FBS games today' +
+        (r.next && r.next.startsAt ? ' · next kickoff ' + liveEsc(liveDay(r.next.startsAt)) : '') +
+        (r.stale ? ' · scores may be behind' : '') + '</div>';
+      return;
+    }
+    var liveGames = games.filter(function(g){ return g.live; });
+    // Live: what is on now, plus the reader's own games whatever their state.
+    // Nothing live: all of today.
+    var shown = liveGames.length ? games.filter(function(g){ return g.live || g.mine; }) : games;
+    var rest = games.length - shown.length;
+    if (live.showAll) { shown = games; rest = 0; }
+    var finals = games.filter(function(g){ return g.final; }).length;
+    var later = games.filter(function(g){ return g.state === 'pre' || g.state === 'delayed'; }).length;
+    var head = liveGames.length
+      ? '<span class="live-dot" aria-hidden="true"></span><b>Live now</b>'
+      : '<b>Today</b>';
+    var counts = [];
+    if (liveGames.length) counts.push(liveGames.length + ' live');
+    if (finals) counts.push(finals + ' final');
+    if (later) counts.push(later + ' later');
+    var sub = r.stale
+      ? '<span class="sub stale">Scores may be behind</span>'
+      : '<span class="sub">' + liveEsc(counts.join(' · ')) + '</span>';
+    root.classList.toggle('gameday', !!liveGames.length);
+    root.innerHTML = '<div class="live-head">' + head + sub + '</div>' +
+      '<div class="live-strip">' + shown.map(chipHtml).join('') + '</div>' +
+      (rest > 0 ? '<button class="text-toggle-btn live-all" type="button" data-live-all>All ' + games.length + ' games today</button>' : '') +
+      sweatHtml();
+  }
+
+  /** The status block under one play on the Slip tab. */
+  function liveStatusInner(id){
+    var s = live.bySlip[id];
+    if (!s || !s.matched || !(s.state === 'live' || s.state === 'final')) return '';
+    var legs = s.kind === 'parlay' ? legsHtml(s) : '';
+    return '<span class="pill ' + liveEsc(s.outcome) + '">' + liveEsc(pillLabel(s)) + '</span>' +
+      '<span class="t">' + liveEsc(s.text) + (s.detail ? '<span class="s">' + liveEsc(s.detail) + '</span>' : '') + legs + '</span>';
+  }
+
+  function paintSlipLive(){
+    document.querySelectorAll('[data-live-for]').forEach(function(el){
+      el.innerHTML = liveStatusInner(el.getAttribute('data-live-for'));
+    });
+  }
+
+  function renderLiveSheet(id){
+    var sheet = document.getElementById('dyn-sheet');
+    var g = liveGameById(id);
+    if (!sheet) return;
+    if (!g){
+      if (live.sheetId === id && !sheet.hidden) sheet.querySelector('.gs-status') && (sheet.querySelector('.gs-status').textContent = 'No longer on today’s board');
+      return;
+    }
+    var st = LC.clockLabel(g, liveTime);
+    var team = function(side){
+      var t = g[side], o = g[side === 'home' ? 'away' : 'home'];
+      var trail = typeof t.score === 'number' && typeof o.score === 'number' && t.score < o.score;
+      return '<div class="gs-team' + (trail ? ' trail' : '') + '">' +
+        '<span class="dot" style="background:' + liveEsc(liveColor(t.color)) + '"></span>' +
+        (t.rank ? '<span class="rk">' + t.rank + '</span>' : '') +
+        '<span class="nm">' + liveEsc(t.name) + '</span>' +
+        (t.record ? '<span class="rec">' + liveEsc(t.record) + '</span>' : '') +
+        (g.possession === side ? '<span class="ball" title="Has the ball"></span>' : '') +
+        '<span class="big">' + (typeof t.score === 'number' ? t.score : '') + '</span>' +
+      '</div>';
+    };
+    var lines = '';
+    var n = Math.max(g.away.linescores.length, g.home.linescores.length);
+    if (n && g.away.linescores.length === g.home.linescores.length){
+      var heads = [];
+      for (var i = 0; i < n; i++) heads.push(i < 4 ? String(i + 1) : (i === 4 ? 'OT' : (i - 3) + 'OT'));
+      var lrow = function(side){
+        return '<tr><td>' + liveEsc(g[side].abbr || g[side].name) + '</td>' +
+          g[side].linescores.map(function(v){ return '<td>' + Number(v) + '</td>'; }).join('') +
+          '<td>' + (typeof g[side].score === 'number' ? g[side].score : '') + '</td></tr>';
+      };
+      lines = '<table class="gs-lines"><thead><tr><th></th>' + heads.map(function(h){ return '<th>' + h + '</th>'; }).join('') +
+        '<th>T</th></tr></thead><tbody>' + lrow('away') + lrow('home') + '</tbody></table>';
+    }
+    var sit = [g.downDistance, g.redZone ? 'Red zone' : ''].filter(Boolean).join(' · ');
+    var leaders = (g.leaders || []).map(function(l){
+      return '<div class="gs-lead"><span class="c">' + liveEsc(l.label) + '</span><span class="v"><b>' + liveEsc(l.name) + '</b>' +
+        (l.side ? ' (' + liveEsc(g[l.side].abbr || g[l.side].name) + ')' : '') + ' · ' + liveEsc(l.line) + '</span></div>';
+    }).join('');
+    var mine = ((live.resp && live.resp.slip) || []).filter(function(s){
+      return s.matched && (s.gameId === id || (s.gameIds || []).indexOf(id) !== -1);
+    });
+    var mineHtml = mine.map(function(s){
+      if (s.kind === 'parlay'){
+        return (s.legs || []).filter(function(l){ return l.gameId === id; }).map(function(l){
+          return '<div class="gs-lead"><span class="pill ' + liveEsc(l.outcome) + '">' + liveEsc(LIVE_PILL[l.outcome] || '') + '</span>' +
+            '<span class="v"><b>' + liveEsc(l.market) + '</b> (' + liveEsc(s.title) + ')' + (l.text ? ' · ' + liveEsc(l.text) : '') + '</span></div>';
+        }).join('');
+      }
+      return '<div class="gs-lead"><span class="pill ' + liveEsc(s.outcome) + '">' + liveEsc(LIVE_PILL[s.outcome] || '') + '</span>' +
+        '<span class="v"><b>' + liveEsc(s.title) + '</b>' + (s.text ? ' · ' + liveEsc(s.text) : '') + '</span></div>';
+    }).join('');
+    var foot = [
+      g.line ? 'Line ' + g.line + (g.overUnder ? ' · O/U ' + g.overUnder : '') : '',
+      [ (g.tv || []).join(', '), g.venue ].filter(Boolean).join(' · ')
+    ].filter(Boolean);
+    var scroll = sheet.scrollTop;
+    sheet.innerHTML = '<div class="grabber"></div>' +
+      '<div class="gs-status' + (g.live ? ' on' : '') + '">' + liveEsc(g.live ? 'Live · ' + st : st) + '</div>' +
+      '<h2 class="sheet-title">' + liveEsc(g.away.name + ' at ' + g.home.name) + '</h2>' +
+      '<div class="gs-score">' + team('away') + team('home') + '</div>' +
+      lines +
+      (sit ? '<div class="gs-block"><div class="k">Situation</div>' + liveEsc(sit) + '</div>' : '') +
+      (g.lastPlay ? '<div class="gs-block"><div class="k">Last play</div>' + liveEsc(g.lastPlay) + '</div>' : '') +
+      (leaders ? '<div class="gs-block"><div class="k">Leaders</div>' + leaders + '</div>' : '') +
+      (mineHtml ? '<div class="gs-block"><div class="k">Your slip</div>' + mineHtml + '</div>' : '') +
+      '<p class="gs-foot">' + foot.map(liveEsc).join('<br>') + (foot.length ? '<br>' : '') +
+        'Scores from ESPN’s public feed, refreshed every 20 seconds while games are on. They can trail the broadcast.</p>' +
+      '<div class="sheet-actions"><button class="sheet-action sheet-cancel" type="button" data-live-close>Close</button></div>';
+    sheet.scrollTop = scroll;
+  }
+
+  function openLiveSheet(id){
+    var sheet = document.getElementById('dyn-sheet');
+    if (!sheet || !liveGameById(id)) return;
+    live.sheetId = id;
+    renderLiveSheet(id);
+    var g = liveGameById(id);
+    sheet.setAttribute('aria-label', g.away.name + ' at ' + g.home.name);
+    sheet.onclick = function(e){ if (e.target.closest('[data-live-close]')) closeSheet(sheet); };
+    openSheet(sheet, { onClose: function(){ live.sheetId = null; sheet.onclick = null; } });
+  }
+
+  function showLiveAlert(a){
+    var box = document.getElementById('live-alerts');
+    if (!box) return;
+    // Three at most on screen: a busy Saturday should not bury the page.
+    while (box.children.length >= 3) box.removeChild(box.firstChild);
+    var tone = a.kind === 'lead' ? 'lead' : a.title === 'Now hitting' ? 'hitting' : a.title === 'Now missing' ? 'missing' : '';
+    var el = document.createElement('div');
+    el.className = 'live-alert' + (tone ? ' ' + tone : '');
+    el.innerHTML = '<button class="body" type="button"' + (a.gameId ? ' data-live-game="' + liveEsc(a.gameId) + '"' : '') + '>' +
+        '<b>' + liveEsc(a.title) + '</b><span>' + liveEsc(a.text) + '</span></button>' +
+      '<button class="x" type="button" aria-label="Dismiss">×</button>';
+    var gone = false;
+    var dismiss = function(){ if (gone) return; gone = true; if (el.parentNode) el.parentNode.removeChild(el); };
+    el.querySelector('.x').addEventListener('click', dismiss);
+    el.querySelector('.body').addEventListener('click', dismiss);
+    box.appendChild(el);
+    // Long enough to read over a shoulder, short enough not to pile up.
+    setTimeout(dismiss, 20000);
+  }
+
+  function startLive(){
+    if (!LC) return;
+    var store = null;
+    try { store = window.sessionStorage; } catch (e) { store = null; }
+    live.seen = LC.createSeen(store, 'cfb-live-seen-v1', 300);
+    document.addEventListener('click', function(e){
+      var all = e.target.closest('[data-live-all]');
+      if (all){ live.showAll = true; renderLive(); return; }
+      if (e.target.closest('[data-live-slip-all]')){ live.showAllSlip = true; renderLive(); return; }
+      var hit = e.target.closest('[data-live-game]');
+      if (hit && !e.target.closest('#dyn-sheet')) openLiveSheet(hit.getAttribute('data-live-game'));
+    });
+    document.addEventListener('visibilitychange', function(){
+      if (document.hidden){ if (live.timer) clearTimeout(live.timer); live.timer = null; return; }
+      // Back on screen: ask now if the last answer is older than a fast poll.
+      if (Date.now() - live.lastAt > 15000) pollLive(); else scheduleLive();
+    });
+    pollLive();
   }
 
   // ---------- the board ----------
