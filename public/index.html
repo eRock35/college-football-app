@@ -4470,9 +4470,11 @@
       return;
     }
     var liveGames = games.filter(function(g){ return g.live; });
-    // Live: what is on now, plus the reader's own games whatever their state.
-    // Nothing live: all of today.
-    var shown = liveGames.length ? games.filter(function(g){ return g.live || g.mine; }) : games;
+    // Live: what is on now, plus the reader's own games and every game with a
+    // Top 25 team, whatever their state - Erik: "I should have every top 25
+    // game that plays today". Nothing live: all of today.
+    var ranked = function(g){ return (g.away && g.away.rank) || (g.home && g.home.rank); };
+    var shown = liveGames.length ? games.filter(function(g){ return g.live || g.mine || ranked(g); }) : games;
     var rest = games.length - shown.length;
     if (live.showAll) { shown = games; rest = 0; }
     var finals = games.filter(function(g){ return g.final; }).length;

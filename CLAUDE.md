@@ -214,7 +214,8 @@ account rather than in any one app.
 A live layer on top of the board, with no model call anywhere in it:
 
 - **Ticker** at the top of Today's Card: every FBS game live today, plus the
-  reader's own games whatever their state (all of today's when nothing is
+  reader's own games and every game with a Top 25 team (by the feed's rank),
+  whatever their state (all of today's when nothing is
   live; "No FBS games today · next kickoff …" when there are none). Ordered
   the reader's team (from `prefs/<uid>`, only a team they actually chose, so
   never a default Georgia; signed-out readers have none), then games on
