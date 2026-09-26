@@ -912,7 +912,9 @@ function createFeed({ fetch: fetchImpl, url = ESPN_SCOREBOARD, ttlMs = TTL_MS, s
  * rejects: a day that cannot be read is simply missing, and whatever is not
  * matched falls back to the model.
  */
-async function fetchFinals(fetchImpl, days, { url = ESPN_SCOREBOARD, timeoutMs = FETCH_TIMEOUT_MS, now = Date.now, log = console } = {}) {
+/** Every game on the scoreboard for the given YYYYMMDD days, once each.
+ *  A day that fails is logged and skipped, never thrown. */
+async function fetchDays(fetchImpl, days, { url = ESPN_SCOREBOARD, timeoutMs = FETCH_TIMEOUT_MS, now = Date.now, log = console } = {}) {
   const seen = new Set();
   const out = [];
   for (const d of days) {
@@ -920,13 +922,101 @@ async function fetchFinals(fetchImpl, days, { url = ESPN_SCOREBOARD, timeoutMs =
     try {
       const raw = await fetchScoreboard(fetchImpl, `${url}&dates=${d}`, timeoutMs);
       for (const g of normalise(raw, now()).all) {
-        if (g.final && !seen.has(g.id)) { seen.add(g.id); out.push(g); }
+        if (!seen.has(g.id)) { seen.add(g.id); out.push(g); }
       }
     } catch (err) {
-      log.error(`[live] finals for ${d} failed:`, err && err.message ? err.message : err);
+      log.error(`[live] scoreboard for ${d} failed:`, err && err.message ? err.message : err);
     }
   }
   return out;
+}
+
+async function fetchFinals(fetchImpl, days, opts) {
+  return (await fetchDays(fetchImpl, days, opts)).filter((g) => g.final);
+}
+
+/* ------------------------------------------------------------------ *
+ * Grounding a new board in the real schedule (2026-09-26)
+ *
+ * The weekly build asked a model with web search for "the CURRENT week's
+ * schedule", and on 2026-09-21 it came back with 2025's: Alabama at Georgia
+ * "Sat, Sept 27" (a Sunday this year) while Georgia was playing Oklahoma.
+ * It validated - every field was well formed - and served all week, matching
+ * nothing on the live scoreboard. So the week's real slate is now read from
+ * ESPN first, handed to the model as the only games it may use, and every
+ * game, pick and parlay leg it returns is checked against it by the same
+ * exact team matching as the live slip. What is not on the slate is dropped.
+ * ------------------------------------------------------------------ */
+
+/** Both teams' ids, sorted and joined - "arkansas|uga" - or ''. */
+function pairKey(ids) {
+  return Array.isArray(ids) && ids.length === 2 ? ids.slice().sort().join('|') : '';
+}
+
+const KICK_FMT = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true });
+const KICK_DAY_FMT = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' });
+
+/** "Sat 3:30p ET", or "Sat, Oct 3 · time TBA" for a kickoff ESPN files at
+ *  midnight Eastern (how it stores a time not yet announced). */
+function kickoffText(iso) {
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return '';
+  const p = {};
+  for (const x of KICK_FMT.formatToParts(new Date(t))) p[x.type] = x.value;
+  if (Number(p.hour) === 12 && p.minute === '00' && /am/i.test(p.dayPeriod)) return `${KICK_DAY_FMT.format(new Date(t))} \u00b7 time TBA`;
+  return `${p.weekday} ${p.hour}:${p.minute}${/pm/i.test(p.dayPeriod) ? 'p' : 'a'} ET`;
+}
+
+/** The week's slate as the model is shown it: FBS-vs-FBS games not yet
+ *  final, with ESPN's own kickoff, TV, ranks and line. */
+function slateBrief(slate) {
+  return slate.filter((g) => !g.final && g.home.teamId && g.away.teamId).map((g) => ({
+    game: `${g.away.rank ? '#' + g.away.rank + ' ' : ''}${g.away.name} ${g.neutral ? 'vs' : 'at'} ${g.home.rank ? '#' + g.home.rank + ' ' : ''}${g.home.name}`,
+    kickoff: kickoffText(g.startsAt),
+    tv: (g.tv || []).join(', '),
+    line: g.line || 'not posted',
+    total: g.overUnder || null,
+  }));
+}
+
+/**
+ * A proposed board, kept to the games on `slate`. Returns
+ * `{ board, dropped: {games, picks, parlays} }`; the board's games get ESPN's
+ * kickoff time. Pure - no fetching.
+ */
+function groundBoard(draft, slate) {
+  const byPair = new Map();
+  for (const g of slate) {
+    if (g.final || !g.home.teamId || !g.away.teamId) continue;
+    byPair.set(pairKey([g.home.teamId, g.away.teamId]), g);
+  }
+  const find = (text) => byPair.get(pairKey(matchupTeams(text))) || null;
+  const d = draft && typeof draft === 'object' ? draft : {};
+  const list = (x) => (Array.isArray(x) ? x : []);
+  const dropped = { games: [], picks: [], parlays: [] };
+
+  const games = [];
+  for (const g of list(d.games)) {
+    const hit = g && find(g.label);
+    if (!hit) { dropped.games.push(String((g && g.label) || '?').slice(0, 80)); continue; }
+    const when = kickoffText(hit.startsAt);
+    const tv = (hit.tv || [])[0];
+    games.push({ ...g, time: when ? (tv && !/TBA/.test(when) ? `${when} \u00b7 ${tv}` : when) : g.time });
+  }
+  const picks = [];
+  for (const p of list(d.picks)) {
+    if (p && find(p.matchup)) picks.push(p);
+    else dropped.picks.push(String((p && (p.matchup || p.title)) || '?').slice(0, 80));
+  }
+  const parlays = [];
+  for (const p of list(d.parlays)) {
+    const legs = list(p && p.legs);
+    if (legs.length >= 2 && legs.every((l) => l && find(l.game))) parlays.push(p);
+    else dropped.parlays.push(String((p && p.title) || '?').slice(0, 80));
+  }
+  const kept = new Set(games.map((g) => g.id));
+  const rankings = list(d.rankings).map((r) => (r && r.gameId && !kept.has(r.gameId) ? { ...r, gameId: '' } : r));
+  return { board: { ...d, games, picks, parlays, rankings }, dropped };
 }
 
 /**
@@ -982,6 +1072,7 @@ module.exports = {
   teamKey, resolveTeam, resolveEspnTeam, matchupTeams,
   normalise, normaliseEvent, order, etDay,
   parseBet, matchBet, evaluate, elapsedMinutes, pace, parlayStatus, lineNow, dkUrlFromOdds,
+  fetchDays, pairKey, kickoffText, slateBrief, groundBoard,
   cleanSlipItems, slipStatus, slipGameIds, fetchFinals, gradeFromFinals,
   createFeed, publicView, STATES,
   // The cleaning helpers, for teamfacts.js: the same upstream, the same rules.

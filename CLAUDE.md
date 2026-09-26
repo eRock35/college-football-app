@@ -88,6 +88,31 @@ or add the next week's.
 - Cloud Scheduler `cfb-weekend-settle` (Sun/Mon 10:00 ET) runs it. Its
   `attemptDeadline` is 900s, not the 180s default.
 
+### The slate comes from ESPN, not from search (2026-09-26)
+
+The board built on 2026-09-21 was **last season's**: "Alabama at Georgia,
+Sat, Sept 27" (a Sunday in 2026), "Oregon at Penn State" - the 2025
+matchups - while Georgia was playing Oklahoma. Every field was well formed,
+so `validate()` passed it, and it served all week matching nothing on the
+live scoreboard. Web search asked for "the current week's schedule" can
+answer with any season's.
+
+So `weekly-board` now reads the week's real slate first
+(`live.fetchDays`, Tuesday to Saturday of the new week), **before anything
+is spent**, and:
+
+- hands it to the model as the only games that exist (`live.slateBrief`:
+  FBS-vs-FBS, not final, with ESPN's kickoff, TV, ranks and DraftKings line);
+- runs `live.groundBoard` on the answer: a game, pick or parlay leg whose two
+  teams are not a slate game (the live slip's exact matching) is dropped, and
+  a kept game takes ESPN's kickoff time. The route's answer lists `dropped`;
+- refuses the whole board (the old one stays) if fewer than 3 games or 2
+  picks survive, and answers **503 with no model call** if ESPN has fewer
+  than 3 FBS games for the week.
+
+A forced rebuild of the week already on the board (`?force=1`) grades
+nothing - those games are unplayed - and keeps the results already there.
+
 ### Two things that cost three failed runs
 
 Both are in `runStructuredResearch`, and both are invisible from the code:

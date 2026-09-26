@@ -1368,6 +1368,23 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
     if (current.weekKey === week && !req.query.force) {
       return res.json({ skipped: 'the board is already on this week', weekKey: week });
     }
+    // A forced rebuild of the week already on the board replaces it; its
+    // games have not been played, so there is nothing to grade and last
+    // week's results stay as they were.
+    const sameWeek = current.weekKey === week;
+
+    // 0. The week's real slate, from ESPN, BEFORE anything is spent
+    // (2026-09-26). The build used to ask web search for "the current week's
+    // schedule" and once got last season's; now it may only use these games,
+    // and live.groundBoard drops anything else it proposes.
+    const weekTue = Date.parse(week + 'T12:00:00Z');
+    const slateDays = [0, 1, 2, 3, 4].map((n) => new Date(weekTue + n * 86400000).toISOString().slice(0, 10).replace(/-/g, ''));
+    const slate = await live.fetchDays((...a) => globalThis.fetch(...a), slateDays);
+    const brief = live.slateBrief(slate);
+    if (brief.length < 3) {
+      console.error(`weekly-board: ESPN gave ${brief.length} FBS games for ${week}; board left as is`);
+      return res.status(503).json({ error: `ESPN has no schedule for the week of ${week} yet; the board was left as it is.` });
+    }
 
     // 1. How last week finished - from ESPN's finals first (2026-09-26): a
     // pick whose game matched a final with certainty is graded by the same
@@ -1377,8 +1394,8 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
       ...current.picks.map((p) => ({ id: p.id, kind: 'straight', title: p.title, matchup: p.matchup, market: p.market })),
       ...current.parlays.map((p) => ({ id: p.id, kind: 'parlay', title: p.title, legs: p.legs.map((l) => ({ game: l.game, market: l.market })) })),
     ];
-    let fromFinals = { graded: [], rest: cards };
-    if (/^\d{4}-\d{2}-\d{2}$/.test(current.weekKey || '')) {
+    let fromFinals = { graded: [], rest: sameWeek ? [] : cards };
+    if (!sameWeek && /^\d{4}-\d{2}-\d{2}$/.test(current.weekKey || '')) {
       const tue = Date.parse(current.weekKey + 'T12:00:00Z');
       const days = [2, 3, 4].map((n) => new Date(tue + n * 86400000).toISOString().slice(0, 10).replace(/-/g, ''));
       const finals = await live.fetchFinals((...a) => globalThis.fetch(...a), days);
@@ -1390,7 +1407,7 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
       market: p.market || (p.legs || []).map((l) => l.market).join(' + '),
     }));
 
-    let results = fromFinals.graded;
+    let results = sameWeek ? (current.results || []) : fromFinals.graded;
     if (staked.length) {
       const graded = await runStructuredResearch({
         systemPrompt:
@@ -1435,11 +1452,16 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
         'Give 6-10 games, 5-8 picks and 2-3 parlays, and ALL 25 rows of the current AP Top 25 with each ' +
         'ranked team\'s game this week (empty game for a bye). Every parlay needs at least two legs. ' +
         'Odds are American and numeric. Only include games that have NOT yet been played. Never invent a ' +
-        'line, an injury or a score - if a line is not posted yet, say so in the market field.',
+        'line, an injury or a score - if a line is not posted yet, say so in the market field. ' +
+        'You will be given THIS WEEK\'S SCHEDULE from ESPN. It is the only source of which games exist: ' +
+        'every game, pick and parlay leg must be one of those games, named with the same two teams. ' +
+        'Anything else is discarded. Do not use a schedule found by search - it may be another season\'s.',
       prompt:
-        `Today is ${new Date().toISOString().slice(0, 10)}. Build the board for the games being played ` +
-        'this coming weekend. These games are finished and must NOT appear again:\n' +
-        JSON.stringify(current.games.map((g) => g.label), null, 2),
+        `Today is ${new Date().toISOString().slice(0, 10)}. Build the board for the week of ${week}. ` +
+        'THIS WEEK\'S SCHEDULE (ESPN; lines are DraftKings\' where posted):\n' +
+        JSON.stringify(brief.slice(0, 80), null, 1) +
+        (sameWeek ? '' : '\n\nThese games are finished and must NOT appear again:\n' +
+          JSON.stringify(current.games.map((g) => g.label), null, 2)),
       user: req.user,
       // A full board is long - nine games, seven picks with a paragraph of
       // reasoning each, three parlays - and the searching that precedes it
@@ -1452,17 +1474,25 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
     // board that does not validate leaves the old one in place, which is a
     // week out of date but coherent - strictly better than a front page of
     // half-written cards.
-    const next = board.validate({ ...built, results, weekKey: week, generatedAt: new Date().toISOString() });
+    const grounded = live.groundBoard(built, slate);
+    const d = grounded.dropped;
+    if (d.games.length || d.picks.length || d.parlays.length) {
+      console.log(`weekly-board: dropped as not on ESPN's slate - games ${JSON.stringify(d.games)}, picks ${JSON.stringify(d.picks)}, parlays ${JSON.stringify(d.parlays)}`);
+    }
+    if (grounded.board.games.length < 3 || grounded.board.picks.length < 2) {
+      throw new Error(`the proposed board did not match this week's schedule (${grounded.board.games.length} games, ${grounded.board.picks.length} picks kept); the board was left as it is`);
+    }
+    const next = board.validate({ ...grounded.board, results, weekKey: week, generatedAt: new Date().toISOString() });
 
     await db.collection('board').doc('current').set(next);
     // Last week's board, kept so a result can be checked against what was
     // actually offered rather than against what we now say we offered.
-    await db.collection('board').doc(`week-${current.weekKey || 'seed'}`).set(current).catch(() => {});
+    if (!sameWeek) await db.collection('board').doc(`week-${current.weekKey || 'seed'}`).set(current).catch(() => {});
     await db.collection('control').doc('status').set({ lastRunAt: next.generatedAt, boardWeek: week }, { merge: true });
 
     res.json({ weekKey: week, games: next.games.length, picks: next.picks.length,
                parlays: next.parlays.length, results: next.results.length,
-               rankings: next.rankings.length });
+               rankings: next.rankings.length, dropped: d });
   } catch (err) {
     console.error('POST /api/research/weekly-board', err);
     res.status(500).json({ error: err.message || 'Could not rebuild the board.' });
