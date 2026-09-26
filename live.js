@@ -824,4 +824,6 @@ module.exports = {
   parseBet, matchBet, evaluate, elapsedMinutes, pace, parlayStatus,
   cleanSlipItems, slipStatus, slipGameIds,
   createFeed, publicView, STATES,
+  // The cleaning helpers, for teamfacts.js: the same upstream, the same rules.
+  str, int, isoOrEmpty, gameState, obj, arr,
 };

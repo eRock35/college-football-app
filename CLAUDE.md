@@ -304,6 +304,81 @@ fixture for looking at it in a browser (`LIVE_FIXTURE=live|live-next|finals|
 no-games|down`, or `LIVE_FIXTURE_CTL=<file>` to switch while running); it
 shifts the fixture's Saturday to today in Eastern time.
 
+## Team facts from ESPN, prose from the model (2026-09-26)
+
+Reported as "the uga record is wrong, they beat Arkansas last week". `fan/uga`
+had last been researched 2026-09-19 15:30Z, before the Arkansas kickoff, and a
+team page only ever changed when someone tapped the paid research button - so
+its record, results, next game and rank froze after every game. On the day of
+the Oklahoma game it still said 2-0, "next: at Arkansas", #2.
+
+**The split:** a record, a score, a kickoff and a poll position are facts ESPN
+publishes free the moment they change; a model is for the storyline.
+
+- `teamfacts.js` reads two more endpoints from `live.js`'s unofficial family,
+  through `live.js`'s own cleaners (`str`, `int`, `isoOrEmpty`, `gameState`,
+  now exported): `/teams/{espnId}/schedule?season=YYYY` (every game, result
+  when final, home/away/neutral, TV, kickoff, conference flag) and
+  `/rankings` (the **AP** poll only - the coaches' poll and the CFP are other
+  lists). Record and conference record are counted from the finals (ESPN's
+  `vsconf` split is the fallback when games carry no conference flag). "This
+  week" is a game in progress, else the next unplayed one. Only the regular
+  season is fetched (`seasontype` 3, bowls, is not).
+- **ids:** `espn-ids.js` maps every teams.js id to an ESPN id. It is
+  GENERATED (`node teamfacts.js --ids <teams.json>`) from ESPN's
+  `/teams?groups=80&limit=500` through `live.js`'s `resolveEspnTeam`, and
+  `test/teamfacts.js` holds it to "every team maps to exactly one ESPN id or is
+  in `UNMAPPED`". **The committed map was generated from a hand-written
+  fixture** (`test/fixtures/espn-teams.json`) because the sandbox cannot reach
+  ESPN; the ids are the long-standing ESPN ones but were not checked against
+  the live endpoint. Regenerate from the real response once
+  (`curl ... > /tmp/teams.json && node teamfacts.js --ids /tmp/teams.json > espn-ids.js`)
+  and diff. A wrong id cannot show the wrong team: a schedule whose own `team`
+  does not resolve back to the id asked for is refused (logged, no facts).
+- **Cache:** 30 minutes in memory and in `teamfacts/<teamId>` (the poll in
+  `polls/ap`), `fetchedAt` on each, so a cold instance reads Firestore rather
+  than ESPN. Concurrent readers share one fetch; a failure is remembered for
+  2 minutes. On failure: last good copy (memory, then Firestore) marked
+  `stale`; with none, the model's page as it was. Never a 500, never blank.
+  No timer - filled inside the request (billed per request).
+  `teams.validId()` is still the only way an id reaches Firestore; the module
+  checks it again itself.
+- **`GET /api/fan/:team`** returns `teamfacts.overlay(stored, facts, poll)`:
+  record, conference record, rank, schedule (with results and opponents' poll
+  ranks) and the next game come from ESPN; the model keeps its storyline,
+  its rivalry flags (matched by opponent) and its betting line/board link only
+  while the next game is still the game it wrote about. `storylineAsOf` dates
+  the prose, and when a game finished after it was written, `storylineNote`
+  says "Written before the Arkansas game - refresh for a new take", drawn
+  beside a Refresh that is the same paid button. `facts: {source, fetchedAt,
+  stale, rankSource}` is drawn as a source line in the hero. A team nobody has
+  written up still gets its real season, with the prose offered as a button.
+  The stored `fan/<id>` is never rewritten by a read.
+- **`POST /api/fan/:team/research`** skips its 12-hour cache when a game has
+  finished since the page was written, gives the model ESPN's facts as "known,
+  do not contradict", and answers through the same overlay.
+- **Board Top 25:** `GET /api/board` fills `rankings` from the AP poll when
+  the board has none (every board built before that field) or was built before
+  the poll's release date, each row with its game this week from the live
+  scoreboard, through `board.validateRankings()` (the same 1..25 and
+  no-duplicate rules as a model's list). It adds `rankingsFrom: {source:
+  'poll', name, week, date, games}`; the page heads the section "AP Top 25 ·
+  Week N" and footnotes it as the poll's. With no scoreboard, an empty game is
+  a dash, not "Bye".
+- **One rank everywhere:** `/api/live` and `/api/live/slip` replace the
+  scoreboard's `curatedRank` with the same AP poll (`applyPollRanks`), so a
+  team is one number on the ticker and its own page. (ESPN's curatedRank moves
+  to the CFP ranking in November; the poll does not.) Without a poll the
+  feed's rank stands.
+
+Tests: `test/teamfacts.js` (map completeness, schedule/poll normalisers
+against `test/fixtures/espn-schedule-uga.json` / `espn-rankings.json` /
+`espn-teams.json`, hostile data, the overlay, the Top 25 fill, cache and
+fallback, the routes). `test/harness.js` now makes ESPN unreachable for every
+suite unless the suite fakes it. `FACTS_SCENE=1 node test/boot-live.js`
+boots Erik's situation (stale `fan/uga`, Georgia at Oklahoma tonight) for a
+browser.
+
 ## Commit and PR conventions
 
 **Never put a Claude session link in anything pushed to GitHub.** No

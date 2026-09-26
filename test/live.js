@@ -41,8 +41,28 @@ const SAT_NIGHT = Date.parse('2026-09-27T01:15:00Z');
 // The upstream, faked at fetch. The test's own requests to the app go through.
 const realFetch = globalThis.fetch;
 let upstream = { mode: 'fixture', name: 'live', calls: 0 };
+// The AP poll, which the ticker's ranks now come from (teamfacts.js). Counted
+// on its own, so "one scoreboard fetch per 20 s" still means the scoreboard.
+let pollCalls = 0;
+// The poll fixture agrees with the scoreboard's curatedRank everywhere, which
+// would prove nothing. Here the poll has Alabama #11 and Michigan #10 while the
+// feed still says Alabama #10: the ticker must follow the poll.
+function swappedPoll() {
+  const raw = fixture('rankings');
+  const ap = raw.rankings.find((p) => p.type === 'ap');
+  for (const r of ap.ranks) {
+    if (r.team.location === 'Alabama') r.current = 11;
+    else if (r.team.location === 'Michigan') r.current = 10;
+  }
+  return raw;
+}
 globalThis.fetch = async (url, opts) => {
   if (!String(url).startsWith('https://site.api.espn.com/')) return realFetch(url, opts);
+  if (/\/rankings(\?|$)/.test(String(url))) {
+    pollCalls++;
+    if (upstream.mode === 'down') throw new Error('ENOTFOUND');
+    return new Response(JSON.stringify(swappedPoll()), { status: 200, headers: { 'content-type': 'application/json' } });
+  }
   upstream.calls++;
   if (upstream.mode === 'down') throw new Error('ENOTFOUND');
   if (upstream.mode === '500') return new Response('oops', { status: 500 });
@@ -455,6 +475,21 @@ const total = (dir, line) => ({ type: 'total', dir, line });
   for (let i = 0; i < 5; i++) await fetch(B + '/api/live');
   await post('/api/live/slip', { items: [] });
   ok('six requests, one upstream fetch', upstream.calls === 1, String(upstream.calls));
+  ok('...and one fetch of the poll the ranks come from', pollCalls === 1, String(pollCalls));
+
+  // The ticker and the team page read one poll, so a team is one number on
+  // both. The feed's own curatedRank gives way to it.
+  res = await fetch(B + '/api/live');
+  body = await res.json();
+  const pollFx = swappedPoll().rankings.find((p) => p.type === 'ap');
+  const pollRank = (espnId) => { const r = pollFx.ranks.find((x) => x.team.id === espnId); return r ? r.current : null; };
+  const sides = body.games.flatMap((g) => [g.away, g.home]);
+  ok('every rank on the ticker is the AP poll\'s', sides.every((t) => (t.rank || null) === pollRank(t.espnId)),
+    JSON.stringify(sides.filter((t) => (t.rank || null) !== pollRank(t.espnId)).map((t) => [t.name, t.rank, pollRank(t.espnId)])));
+  const ugaSide = sides.find((t) => t.teamId === 'uga');
+  ok('...Georgia included', ugaSide && ugaSide.rank === 2, JSON.stringify(ugaSide && ugaSide.rank));
+  const bama = sides.find((t) => t.teamId === 'alabama');
+  ok('...where the feed and the poll disagree, the poll wins', bama && bama.rank === 11, JSON.stringify(bama && bama.rank));
 
   res = await post('/api/live/slip', { items: slipItems });
   body = await res.json();

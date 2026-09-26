@@ -365,6 +365,18 @@ function ranked(raw, i) {
   };
 }
 
+/** A Top 25 list, cleaned: every row through ranked(), a second team at one
+ *  position dropped, sorted. The board's own rows and the ones filled from
+ *  the AP poll (teamfacts.js) both come through here, so the two can never
+ *  disagree about what a valid poll looks like. */
+function validateRankings(list) {
+  const seenRank = new Set();
+  return (Array.isArray(list) ? list : [])
+    .map(ranked)
+    .filter((r) => (seenRank.has(r.rank) ? false : seenRank.add(r.rank)))
+    .sort((a, b) => a.rank - b.rank);
+}
+
 const OUTCOMES = new Set(['win', 'loss', 'push', 'void']);
 
 /** How last week's bet finished. Unlike the rest of the board this is a claim
@@ -404,11 +416,7 @@ function validate(raw) {
   // this existed has none, and refusing those would blank the front page to
   // add a section to it. Two teams at #7 is a poll nobody can read, so the
   // later one is dropped rather than shown.
-  const seenRank = new Set();
-  const rankings = (Array.isArray(raw.rankings) ? raw.rankings : [])
-    .map(ranked)
-    .filter((r) => (seenRank.has(r.rank) ? false : seenRank.add(r.rank)))
-    .sort((a, b) => a.rank - b.rank);
+  const rankings = validateRankings(raw.rankings);
 
   if (!games.length) throw new Error('board has no games');
   if (!picks.length) throw new Error('board has no picks');
@@ -435,4 +443,4 @@ function seed() {
   return validate({ ...SEED, weekKey: '', generatedAt: '2026-09-19T00:00:00.000Z' });
 }
 
-module.exports = { seed, validate, SEED };
+module.exports = { seed, validate, validateRankings, SEED };

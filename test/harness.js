@@ -101,6 +101,15 @@ function noNestedArrays(value, path = '') {
 }
 
 function install() {
+  // ESPN is never reached from a test. The sandbox cannot, CI should not, and
+  // a suite that passes only while an unofficial feed is up is not a test. A
+  // suite that wants ESPN stands its own fake in front of this one; the rest
+  // see ESPN as down, which every caller must survive anyway.
+  const netFetch = globalThis.fetch;
+  globalThis.fetch = async (url, opts) => {
+    if (String(url).startsWith('https://site.api.espn.com/')) throw new Error('harness: ESPN is not reachable from tests');
+    return netFetch(url, opts);
+  };
   const orig = Module._resolveFilename;
   Module._resolveFilename = function (r, ...rest) {
     if (r === '@google-cloud/firestore') return 'FAKE_FS';

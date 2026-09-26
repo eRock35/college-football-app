@@ -705,6 +705,22 @@
   .team-story h3{font-size:18px; margin-bottom:8px; letter-spacing:-.01em;}
   .team-story p{color:var(--label-2); font-size:15px; line-height:1.5; margin:0 0 10px;}
   .team-story p:last-child{margin-bottom:0;}
+  /* Facts from ESPN, prose from the model (2026-09-26). */
+  .team-source{font-size:12px; color:rgba(255,255,255,.85); margin-top:12px;}
+  .team-game .result.loss{color:var(--negative);}
+  .team-game .result.tie{color:var(--text-faint);}
+  .team-game .result.live-now{color:var(--negative);}
+  .team-game.live{opacity:1;}
+  .team-next.is-live h3{display:flex; align-items:center; gap:8px;}
+  .team-next .opp-rank{font-size:13px; font-weight:600; color:var(--text-faint);}
+  .team-story-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:8px;}
+  .team-story-head h3{margin-bottom:0;}
+  .team-story-date{font-size:12.5px; color:var(--text-faint); flex:0 0 auto;}
+  .team-story-stale{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    background:var(--warning-soft); color:var(--label-2); border-radius:10px; padding:8px 12px; margin:0 0 12px; font-size:13.5px;}
+  .team-story-stale span{flex:1 1 200px; min-width:0;}
+  .team-story-stale .text-toggle-btn{flex:0 0 auto; padding:0 4px;}
+  .top25-foot{padding:10px 16px 12px; font-size:12px; color:var(--text-faint); box-shadow:inset 0 1px 0 var(--sep);}
   .team-research{margin-top:12px; padding:16px; box-shadow:0 0 0 1.5px var(--team);}
   .team-research h3{font-size:18px; margin-bottom:10px; letter-spacing:-.01em;}
   .team-research p{color:var(--label-2); font-size:15px; line-height:1.5; margin:0 0 10px;}
@@ -1152,7 +1168,7 @@
   // page sat on the September 20 slate with every game on it already played.
   // The server owns the board now (board.js is the seed, Firestore holds the
   // current one) and the page draws whatever it is handed.
-  var GAMES = [], PICKS = [], PARLAYS = [], RESULTS = [], RANKINGS = [];
+  var GAMES = [], PICKS = [], PARLAYS = [], RESULTS = [], RANKINGS = [], RANKINGS_FROM = null;
   var BOARD_CACHE_KEY = 'cfb-board-v1';
 
   var FUTURES_NC = [
@@ -1376,7 +1392,7 @@
     return fetch('/api/fan/' + encodeURIComponent(myTeam)).then(function(r){ return r.json(); })
       .then(function(d){
         // Georgia is the one team with a hand-written page behind it.
-        if (!d.researched && myTeam === 'uga') { renderTeam(Object.assign({}, GEORGIA_SEED, { team: 'uga', meta: myTeamMeta, researched: true })); return; }
+        if (!d.researched && !d.facts && myTeam === 'uga') { renderTeam(Object.assign({}, GEORGIA_SEED, { team: 'uga', meta: myTeamMeta, researched: true })); return; }
         renderTeam(Object.assign({}, d, { meta: d.meta || myTeamMeta }));
       })
       .catch(function(){ renderTeam({ team: myTeam, meta: myTeamMeta, researched: false, failed: true }); });
@@ -3526,6 +3542,13 @@
     return out;
   }
 
+  /** A date the storyline was written: "Sep 19". */
+  function shortDate(iso){
+    var d = new Date(iso);
+    if (!iso || isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' });
+  }
+
   function renderTeam(u){
     var root = document.getElementById('team-root');
     if (!root) return;
@@ -3533,30 +3556,35 @@
     if (ugaCountdownTimer) { clearInterval(ugaCountdownTimer); ugaCountdownTimer = null; }
     var meta = u.meta || myTeamMeta || {};
     var name = meta.name || 'Your team';
+    // Record, schedule, next game and rank come from ESPN now (teamfacts.js),
+    // an unofficial feed, and the storyline from a model: all of it escaped,
+    // quotes included.
+    var esc = (window.LiveCore && LiveCore.esc) ? LiveCore.esc : escapeHtml;
+    var facts = u.facts || null;
 
     var change = '<button class="text-toggle-btn" type="button" id="change-team">Change team</button>';
 
     if (u.loading){
-      root.innerHTML = '<div class="team-hero"><div class="eyebrow">' + escapeHtml(name) + '</div>' +
-        '<h2>Loading\u2026</h2></div>';
+      root.innerHTML = '<div class="team-hero"><div class="eyebrow">' + esc(name) + '</div>' +
+        '<h2>Loading…</h2></div>';
       return;
     }
 
-    // Never researched. Say so and offer the button, rather than inventing a
-    // season - a fabricated schedule is worse than an empty tab, because the
-    // reader cannot tell which one they are looking at.
-    if (!u.researched){
+    // Never researched and no facts either. Say so and offer the button,
+    // rather than inventing a season - a fabricated schedule is worse than an
+    // empty tab, because the reader cannot tell which one they are looking at.
+    if (!u.researched && !facts){
       root.innerHTML =
         '<div class="team-hero">' +
-          '<div class="eyebrow">' + escapeHtml(meta.conf || '') + '</div>' +
-          '<h2>' + escapeHtml(name) + '</h2>' +
+          '<div class="eyebrow">' + esc(meta.conf || '') + '</div>' +
+          '<h2>' + esc(name) + '</h2>' +
         '</div>' +
         '<div class="team-next">' +
           '<h3>Nobody has looked this team up yet</h3>' +
-          '<div class="meta">Rank, record, the full schedule and what to watch \u2014 pulled from the web.</div>' +
-          '<button class="auth-go" type="button" id="research-team">Look up ' + escapeHtml(name) + '</button>' +
+          '<div class="meta">Rank, record, the full schedule and what to watch — pulled from the web.</div>' +
+          '<button class="auth-go" type="button" id="research-team">Look up ' + esc(name) + '</button>' +
           '<p class="muted" style="margin:8px 0 0;">Spends your own AI credit, once. ' +
-          'After that it is cached and free for everyone who follows ' + escapeHtml(name) + '.</p>' +
+          'After that it is cached and free for everyone who follows ' + esc(name) + '.</p>' +
           '<div class="copy-status" id="team-research-status"></div>' +
         '</div>' +
         '<div style="margin-top:10px;">' + change + '</div>';
@@ -3564,47 +3592,95 @@
     }
 
     var scheduleHtml = (u.schedule || []).map(function(g){
-      var cls = 'team-game' + (g.current ? ' current' : '') + (g.result ? ' played' : '');
-      var badge = g.rivalry ? '<span class="badge rivalry">Rivalry</span>' : (g.ranked ? '<span class="badge ranked">Ranked</span>' : '');
-      return '<div class="' + cls + '"><span class="wk">' + g.wk + '</span><span class="opp">' + g.opp + '</span>' + badge +
-        (g.result ? '<span class="result">' + g.result + '</span>' : '') + '</div>';
+      var played = !!g.result;
+      var cls = 'team-game' + (g.current ? ' current' : '') + (played ? ' played' : '') + (g.live ? ' live' : '');
+      var rankBadge = g.oppRank ? '<span class="badge ranked">#' + esc(g.oppRank) + '</span>'
+        : (g.ranked ? '<span class="badge ranked">Ranked</span>' : '');
+      var badge = g.rivalry ? '<span class="badge rivalry">Rivalry</span>' : rankBadge;
+      var resultCls = 'result' + (g.outcome === 'L' ? ' loss' : g.outcome === 'T' ? ' tie' : '');
+      var right = played ? '<span class="' + resultCls + '">' + esc(g.result) + '</span>'
+        : g.live ? '<span class="result live-now">Live ' + esc(g.liveScore || '') + '</span>' : '';
+      return '<div class="' + cls + '"><span class="wk">' + esc(g.wk) + '</span><span class="opp">' + esc(g.opp) + '</span>' + badge + right + '</div>';
     }).join('');
 
     // confRecord is the field now; secRecord is what the hand-written Georgia
     // document used before this tab could be any team.
     var conf = u.confRecord || u.secRecord || '';
-    var headline = [u.rank ? u.rank + ' in the country' : '', u.record].filter(Boolean).join(' \u00b7 ') || name;
+    var headline = [u.rank ? u.rank + ' in the country' : '', u.record].filter(Boolean).join(' · ') || name;
+
+    // Where the numbers came from, and how fresh. A reader who has been burned
+    // by a frozen record once deserves to see this.
+    var sourceLine = facts
+      ? '<div class="team-source">' +
+          esc('Record & schedule: ESPN' + (facts.rankSource && facts.rankSource !== 'ESPN' ? ' · Rank: ' + facts.rankSource : '') +
+            (facts.fetchedAt ? ' · ' + (facts.stale ? 'last checked ' : 'updated ') + relativeTime(facts.fetchedAt) : '')) +
+        '</div>'
+      : '';
+
+    var ng = u.nextGame;
+    var nextHtml = '';
+    if (ng){
+      var metaBits = ng.live
+        ? [ng.liveScore, ng.detail]
+        : [ng.kickoffLabel, ng.tv, ng.line];
+      nextHtml =
+        '<div class="team-next' + (ng.live ? ' is-live' : '') + '">' +
+          '<h3>' + (ng.live ? '<span class="live-dot" aria-hidden="true"></span>Now: ' : 'Next up: ') + esc(ng.opponent) +
+            (ng.oppRank ? ' <span class="opp-rank">#' + esc(ng.oppRank) + '</span>' : '') + '</h3>' +
+          '<div class="meta">' + esc(metaBits.filter(Boolean).join(' · ')) + '</div>' +
+          (ng.live ? '' : '<div class="team-countdown" id="team-countdown"></div>') +
+        '</div>';
+    }
+
+    var storyHtml = '';
+    if (u.researched && u.storyline && u.storyline.length){
+      var written = shortDate(u.storylineAsOf || u.lastChecked);
+      storyHtml =
+        '<div class="team-story">' +
+          '<div class="team-story-head"><h3>What to watch</h3>' +
+            (written ? '<span class="team-story-date">Written ' + esc(written) + '</span>' : '') + '</div>' +
+          (u.storylineNote
+            ? '<div class="team-story-stale"><span>' + esc(u.storylineNote) + '</span>' +
+                '<button class="text-toggle-btn js-research-team" type="button">Refresh</button></div>'
+            : '') +
+          u.storyline.map(function(p){ return '<p>' + esc(p) + '</p>'; }).join('') +
+        '</div>';
+    } else if (!u.researched){
+      // Real facts, nobody's prose yet.
+      storyHtml =
+        '<div class="team-story">' +
+          '<h3>What to watch</h3>' +
+          '<p>Nobody has written ' + esc(name) + ' up yet. Injuries, form and what to watch, pulled from the web.</p>' +
+          '<button class="auth-go" type="button" id="research-team">Write it up</button>' +
+          '<p class="muted" style="margin:8px 0 0;">Spends your own AI credit, once. ' +
+          'After that it is shared with everyone who follows ' + esc(name) + '.</p>' +
+          '<div class="copy-status" id="team-research-status"></div>' +
+        '</div>';
+    }
 
     root.innerHTML =
       '<div class="team-hero">' +
-        '<div class="eyebrow">' + escapeHtml(name + (meta.mascot ? ' ' + meta.mascot : '')) + ' \u00b7 Just for you</div>' +
-        '<h2>' + headline + '</h2>' +
+        '<div class="eyebrow">' + esc(name + (meta.mascot ? ' ' + meta.mascot : '')) + ' · Just for you</div>' +
+        '<h2>' + esc(headline) + '</h2>' +
         (u.record || conf ?
           '<div class="team-stats">' +
-            (u.record ? '<div class="team-stat"><div class="v">' + u.record + '</div><div class="k">Overall</div></div>' : '') +
-            (conf ? '<div class="team-stat"><div class="v">' + conf + '</div><div class="k">' + escapeHtml(meta.conf || 'Conference') + '</div></div>' : '') +
+            (u.record ? '<div class="team-stat"><div class="v">' + esc(u.record) + '</div><div class="k">Overall</div></div>' : '') +
+            (conf ? '<div class="team-stat"><div class="v">' + esc(conf) + '</div><div class="k">' + esc(meta.conf || 'Conference') + '</div></div>' : '') +
           '</div>' : '') +
+        sourceLine +
       '</div>' +
-      (u.nextGame ?
-        '<div class="team-next">' +
-          '<h3>Next up: ' + u.nextGame.opponent + '</h3>' +
-          '<div class="meta">' + (u.nextGame.tv || '') + (u.nextGame.line ? ' \u00b7 ' + u.nextGame.line : '') + '</div>' +
-          '<div class="team-countdown" id="team-countdown"></div>' +
-        '</div>' : ''
-      ) +
+      nextHtml +
       teamResearchHtml(u) +
       (scheduleHtml ? '<div class="team-schedule">' + scheduleHtml + '</div>' : '') +
-      (u.storyline && u.storyline.length ?
-        '<div class="team-story"><h3>What to watch</h3>' + u.storyline.map(function(p){ return '<p>' + p + '</p>'; }).join('') + '</div>' : ''
-      ) +
+      storyHtml +
       '<div class="team-footer">' + change +
-        '<button class="text-toggle-btn" type="button" id="research-team">Refresh</button>' +
-        '<div class="copy-status" id="team-research-status"></div>' +
+        (u.researched ? '<button class="text-toggle-btn" type="button" id="research-team">Refresh</button>' +
+          '<div class="copy-status" id="team-research-status"></div>' : '') +
       '</div>';
 
-    if (u.nextGame && u.nextGame.kickoffISO){
-      tickUgaCountdown(u.nextGame.kickoffISO);
-      ugaCountdownTimer = setInterval(function(){ tickUgaCountdown(u.nextGame.kickoffISO); }, 60000);
+    if (ng && ng.kickoffISO && !ng.live){
+      tickUgaCountdown(ng.kickoffISO);
+      ugaCountdownTimer = setInterval(function(){ tickUgaCountdown(ng.kickoffISO); }, 60000);
     }
   }
 
@@ -3683,7 +3759,7 @@
     var teamPanel = document.getElementById('panel-uga');
     if (teamPanel) teamPanel.addEventListener('click', function(e){
       if (e.target.closest('#change-team')) { openTeamPicker(); return; }
-      var go = e.target.closest('#research-team');
+      var go = e.target.closest('#research-team, .js-research-team');
       if (go) researchTeam(go);
     });
     // Arranging the board: pin, move, hide, and your own card.
@@ -4645,6 +4721,7 @@
     PARLAYS = b.parlays || [];
     RESULTS = b.results || [];
     RANKINGS = b.rankings || [];
+    RANKINGS_FROM = b.rankingsFrom || null;
     renderSlate();
     renderResults();
     renderTop25();
@@ -4669,6 +4746,13 @@
     if (!box || !list) return;
     if (!RANKINGS.length){ box.hidden = true; list.innerHTML = ''; return; }
     box.hidden = false;
+    // When the rows are the AP poll's (the board had none, or an older one),
+    // say so: the poll's, not a model's.
+    var from = (RANKINGS_FROM && RANKINGS_FROM.source === 'poll') ? RANKINGS_FROM : null;
+    var head = document.querySelector('#top25-toggle b');
+    if (head) head.textContent = from ? (from.name || 'AP Top 25') + (from.week ? ' \u00b7 ' + from.week : '') : 'Top 25 this week';
+    // An empty game is a bye only when the scoreboard was actually read.
+    var noGame = from && !from.games ? '\u2014' : 'Bye';
     list.innerHTML = RANKINGS.map(function(r){
       // Opponent on its own line, line and time muted beneath. One run-on
       // string wraps into a ragged second line at phone width and reads as a
@@ -4676,14 +4760,17 @@
       var sub = [r.line, r.time].filter(Boolean).join(' \u00b7 ');
       var game = r.game
         ? escapeHtml(r.game) + (sub ? '<span class="ln">' + escapeHtml(sub) + '</span>' : '')
-        : 'Bye';
+        : noGame;
       return '<div class="top25-row' + (r.game ? '' : ' bye') + '">' +
         '<span class="rk">' + r.rank + '</span>' +
         '<span class="tm">' + escapeHtml(r.team) + '</span>' +
         (r.record ? '<span class="rec">' + escapeHtml(r.record) + '</span>' : '') +
         '<span class="gm">' + game + '</span>' +
       '</div>';
-    }).join('');
+    }).join('') + (from ?
+      '<div class="top25-foot">' + escapeHtml('The AP poll via ESPN' +
+        (from.date ? ', released ' + new Date(from.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/New_York' }) : '') +
+        (from.games ? '. Games from the live scoreboard.' : '. This week\u2019s games could not be read just now.')) + '</div>' : '');
   }
 
   function renderResults(){

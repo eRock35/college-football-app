@@ -10,6 +10,7 @@ const board = require('./board');
 const teams = require('./teams');
 const fan = require('./fan');
 const live = require('./live');
+const teamfacts = require('./teamfacts');
 const identityLib = require('./identity');
 const identityStore = require('./identity-store');
 
@@ -577,17 +578,36 @@ app.put('/api/prefs', requireLoginSilent, async (req, res) => {
   }
 });
 
+/* ---------- team facts from ESPN (2026-09-26) ----------
+ *
+ * Facts from ESPN, prose from the model. A team page used to be entirely a
+ * model's answer, refreshed only when someone paid for it, so its record and
+ * next game froze after every game: Georgia's still said 2-0 and "next: at
+ * Arkansas" on the day of the Oklahoma game. The record, results, schedule,
+ * next game and AP rank now come from ESPN's public JSON on every read (cached
+ * 30 minutes in memory and in `teamfacts/<id>`), laid over the stored page.
+ * The model keeps the storyline, shown with its date. No model call here, and
+ * no timer: the cache fills inside whichever request finds it stale.
+ */
+const teamFacts = teamfacts.createTeamFacts({
+  // Resolved per call so a test can stand a fake in front of ESPN.
+  fetch: (...args) => globalThis.fetch(...args),
+  db,
+});
+
 /** A team's page. Open, like the rest of the reading surface - and `researched`
  *  false is an honest answer, not an error: most teams have never been looked
- *  up, and the tab says so and offers the button rather than faking a season. */
+ *  up, and the tab says so and offers the button rather than faking a season.
+ *  The facts are real whether or not anyone has written the prose. */
 app.get('/api/fan/:team', async (req, res) => {
   try {
     const id = teams.validId(req.params.team);
     if (!id) return res.status(404).json({ error: 'Not a team I know.' });
-    const doc = await db.collection('fan').doc(id).get();
+    const [doc, facts, poll] = await Promise.all([
+      db.collection('fan').doc(id).get(), teamFacts.facts(id), teamFacts.poll(),
+    ]);
     const meta = teams.get(id);
-    if (!doc.exists) return res.json({ team: id, meta, researched: false });
-    res.json({ ...doc.data(), team: id, meta, researched: true });
+    res.json(teamfacts.overlay(doc.exists ? doc.data() : null, facts, poll, { teamId: id, meta }));
   } catch (err) {
     console.error('GET /api/fan/:team', err);
     res.status(500).json({ error: 'Failed to load that team.' });
@@ -607,15 +627,32 @@ app.post('/api/fan/:team/research', requireLoginSilent, identity.requireBudget, 
       const meta = teams.get(id);
       const ref = db.collection('fan').doc(id);
 
+      const [existing, facts, poll] = await Promise.all([ref.get(), teamFacts.facts(id), teamFacts.poll()]);
+      const view = (page, extra) => ({ ...teamfacts.overlay(page, facts, poll, { teamId: id, meta }), ...extra });
+
       // Someone else may have just paid for this. Handing back their answer
-      // rather than buying it again is the whole point of a shared cache.
-      const existing = await ref.get();
+      // rather than buying it again is the whole point of a shared cache -
+      // unless a game has finished since it was written, which is exactly
+      // when a new take is worth paying for.
       if (existing.exists) {
         const age = Date.now() - Date.parse(existing.data().lastChecked || 0);
-        if (Number.isFinite(age) && age < TEAM_FRESH_HOURS * 3600 * 1000) {
-          return res.json({ ...existing.data(), team: id, meta, researched: true, cached: true });
+        const overtaken = teamfacts.playedSince(facts, existing.data().lastChecked).length > 0;
+        if (Number.isFinite(age) && age < TEAM_FRESH_HOURS * 3600 * 1000 && !overtaken) {
+          return res.json(view(existing.data(), { cached: true }));
         }
       }
+
+      // What ESPN already says, so the model writes about the season as it
+      // stands rather than re-deriving a record it might get wrong.
+      const rankNow = view(null, {}).rank;
+      const known = facts ? [
+        '',
+        `Known facts (from the scoreboard, correct as of ${facts.fetchedAt}; do not contradict them):`,
+        `- Record ${facts.record}${facts.confRecord ? `, ${facts.confRecord} in conference` : ''}` +
+          `${rankNow ? `, ${rankNow} in the AP poll` : ', unranked'}.`,
+        ...facts.schedule.filter((r) => r.result).map((r) => `- ${r.wk}: ${r.opp}, ${r.result}`),
+        facts.nextGame ? `- Next: ${facts.nextGame.opponent}, ${facts.nextGame.kickoffLabel}` : '- No game left on the schedule.',
+      ] : [];
 
       const season = new Date().getFullYear();
       const raw = await runStructuredResearch({
@@ -643,6 +680,7 @@ app.post('/api/fan/:team/research', requireLoginSilent, identity.requireBudget, 
           '',
           'The full regular-season schedule, in order, including bye weeks. Mark exactly one row current.',
           'kickoffISO must be a real UTC instant or an empty string - the page runs a live countdown off it.',
+          ...known,
         ].join('\n'),
       });
 
@@ -650,7 +688,7 @@ app.post('/api/fan/:team/research', requireLoginSilent, identity.requireBudget, 
       // document serving rather than replacing it with a broken tab.
       const page = fan.validate({ ...raw, lastChecked: new Date().toISOString() }, id);
       await ref.set({ ...page, researchedBy: (currentUser(req) || {}).uid || null });
-      res.json({ ...page, meta, researched: true, cached: false });
+      res.json(view(page, { cached: false }));
     } catch (err) {
       console.error('POST /api/fan/:team/research', err);
       res.status(500).json({ error: err.message || 'Could not research that team.' });
@@ -671,15 +709,40 @@ app.get('/api/board', async (_req, res) => {
   try {
     const doc = await db.collection('board').doc('current').get();
     const current = doc.exists ? board.validate(doc.data()) : board.seed();
-    res.json({ ...current, stale: current.weekKey !== boardWeekKey(), seeded: !doc.exists });
+    res.json({ ...current, ...(await pollTop25(current)), stale: current.weekKey !== boardWeekKey(), seeded: !doc.exists });
   } catch (err) {
     // A stored board that no longer validates is a bug worth shouting about,
     // but not one worth an empty front page: fall back to the seed.
     console.error('GET /api/board', err);
     const fallback = board.seed();
-    res.json({ ...fallback, stale: true, seeded: true, error: 'stored board was unreadable' });
+    res.json({ ...fallback, ...(await pollTop25(fallback)), stale: true, seeded: true, error: 'stored board was unreadable' });
   }
 });
+
+/**
+ * The Top 25 from the AP poll, when the board's own is missing or older than
+ * the latest poll - every board built before `rankings` existed has none, and
+ * a model's copy of last week's poll is worse than this week's poll. Each row
+ * carries its team's game this week from the live scoreboard. Returns fields
+ * to spread over the board, or {} to leave the board's own list alone. Never
+ * throws: this decorates the front page.
+ */
+async function pollTop25(current) {
+  try {
+    const poll = await teamFacts.poll();
+    if (!teamfacts.boardNeedsPoll(current, poll)) return {};
+    const sb = await liveFeed.get();
+    const rankings = board.validateRankings(teamfacts.pollRows(poll, sb.available ? sb.all : [], Date.now()));
+    return {
+      rankings,
+      rankingsFrom: { source: 'poll', name: poll.name, week: poll.week, date: poll.date,
+                      fetchedAt: poll.fetchedAt, games: !!sb.available },
+    };
+  } catch (err) {
+    console.error('board: poll Top 25 failed', err && err.message);
+    return {};
+  }
+}
 
 /* ---------- live scores (2026-09-25) ----------
  *
@@ -720,10 +783,18 @@ async function liveTeamFor(req) {
   return team;
 }
 
+/** The scoreboard with its ranks taken from the same AP poll the team pages
+ *  read, so a team is the same number on the ticker and on its own page. The
+ *  poll is cached for 30 minutes; without one the feed's own ranks stand. */
+async function rankedFeed() {
+  const [result, poll] = await Promise.all([liveFeed.get(), teamFacts.poll()]);
+  return teamfacts.applyPollRanks(result, poll);
+}
+
 app.get('/api/live', async (_req, res) => {
   res.set('Cache-Control', 'no-store');
   try {
-    res.json(live.publicView(await liveFeed.get()));
+    res.json(live.publicView(await rankedFeed()));
   } catch (err) {
     console.error('GET /api/live', err);
     res.json({ available: false, message: live.UNAVAILABLE });
@@ -740,7 +811,7 @@ app.get('/api/live', async (_req, res) => {
 app.post('/api/live/slip', async (req, res) => {
   res.set('Cache-Control', 'no-store');
   try {
-    const result = await liveFeed.get();
+    const result = await rankedFeed();
     const teamId = await liveTeamFor(req);
     if (!result.available) return res.json({ ...live.publicView(result), team: teamId, slip: [] });
     const slip = live.slipStatus((req.body || {}).items, result.all);

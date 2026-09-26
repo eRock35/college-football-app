@@ -1,0 +1,2177 @@
+{
+ "sports": [
+  {
+   "id": "20",
+   "name": "Football"
+  }
+ ],
+ "leagues": [
+  {
+   "id": "23",
+   "name": "NCAA - Football",
+   "abbreviation": "NCAAF"
+  }
+ ],
+ "rankings": [
+  {
+   "id": "1",
+   "name": "AP Top 25",
+   "shortName": "AP Poll",
+   "type": "ap",
+   "headline": "2026 NCAA Football Rankings - AP Top 25 Week 4",
+   "shortHeadline": "2026 AP Poll: Week 4",
+   "season": {
+    "year": 2026,
+    "startDate": "2026-07-01T07:00Z",
+    "endDate": "2027-01-21T07:59Z",
+    "displayName": "2026-27",
+    "type": {
+     "id": "2",
+     "type": 2,
+     "name": "Regular Season",
+     "abbreviation": "reg"
+    }
+   },
+   "occurrence": {
+    "number": 4,
+    "type": "week",
+    "last": false,
+    "value": "4",
+    "displayValue": "Week 4"
+   },
+   "date": "2026-09-20T18:00Z",
+   "lastUpdated": "2026-09-20T18:05Z",
+   "ranks": [
+    {
+     "current": 1,
+     "previous": 1,
+     "points": 1550,
+     "firstPlaceVotes": 40,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "251",
+      "uid": "s:20~l:23~t:251",
+      "location": "Texas",
+      "name": "Longhorns",
+      "nickname": "Texas",
+      "abbreviation": "TEX",
+      "color": "bf5700",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/251.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/251.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 2,
+     "previous": 2,
+     "points": 1495,
+     "firstPlaceVotes": 20,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "61",
+      "uid": "s:20~l:23~t:61",
+      "location": "Georgia",
+      "name": "Bulldogs",
+      "nickname": "Georgia",
+      "abbreviation": "UGA",
+      "color": "ba0c2f",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/61.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/61.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 3,
+     "previous": 3,
+     "points": 1440,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "2-1",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "87",
+      "uid": "s:20~l:23~t:87",
+      "location": "Notre Dame",
+      "name": "Fighting Irish",
+      "nickname": "Notre Dame",
+      "abbreviation": "ND",
+      "color": "0c2340",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/87.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/87.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 4,
+     "previous": 4,
+     "points": 1385,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "213",
+      "uid": "s:20~l:23~t:213",
+      "location": "Penn State",
+      "name": "Nittany Lions",
+      "nickname": "Penn State",
+      "abbreviation": "PSU",
+      "color": "041e42",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/213.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/213.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 5,
+     "previous": 5,
+     "points": 1330,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "2483",
+      "uid": "s:20~l:23~t:2483",
+      "location": "Oregon",
+      "name": "Ducks",
+      "nickname": "Oregon",
+      "abbreviation": "ORE",
+      "color": "154733",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2483.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2483.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 6,
+     "previous": 6,
+     "points": 1275,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "194",
+      "uid": "s:20~l:23~t:194",
+      "location": "Ohio State",
+      "name": "Buckeyes",
+      "nickname": "Ohio State",
+      "abbreviation": "OSU",
+      "color": "bb0000",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/194.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/194.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 7,
+     "previous": 7,
+     "points": 1220,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "99",
+      "uid": "s:20~l:23~t:99",
+      "location": "LSU",
+      "name": "Tigers",
+      "nickname": "LSU",
+      "abbreviation": "LSU",
+      "color": "461d7c",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/99.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/99.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 8,
+     "previous": 8,
+     "points": 1165,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "145",
+      "uid": "s:20~l:23~t:145",
+      "location": "Ole Miss",
+      "name": "Rebels",
+      "nickname": "Ole Miss",
+      "abbreviation": "MISS",
+      "color": "14213d",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/145.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/145.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 9,
+     "previous": 9,
+     "points": 1110,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "2390",
+      "uid": "s:20~l:23~t:2390",
+      "location": "Miami",
+      "name": "Hurricanes",
+      "nickname": "Miami",
+      "abbreviation": "MIA",
+      "color": "f47321",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2390.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2390.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 10,
+     "previous": 10,
+     "points": 1055,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "2-1",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "333",
+      "uid": "s:20~l:23~t:333",
+      "location": "Alabama",
+      "name": "Crimson Tide",
+      "nickname": "Alabama",
+      "abbreviation": "ALA",
+      "color": "9e1b32",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/333.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/333.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 11,
+     "previous": 11,
+     "points": 1000,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "130",
+      "uid": "s:20~l:23~t:130",
+      "location": "Michigan",
+      "name": "Wolverines",
+      "nickname": "Michigan",
+      "abbreviation": "MICH",
+      "color": "00274c",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/130.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/130.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 12,
+     "previous": 12,
+     "points": 945,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "245",
+      "uid": "s:20~l:23~t:245",
+      "location": "Texas A&M",
+      "name": "Aggies",
+      "nickname": "Texas A&M",
+      "abbreviation": "TA&M",
+      "color": "500000",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/245.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/245.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 13,
+     "previous": 13,
+     "points": 890,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "2633",
+      "uid": "s:20~l:23~t:2633",
+      "location": "Tennessee",
+      "name": "Volunteers",
+      "nickname": "Tennessee",
+      "abbreviation": "TENN",
+      "color": "ff8200",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2633.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2633.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 14,
+     "previous": 14,
+     "points": 835,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "84",
+      "uid": "s:20~l:23~t:84",
+      "location": "Indiana",
+      "name": "Hoosiers",
+      "nickname": "Indiana",
+      "abbreviation": "IU",
+      "color": "990000",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/84.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/84.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 15,
+     "previous": 15,
+     "points": 780,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "30",
+      "uid": "s:20~l:23~t:30",
+      "location": "USC",
+      "name": "Trojans",
+      "nickname": "USC",
+      "abbreviation": "USC",
+      "color": "990000",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/30.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/30.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 16,
+     "previous": 16,
+     "points": 725,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "66",
+      "uid": "s:20~l:23~t:66",
+      "location": "Iowa State",
+      "name": "Cyclones",
+      "nickname": "Iowa St",
+      "abbreviation": "ISU",
+      "color": "c8102e",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/66.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/66.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 17,
+     "previous": 17,
+     "points": 670,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "142",
+      "uid": "s:20~l:23~t:142",
+      "location": "Missouri",
+      "name": "Tigers",
+      "nickname": "Missouri",
+      "abbreviation": "MIZ",
+      "color": "f1b82d",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/142.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/142.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 18,
+     "previous": 18,
+     "points": 615,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "252",
+      "uid": "s:20~l:23~t:252",
+      "location": "BYU",
+      "name": "Cougars",
+      "nickname": "BYU",
+      "abbreviation": "BYU",
+      "color": "002e5d",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/252.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/252.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 19,
+     "previous": 19,
+     "points": 560,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "2306",
+      "uid": "s:20~l:23~t:2306",
+      "location": "Kansas State",
+      "name": "Wildcats",
+      "nickname": "Kansas St",
+      "abbreviation": "KSU",
+      "color": "512888",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2306.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2306.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 20,
+     "previous": 20,
+     "points": 505,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "356",
+      "uid": "s:20~l:23~t:356",
+      "location": "Illinois",
+      "name": "Fighting Illini",
+      "nickname": "Illinois",
+      "abbreviation": "ILL",
+      "color": "13294b",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/356.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/356.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 21,
+     "previous": 21,
+     "points": 450,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "2641",
+      "uid": "s:20~l:23~t:2641",
+      "location": "Texas Tech",
+      "name": "Red Raiders",
+      "nickname": "Texas Tech",
+      "abbreviation": "TTU",
+      "color": "cc0000",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2641.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2641.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 22,
+     "previous": 22,
+     "points": 395,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "97",
+      "uid": "s:20~l:23~t:97",
+      "location": "Louisville",
+      "name": "Cardinals",
+      "nickname": "Louisville",
+      "abbreviation": "LOU",
+      "color": "ad0000",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/97.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/97.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 23,
+     "previous": 23,
+     "points": 340,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "68",
+      "uid": "s:20~l:23~t:68",
+      "location": "Boise State",
+      "name": "Broncos",
+      "nickname": "Boise St",
+      "abbreviation": "BSU",
+      "color": "0033a0",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/68.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/68.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 24,
+     "previous": 21,
+     "points": 285,
+     "firstPlaceVotes": 0,
+     "trend": "-3",
+     "record": {
+      "summary": "2-1",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "201",
+      "uid": "s:20~l:23~t:201",
+      "location": "Oklahoma",
+      "name": "Sooners",
+      "nickname": "Oklahoma",
+      "abbreviation": "OU",
+      "color": "841617",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/201.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/201.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 25,
+     "previous": 25,
+     "points": 230,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "2655",
+      "uid": "s:20~l:23~t:2655",
+      "location": "Tulane",
+      "name": "Green Wave",
+      "nickname": "Tulane",
+      "abbreviation": "TULN",
+      "color": "006747",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2655.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2655.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    }
+   ],
+   "others": [],
+   "droppedOut": []
+  },
+  {
+   "id": "2",
+   "name": "AFCA Coaches Poll",
+   "shortName": "Coaches Poll",
+   "type": "usa",
+   "headline": "2026 NCAA Football Rankings - AFCA Coaches Poll Week 4",
+   "shortHeadline": "2026 Coaches Poll: Week 4",
+   "occurrence": {
+    "number": 4,
+    "type": "week",
+    "last": false,
+    "value": "4",
+    "displayValue": "Week 4"
+   },
+   "date": "2026-09-21T16:00Z",
+   "lastUpdated": "2026-09-21T16:05Z",
+   "ranks": [
+    {
+     "current": 1,
+     "previous": 1,
+     "points": 1550,
+     "firstPlaceVotes": 40,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "61",
+      "uid": "s:20~l:23~t:61",
+      "location": "Georgia",
+      "name": "Bulldogs",
+      "nickname": "Georgia",
+      "abbreviation": "UGA",
+      "color": "ba0c2f",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/61.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/61.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 2,
+     "previous": 2,
+     "points": 1495,
+     "firstPlaceVotes": 20,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "251",
+      "uid": "s:20~l:23~t:251",
+      "location": "Texas",
+      "name": "Longhorns",
+      "nickname": "Texas",
+      "abbreviation": "TEX",
+      "color": "bf5700",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/251.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/251.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 3,
+     "previous": 3,
+     "points": 1440,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "2-1",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "87",
+      "uid": "s:20~l:23~t:87",
+      "location": "Notre Dame",
+      "name": "Fighting Irish",
+      "nickname": "Notre Dame",
+      "abbreviation": "ND",
+      "color": "0c2340",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/87.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/87.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 4,
+     "previous": 4,
+     "points": 1385,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "213",
+      "uid": "s:20~l:23~t:213",
+      "location": "Penn State",
+      "name": "Nittany Lions",
+      "nickname": "Penn State",
+      "abbreviation": "PSU",
+      "color": "041e42",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/213.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/213.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 5,
+     "previous": 5,
+     "points": 1330,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "2483",
+      "uid": "s:20~l:23~t:2483",
+      "location": "Oregon",
+      "name": "Ducks",
+      "nickname": "Oregon",
+      "abbreviation": "ORE",
+      "color": "154733",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2483.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2483.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 6,
+     "previous": 6,
+     "points": 1275,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "194",
+      "uid": "s:20~l:23~t:194",
+      "location": "Ohio State",
+      "name": "Buckeyes",
+      "nickname": "Ohio State",
+      "abbreviation": "OSU",
+      "color": "bb0000",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/194.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/194.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 7,
+     "previous": 7,
+     "points": 1220,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "99",
+      "uid": "s:20~l:23~t:99",
+      "location": "LSU",
+      "name": "Tigers",
+      "nickname": "LSU",
+      "abbreviation": "LSU",
+      "color": "461d7c",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/99.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/99.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 8,
+     "previous": 8,
+     "points": 1165,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "145",
+      "uid": "s:20~l:23~t:145",
+      "location": "Ole Miss",
+      "name": "Rebels",
+      "nickname": "Ole Miss",
+      "abbreviation": "MISS",
+      "color": "14213d",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/145.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/145.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 9,
+     "previous": 9,
+     "points": 1110,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "2390",
+      "uid": "s:20~l:23~t:2390",
+      "location": "Miami",
+      "name": "Hurricanes",
+      "nickname": "Miami",
+      "abbreviation": "MIA",
+      "color": "f47321",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2390.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2390.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 10,
+     "previous": 10,
+     "points": 1055,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "2-1",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "333",
+      "uid": "s:20~l:23~t:333",
+      "location": "Alabama",
+      "name": "Crimson Tide",
+      "nickname": "Alabama",
+      "abbreviation": "ALA",
+      "color": "9e1b32",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/333.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/333.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 11,
+     "previous": 11,
+     "points": 1000,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "130",
+      "uid": "s:20~l:23~t:130",
+      "location": "Michigan",
+      "name": "Wolverines",
+      "nickname": "Michigan",
+      "abbreviation": "MICH",
+      "color": "00274c",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/130.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/130.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 12,
+     "previous": 12,
+     "points": 945,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "245",
+      "uid": "s:20~l:23~t:245",
+      "location": "Texas A&M",
+      "name": "Aggies",
+      "nickname": "Texas A&M",
+      "abbreviation": "TA&M",
+      "color": "500000",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/245.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/245.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 13,
+     "previous": 13,
+     "points": 890,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "2633",
+      "uid": "s:20~l:23~t:2633",
+      "location": "Tennessee",
+      "name": "Volunteers",
+      "nickname": "Tennessee",
+      "abbreviation": "TENN",
+      "color": "ff8200",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2633.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2633.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 14,
+     "previous": 14,
+     "points": 835,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "84",
+      "uid": "s:20~l:23~t:84",
+      "location": "Indiana",
+      "name": "Hoosiers",
+      "nickname": "Indiana",
+      "abbreviation": "IU",
+      "color": "990000",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/84.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/84.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 15,
+     "previous": 15,
+     "points": 780,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "30",
+      "uid": "s:20~l:23~t:30",
+      "location": "USC",
+      "name": "Trojans",
+      "nickname": "USC",
+      "abbreviation": "USC",
+      "color": "990000",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/30.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/30.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 16,
+     "previous": 16,
+     "points": 725,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "66",
+      "uid": "s:20~l:23~t:66",
+      "location": "Iowa State",
+      "name": "Cyclones",
+      "nickname": "Iowa St",
+      "abbreviation": "ISU",
+      "color": "c8102e",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/66.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/66.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 17,
+     "previous": 17,
+     "points": 670,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "142",
+      "uid": "s:20~l:23~t:142",
+      "location": "Missouri",
+      "name": "Tigers",
+      "nickname": "Missouri",
+      "abbreviation": "MIZ",
+      "color": "f1b82d",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/142.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/142.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 18,
+     "previous": 18,
+     "points": 615,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "252",
+      "uid": "s:20~l:23~t:252",
+      "location": "BYU",
+      "name": "Cougars",
+      "nickname": "BYU",
+      "abbreviation": "BYU",
+      "color": "002e5d",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/252.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/252.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 19,
+     "previous": 19,
+     "points": 560,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "2306",
+      "uid": "s:20~l:23~t:2306",
+      "location": "Kansas State",
+      "name": "Wildcats",
+      "nickname": "Kansas St",
+      "abbreviation": "KSU",
+      "color": "512888",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2306.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2306.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 20,
+     "previous": 20,
+     "points": 505,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "356",
+      "uid": "s:20~l:23~t:356",
+      "location": "Illinois",
+      "name": "Fighting Illini",
+      "nickname": "Illinois",
+      "abbreviation": "ILL",
+      "color": "13294b",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/356.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/356.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 21,
+     "previous": 21,
+     "points": 450,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "2641",
+      "uid": "s:20~l:23~t:2641",
+      "location": "Texas Tech",
+      "name": "Red Raiders",
+      "nickname": "Texas Tech",
+      "abbreviation": "TTU",
+      "color": "cc0000",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2641.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2641.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 22,
+     "previous": 22,
+     "points": 395,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "97",
+      "uid": "s:20~l:23~t:97",
+      "location": "Louisville",
+      "name": "Cardinals",
+      "nickname": "Louisville",
+      "abbreviation": "LOU",
+      "color": "ad0000",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/97.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/97.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 23,
+     "previous": 23,
+     "points": 340,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "68",
+      "uid": "s:20~l:23~t:68",
+      "location": "Boise State",
+      "name": "Broncos",
+      "nickname": "Boise St",
+      "abbreviation": "BSU",
+      "color": "0033a0",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/68.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/68.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 24,
+     "previous": 24,
+     "points": 285,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "2-1",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "201",
+      "uid": "s:20~l:23~t:201",
+      "location": "Oklahoma",
+      "name": "Sooners",
+      "nickname": "Oklahoma",
+      "abbreviation": "OU",
+      "color": "841617",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/201.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/201.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    },
+    {
+     "current": 25,
+     "previous": 25,
+     "points": 230,
+     "firstPlaceVotes": 0,
+     "trend": "-",
+     "record": {
+      "summary": "3-0",
+      "stats": [
+       {
+        "name": "wins",
+        "type": "wins",
+        "value": 3,
+        "displayValue": "3"
+       }
+      ]
+     },
+     "team": {
+      "id": "2655",
+      "uid": "s:20~l:23~t:2655",
+      "location": "Tulane",
+      "name": "Green Wave",
+      "nickname": "Tulane",
+      "abbreviation": "TULN",
+      "color": "006747",
+      "logos": [
+       {
+        "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2655.png",
+        "alt": "",
+        "rel": [
+         "full",
+         "default"
+        ],
+        "width": 500,
+        "height": 500
+       }
+      ],
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2655.png"
+     },
+     "date": "2026-09-20T18:00Z",
+     "lastUpdated": "2026-09-20T18:05Z"
+    }
+   ],
+   "others": [],
+   "droppedOut": []
+  }
+ ],
+ "latestSeason": {
+  "year": 2026
+ },
+ "latestWeek": {
+  "number": 4
+ }
+}
