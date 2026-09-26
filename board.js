@@ -253,6 +253,7 @@ const SEED = {
  * ------------------------------------------------------------------ */
 
 const MAX = { id: 60, short: 120, line: 400, prose: 2000 };
+const LiveCore = require('./public/live-core.js');
 
 /**
  * Every string on the board, trimmed, capped, and with angle brackets gone.
@@ -272,10 +273,43 @@ const clean = (v, cap) => String(v === undefined || v === null ? '' : v)
 
 /** American odds as a number. '-110', -110 and '+115' are all the same bet;
  *  'even' and '' are not numbers and must not reach the payout maths, which
- *  turns a NaN into a blank stake box with nothing to explain it. */
+ *  turns a NaN into a blank stake box with nothing to explain it. Nor is
+ *  anything inside -100..+100: "-5" is a spread a model put in the price
+ *  field, and priced as odds it pays twenty times the stake. Same rule as the
+ *  hand-written cards' american() in server.js. */
 function odds(value) {
-  const n = Number(String(value).replace(/^\+/, ''));
-  return Number.isFinite(n) && n !== 0 ? n : null;
+  const n = Number(String(value === undefined || value === null ? '' : value).trim().replace(/^\+/, ''));
+  return Number.isFinite(n) && Math.abs(n) >= 100 ? n : null;
+}
+
+/**
+ * Every id on the board - and on a games document, a hand-written card, a
+ * pin or a hide - is lower-case letters, digits and dashes, 1..60 of them.
+ *
+ * Ids go into data-* attributes and element ids, and clean() only strips
+ * angle brackets: an id of `q" autofocus onfocus="...` survived it and broke
+ * straight out of the attribute (audit, 2026-09-26). Restricting the alphabet
+ * at the door beats trusting every render site to escape, though the page now
+ * escapes too. A model's id is slugged rather than refused, so "LSU-Ole Miss"
+ * becomes "lsu-ole-miss" instead of costing the whole board.
+ */
+const ID_RE = /^[a-z0-9-]{1,60}$/;
+
+function slug(v, cap = MAX.id) {
+  return String(v === undefined || v === null ? '' : v)
+    .normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, cap)
+    .replace(/-+$/, '');
+}
+
+/** A usable id from whatever came in, or `fallback`. */
+function cleanId(raw, fallback = '') {
+  const s = slug(raw);
+  return ID_RE.test(s) ? s : fallback;
 }
 
 function confidence(value) {
@@ -287,7 +321,7 @@ function game(raw, i) {
   const label = clean(raw && raw.label, MAX.short);
   if (!label) throw new Error(`game ${i + 1} has no label`);
   return {
-    id: clean(raw.id, MAX.id) || `game-${i + 1}`,
+    id: cleanId(raw.id, `game-${i + 1}`),
     label,
     time: clean(raw.time, MAX.short),
     kicker: clean(raw.kicker, MAX.short) || label,
@@ -300,7 +334,7 @@ function pick(raw, i) {
   const price = odds(raw.odds);
   if (price === null) throw new Error(`pick "${title}" has no usable odds`);
   return {
-    id: clean(raw.id, MAX.id) || `pick-${i + 1}`,
+    id: cleanId(raw.id, `pick-${i + 1}`),
     type: 'straight',
     title,
     matchup: clean(raw.matchup, MAX.short),
@@ -326,7 +360,7 @@ function parlay(raw, i) {
   // and zero legs multiplies out to a payout of exactly the stake.
   if (legs.length < 2) throw new Error(`parlay "${title}" needs at least two legs`);
   return {
-    id: clean(raw.id, MAX.id) || `parlay-${i + 1}`,
+    id: cleanId(raw.id, `parlay-${i + 1}`),
     title,
     confidence: confidence(raw.confidence),
     thesis: clean(raw.thesis, MAX.line),
@@ -361,7 +395,9 @@ function ranked(raw, i) {
     line: clean(raw.line, MAX.short),
     // Ties a row to a card on the slate, so "who plays this week" and "what to
     // bet" agree about which game they mean.
-    gameId: clean(raw.gameId, MAX.id),
+    gameId: cleanId(raw.gameId, ''),
+    // A DraftKings link for the game, only as LiveCore.dkUrl allows one.
+    dkUrl: LiveCore.dkUrl(raw.dkUrl),
   };
 }
 
@@ -388,13 +424,16 @@ function result(raw, i) {
   if (!title) throw new Error(`result ${i + 1} has no title`);
   const outcome = clean(raw.outcome, 10).toLowerCase();
   return {
-    id: clean(raw.id, MAX.id) || `result-${i + 1}`,
+    id: cleanId(raw.id, `result-${i + 1}`),
     title,
     matchup: clean(raw.matchup, MAX.short),
     market: clean(raw.market, MAX.short),
     finalScore: clean(raw.finalScore, MAX.short),
     outcome: OUTCOMES.has(outcome) ? outcome : '',
     note: clean(raw.note, MAX.line),
+    // 'espn' when graded from the feed's final score (live.gradeFromFinals),
+    // '' when a model graded it.
+    source: raw.source === 'espn' ? 'espn' : '',
   };
 }
 
@@ -443,4 +482,43 @@ function seed() {
   return validate({ ...SEED, weekKey: '', generatedAt: '2026-09-19T00:00:00.000Z' });
 }
 
-module.exports = { seed, validate, validateRankings, SEED };
+/* ------------------------------------------------------------------ *
+ * The week
+ * ------------------------------------------------------------------ */
+
+/**
+ * Hours after midnight Saturday-into-Sunday, Eastern, that the week turns
+ * over. Not midnight: a 10:30 PM kickoff on the West Coast is still being
+ * played at 1 AM Eastern, and turning the week at midnight told a reader
+ * watching it that their slip was last week's and wiped it (audit,
+ * 2026-09-26). By 6 AM every Saturday game is final.
+ */
+const WEEK_ROLL_HOURS = 6;
+
+const ET_PARTS = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hourCycle: 'h23',
+  year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', weekday: 'short' });
+
+/**
+ * Which week an instant belongs to: the Tuesday (as YYYY-MM-DD) that starts
+ * the week containing the next Saturday of games, in US Eastern, turning over
+ * at WEEK_ROLL_HOURS on Sunday.
+ *
+ * ONE definition for the board, the slip and the board arrangement. The slip
+ * used to roll on Tuesday while the board rolled on Sunday, so a play placed
+ * Sunday or Monday from the new board was filed under the old week and wiped
+ * on Tuesday. The page computes the same thing (weekKeyAt in index.html) and
+ * test/board.js holds the two to agreement.
+ */
+function weekKeyAt(ms) {
+  const p = {};
+  for (const x of ET_PARTS.formatToParts(new Date(Number(ms)))) p[x.type] = x.value;
+  const t = new Date(Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day)));
+  // Before 6 AM on a Sunday (Eastern wall clock, so the November clock
+  // change does not move it) still counts as Saturday.
+  if (p.weekday === 'Sun' && Number(p.hour) % 24 < WEEK_ROLL_HOURS) t.setUTCDate(t.getUTCDate() - 1);
+  t.setUTCDate(t.getUTCDate() + ((6 - t.getUTCDay() + 7) % 7));   // forward to Saturday
+  t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() - 2 + 7) % 7));   // back to its Tuesday
+  return t.toISOString().slice(0, 10);
+}
+
+module.exports = { seed, validate, validateRankings, SEED, ID_RE, slug, cleanId, odds, weekKeyAt, WEEK_ROLL_HOURS };

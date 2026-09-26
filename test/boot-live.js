@@ -78,7 +78,7 @@ function factsScene(raw) {
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (url, opts) => {
   const u = String(url);
-  if (u.startsWith('https://site.api.espn.com/')) {
+  if (u.match(/^https:\/\/site(\.web)?\.api\.espn\.com\//)) {
     const name = currentFixture();
     if (name === 'down') throw new Error('getaddrinfo ENOTFOUND site.api.espn.com');
     let raw;

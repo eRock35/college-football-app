@@ -159,9 +159,12 @@ const jar = (r) => (r.headers.getSetCookie() || []).map((c) => c.split(';')[0]).
 
   r = await send('POST', '/api/research/add-game', { query: 'X at Y' }, cookie);
   ok('a member who is not the owner may add a game', r.status === 200, String(r.status));
-  ok('...and it landed where everyone reads it',
-      Boolean(h.bag('college-football-app').get('games/x-y')),
-      JSON.stringify(h.bag('college-football-app').get('games/x-y')));
+  // The id is derived here from the matchup, never the model's own "id".
+  ok('...and it landed where everyone reads it, under an id this app chose',
+      Boolean(h.bag('college-football-app').get('games/x-at-y')) && !h.bag('college-football-app').get('games/x-y'),
+      JSON.stringify([...h.bag('college-football-app').keys()].filter((k) => k.startsWith('games/'))));
+  ok('...stamped with this week, so it leaves the Games tab next week',
+      /^\d{4}-\d{2}-\d{2}$/.test((h.bag('college-football-app').get('games/x-at-y') || {}).weekKey || ''));
 
   // --- the Top 25 ----------------------------------------------------------
   const board = require(require('path').join(__dirname, '..', 'board.js'));

@@ -107,7 +107,7 @@ function install() {
   // see ESPN as down, which every caller must survive anyway.
   const netFetch = globalThis.fetch;
   globalThis.fetch = async (url, opts) => {
-    if (String(url).startsWith('https://site.api.espn.com/')) throw new Error('harness: ESPN is not reachable from tests');
+    if (String(url).match(/^https:\/\/site(\.web)?\.api\.espn\.com\//)) throw new Error('harness: ESPN is not reachable from tests');
     return netFetch(url, opts);
   };
   const orig = Module._resolveFilename;

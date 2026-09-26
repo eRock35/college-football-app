@@ -209,6 +209,43 @@
     };
   }
 
+  /* ---------------- DraftKings links (2026-09-26) ----------------
+   *
+   * Erik: "add hyperlinks to the DraftKings game to easily trade on it". ONE
+   * helper decides where every such link goes, server and page alike, so the
+   * target changes in one place.
+   *
+   * A deep link to the game is used only when ESPN's feed carries one for it
+   * (an odds entry's link/links href) AND it is https on draftkings.com or a
+   * subdomain; its query and fragment are dropped, so no tracking or affiliate
+   * parameter rides along. Otherwise the college football page. A DraftKings
+   * event URL is never built from a guessed id.
+   */
+  var DK_FALLBACK = 'https://sportsbook.draftkings.com/leagues/football/ncaaf';
+
+  /** An https DraftKings URL reduced to origin + path, or ''. */
+  function dkUrl(href) {
+    if (typeof href !== 'string' || href.length > 500) return '';
+    var m = /^https:\/\/([a-z0-9.-]+)(\/[^?#\s"'<>\\]*)?(?:[?#][^\s]*)?$/i.exec(href.trim());
+    if (!m) return '';
+    var host = m[1].toLowerCase();
+    if (host !== 'draftkings.com' && !/^[a-z0-9-]+(\.[a-z0-9-]+)*\.draftkings\.com$/.test(host)) return '';
+    return 'https://' + host + (m[2] || '/');
+  }
+
+  /** Where a "Bet on DraftKings" link goes and what it says. `line` is the
+   *  bet as we show it ("Georgia -24.5"), when there is one. */
+  function dkLink(opts) {
+    opts = opts || {};
+    var deep = dkUrl(opts.url);
+    var line = String(opts.line === undefined || opts.line === null ? '' : opts.line).replace(/\s+/g, ' ').trim().slice(0, 60);
+    return {
+      href: deep || DK_FALLBACK,
+      deep: !!deep,
+      text: (line ? line + ' on DraftKings' : 'Bet on DraftKings') + ' \u2197',
+    };
+  }
+
   /** How often to ask again: 20 s while anything today is live, 5 min
    *  otherwise. The page pauses entirely while hidden. */
   function pollDelay(resp) {
@@ -218,5 +255,6 @@
   return {
     esc: esc, clockLabel: clockLabel, leaderSide: leaderSide, scoreText: scoreText,
     snapshot: snapshot, detectSwings: detectSwings, createSeen: createSeen, pollDelay: pollDelay,
+    dkUrl: dkUrl, dkLink: dkLink, DK_FALLBACK: DK_FALLBACK,
   };
 });

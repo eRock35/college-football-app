@@ -238,15 +238,30 @@ A live layer on top of the board, with no model call anywhere in it:
 ### The source is one module, and untrusted
 
 `live.js` owns the upstream: ESPN's public scoreboard JSON
-(`site.api.espn.com/.../college-football/scoreboard?groups=80&limit=300`),
+(`site.web.api.espn.com/.../college-football/scoreboard?groups=80&limit=300`),
 keyless and **unofficial** - it can change shape or disappear without notice.
 Every field is picked out by name, type-checked, bounded and stripped of `<>`
 and control characters; the page escapes all of it again with
-`LiveCore.esc()` (which escapes quotes - the older `escapeHtml()` does not, so
-it is not used for feed data). Any failure - network, status, non-JSON, a
+`LiveCore.esc()`. (`escapeHtml()` escapes quotes too since 2026-09-26, so the
+two are now the same rule.) Any failure - network, status, non-JSON, a
 body over 6 MB, no `events`, a 6 s timeout - becomes a 200 with
 `{available:false, message:"Live scores unavailable"}`. A feed that fails
 after a good read serves the last good board, marked stale, for 10 minutes.
+
+**The host is `site.web.api.espn.com`, not `site.api` (2026-09-26).** The
+ticker and team facts shipped against `site.api` and **never loaded in
+production**: from Google's network it answered 403 to this service's own
+User-Agent, to none, to `node` and to a browser's, and admitted only curl's
+default. Every test passed, because tests fake ESPN; only the production log
+(`[live] scoreboard fetch failed: upstream status 403`) said so. Measured by a
+Cloud Build step curling each path from GCP: `site.web.api` answered 200 on
+the scoreboard, rankings, team schedule and team list with `Mozilla/5.0`.
+`live.fetchEspnJson` is the one reader for both modules: that host and agent
+first, and a 403 tried **once** on `site.api` with a curl agent, so ESPN
+tightening one host degrades rather than blanks. Anything else is not retried.
+**When a live feature "works in tests", read the production log for its
+fetch before calling it shipped** - the sandbox cannot reach ESPN, so nothing
+here can.
 
 **Swapping to CollegeFootballData** (keyed, documented, rate-limited; check
 which of its tiers carries live scoreboard data before relying on it) means replacing
@@ -378,6 +393,139 @@ fallback, the routes). `test/harness.js` now makes ESPN unreachable for every
 suite unless the suite fakes it. `FACTS_SCENE=1 node test/boot-live.js`
 boots Erik's situation (stale `fan/uga`, Georgia at Oklahoma tonight) for a
 browser.
+
+## Audit fixes: XSS, research spend, the week, owner-only controls (2026-09-26)
+
+A read-only audit of the live app found these; all fixed the same day.
+`test/audit.js` (server) and `test/render.js` (the page) hold them.
+
+- **Stored XSS.** `games` documents went into innerHTML raw (label, summary,
+  why, pick...), and board ids containing `"` broke out of `data-*`
+  attributes (`board.clean()` only strips `<>`). Now:
+  - **Every id** - board games/picks/parlays/results, ranking `gameId`,
+    `boardPrefs` hides/pins/order and own cards, slip keys, custom picks,
+    games documents - is `board.ID_RE` = `/^[a-z0-9-]{1,60}$/`. A model's id
+    is slugged (`board.cleanId`), a user's that does not match is dropped.
+  - **`games.js`** is `board.js` for the games collection: `validate()`
+    (bounded strings, markup stripped, `tag` enum, confidence 1-4, `pass`
+    boolean) runs before every write - add-game, refresh-board, batch-collect
+    - and again on read. **The model never picks a document id**:
+    `games.idFor()` derives it from the two teams (teams.js ids, e.g.
+    `uga-arkansas`) or a slug of the matchup. An id with a "/" used to throw
+    after the credit was spent. An answer with no game is a 422 sentence.
+  - The page escapes **everything** anyway: `escapeHtml()` now escapes `"`
+    and `'`; every card, game, research, slip, review, ask and Top 25 render
+    goes through it (`esc()`). The slip and custom picks are cleaned on PUT
+    and on GET (`cleanSlip`, `cleanCustomPicks`).
+  - `test/render.js` runs the page's own script in a `vm` with a stand-in
+    DOM (the page exposes its render functions on `window.__CFB_TEST__` when
+    that object exists, and then does not start), draws `<img onerror>` and
+    `" autofocus onfocus=` payloads through every render path, and parses the
+    HTML for tags, handlers and non-https hrefs.
+- **Research paid for finished games.** `cfb-batch-submit` and
+  `cfb-saturday-live` researched the whole `games` collection. Both routes
+  (and the Refresh button) now research `games.thisWeek()`'s **upcoming**
+  games only: the current board's games, games its picks/legs name, and games
+  added this week (add-game stamps `weekKey`); a game has "started" by ESPN's
+  scoreboard state/kickoff when it is on it, else by the board's own
+  "Sat 3:30p ET" (`games.kickoffFor`). A board that is not this week's
+  (including the seed) has nothing to research - no model call. Each run
+  logs how many it skipped. Scheduler config untouched. `/api/games` serves
+  the same list (legacy documents only when they are a board game or were
+  added this week), each marked `started`/`final`, and the Games/Research
+  tabs draw it (falling back to the board's slate, never to the old
+  hardcoded Sep 19 `GAMES_FALLBACK`, which is gone, as is `PICK_GAMES`).
+- **One week, turning over at 6 AM Eastern Sunday.** `board.weekKeyAt(ms)`
+  is the board's week, the slip's week and the arrangement's week, on the
+  server and (same algorithm, `weekKeyAt` in the page, held to agreement over
+  200 days by `test/render.js`) in the browser, in Eastern time. The slip
+  used to roll Tuesday in the phone's own zone, so plays placed Sunday from
+  the new board were wiped Tuesday; 6 AM rather than midnight because a West
+  Coast game is still on at 1 AM Eastern (Eastern wall clock, so the
+  November change does not move it). Stored slips are read by the week they
+  were **saved** in (`slipWeekOf`: `weekKeyAt(updatedAt)`), which keeps old
+  Tuesday-keyed Sunday saves readable. In the browser, `expireStaleWeek()`
+  also clears `cover-sheet-board-v1` and runs on `visibilitychange`; its
+  store key moved to `cfb-week-key-v2`, and on first run a v1 week equal to
+  this week or the one before is trusted (one transition week).
+- **Staleness.** The header is drawn from the board: "CFB · Week N"
+  (Week 1 = the week of the Saturday before Labor Day) and "Lines from
+  <generatedAt in ET>"; research time moved to the Games status line. The
+  footer's sources line says when the lines were gathered. The "last week's
+  board" note shows only when the server says stale (from Sun 6 AM ET) **and
+  nothing is live**. `loadBoard()` re-runs on returning to the foreground and
+  every 10 minutes. Futures are labelled "Snapshot from Sep 10, 2026 ... not
+  live odds" (no free source). Stale copy fixed: Research/Games/Futures/Slip
+  intros, "Your slip clears ... Tuesday", "compiled Sep 19", "0 games
+  tracked", the "COVER SHEET" summary title, "3-leg parlay" on every parlay,
+  and a "++596" combined price.
+- **Owner-only controls.** `/api/auth/status` adds `canResearch` (the whole
+  of `requireResearch`: allowlist, shared-account grant or site password -
+  it reads the shared session itself, since the route is mounted before that
+  middleware) and `signedInAnywhere`. "Refresh research", custom research
+  and "Sign in with password" show only when `canResearch`. **No API route
+  sends `WWW-Authenticate` any more** - every refusal is JSON 401/403, so no
+  button can raise the browser's password box. The one exception is
+  `/api/login?prompt=1`, which nothing links to: the owner types it.
+- **Privacy.** `GET /api/asks` (the owner's own questions) is owner-only. A
+  shared slip says the first word of the shared account's `displayName`, or
+  "A reader" - never the email local part, which old links now read as too.
+- **Performance.** The legacy pollers (games, changelog, status; asks for
+  the owner only) run only while Games or Research is on screen in a visible
+  page (games once at load for the other tabs). `/api/games`,
+  `/api/changelog`, `/api/status` share a 60 s in-memory read
+  (`cachedRead`, dropped on every research write). `trust proxy` (share links
+  were `http://`), `compression` (new dependency), `Cache-Control` 1 day on
+  `/api/teams` and 60 s on `/api/board`.
+- **Contrast and taps.** Light `--text-dim`/`--label-2` #56565B,
+  `--text-faint` #636366, `--tint` #0060C0, `--positive` #187A33; dark
+  `--accent-soft`/`--parlay-soft` darker; solid buttons use `--tint-fill`
+  (#0066CC in dark: white on #0A84FF was 3.6:1). Card tools, the switch's
+  hit area and "All N games today" are 44px. The results strip stacks title
+  over score. "Add a game" and "write your own card" sit below the picks.
+- `board.odds()` refuses |n| < 100, like the hand-written cards' `american()`.
+
+### DraftKings links (2026-09-26)
+
+Erik: "add hyperlinks to the DraftKings game to easily trade on it". Every
+pick card, own card, game card, research card, Top 25 row with a game, the
+ticker's game sheet and every slip play has an "... on DraftKings ↗" link
+(new tab, `rel="noopener noreferrer"`), with one line above the first card:
+opens DraftKings, the price may differ, 21+ where legal. **One helper**,
+`LiveCore.dkLink()` / `dkUrl()` in `public/live-core.js`, used by server and
+page: a deep link only when ESPN's odds entry carries one (`odds[].link.href`,
+`links[].href`, or the provider's) that is **https on draftkings.com or a
+subdomain** - reduced to origin + path, so no tracking or affiliate parameter
+survives - otherwise `https://sportsbook.draftkings.com/leagues/football/ncaaf`.
+Never a URL built from a guessed event id. The link text names our pick's
+line ("Georgia -24.5 on DraftKings ↗"); the feed's line is not put on it,
+because the feed's provider has been ESPN BET, not DraftKings. **Our
+fixtures carry no DraftKings link** (their odds are `provider: ESPN BET`), and
+whether the live feed does in the 2026 season is unverified from here, so
+expect the fallback until someone checks a real response. `GET /api/board`
+adds `feed: {<gameId>: {startsAt, state, line, overUnder, lineSource, dkUrl}}`
+from the scoreboard; `/api/games` rows and poll Top 25 rows carry `dkUrl`.
+
+### The live score and the line now on every card (2026-09-26)
+
+`POST /api/live/slip` takes `cards` beside `items`: every card on the board,
+placed or not, matched to the scoreboard exactly as slip plays are but kept
+out of the ticker's ordering. Each card shows its live status ("UGA 24, ARK
+14 · 3rd 7:12 · Needs 15 more to cover") and **closing-line value**:
+`live.lineNow()` reads the feed's line for the side taken ("UGA -27.5" by
+team abbreviation; a line naming neither team is not guessed at) and totals
+from `overUnder`: "Picked −24.5 · now −27.5 ✓ better than now" before
+kickoff, "closed ... ✓ beat the close" after, labelled with whose line it is.
+
+### Last week graded from ESPN's finals (2026-09-26)
+
+`weekly-board` grades from the scoreboard first: `live.fetchFinals()` reads
+`&dates=` for Thursday, Friday and Saturday of the old board's week and
+`live.gradeFromFinals()` runs the live slip's own matching and maths over the
+finals - win/loss/push with the real final score, `source: 'espn'`. Only
+cards it cannot settle (unmatched, not final, props, team totals) go to the
+model, and the model cannot overrule a final. Any ESPN failure just leaves
+more for the model.
 
 ## Commit and PR conventions
 

@@ -57,7 +57,7 @@ function swappedPoll() {
   return raw;
 }
 globalThis.fetch = async (url, opts) => {
-  if (!String(url).startsWith('https://site.api.espn.com/')) return realFetch(url, opts);
+  if (!String(url).match(/^https:\/\/site(\.web)?\.api\.espn\.com\//)) return realFetch(url, opts);
   if (/\/rankings(\?|$)/.test(String(url))) {
     pollCalls++;
     if (upstream.mode === 'down') throw new Error('ENOTFOUND');
@@ -451,6 +451,29 @@ const total = (dir, line) => ({ type: 'total', dir, line });
     try { res = await f.get(); } catch (e) { err = e; }
     ok(`upstream "${mode}" is "Live scores unavailable", never a throw`, !err && res.available === false && res.message === 'Live scores unavailable', err ? err.message : JSON.stringify(res).slice(0, 80));
   }
+
+  console.log('\n-- which ESPN host, and a 403');
+  // Production met a 403 from site.api for every User-Agent but curl's; the
+  // ticker had never loaded. site.web.api is first, the other host a retry.
+  eq('the scoreboard is read from site.web.api', live.ESPN_SCOREBOARD.startsWith('https://site.web.api.espn.com/'), true);
+  const asked = [];
+  const refuseWeb = async (url, opts) => {
+    asked.push([url.split('/')[2], opts.headers['user-agent']]);
+    if (url.startsWith(live.ESPN_HOST + '/')) return { ok: false, status: 403, headers: { get: () => null }, text: async () => 'denied' };
+    return { ok: true, status: 200, headers: { get: () => null }, text: async () => '{"events":[]}' };
+  };
+  eq('a 403 is tried once on the other host, each with the agent it admits',
+    [await live.fetchEspnJson(refuseWeb, live.ESPN_SCOREBOARD, 50), asked],
+    [{ events: [] }, [['site.web.api.espn.com', 'Mozilla/5.0'], ['site.api.espn.com', 'curl/8.5.0']]]);
+  asked.length = 0;
+  const alwaysNo = async (url) => { asked.push(url); return { ok: false, status: 403, headers: { get: () => null }, text: async () => '' }; };
+  let err403 = null;
+  try { await live.fetchEspnJson(alwaysNo, live.ESPN_SCOREBOARD, 50); } catch (e) { err403 = e; }
+  ok('both hosts refusing is one error after two asks, not a loop', err403 && asked.length === 2, String(asked.length));
+  asked.length = 0;
+  const fiveHundred = async (url) => { asked.push(url); return { ok: false, status: 503, headers: { get: () => null }, text: async () => '' }; };
+  try { await live.fetchEspnJson(fiveHundred, live.ESPN_SCOREBOARD, 50); } catch (e) { /* expected */ }
+  ok('any other failure is not retried on the other host', asked.length === 1, String(asked.length));
 
   /* ================================================================ *
    * The routes

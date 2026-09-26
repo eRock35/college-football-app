@@ -14,7 +14,8 @@
  * storyline, and that is shown with the date it was written and a note when a
  * game has been played since.
  *
- * THE SOURCE. The same unofficial family as live.js (site.api.espn.com):
+ * THE SOURCE. The same unofficial family as live.js (site.web.api.espn.com,
+ * falling back to site.api on a 403 - see ESPN_HOST there):
  *   - /teams/{espnId}/schedule?season=YYYY  - a team's games and results
  *   - /rankings                              - the AP Top 25 (and others, ignored)
  * Keyless, undocumented, able to change shape without notice. So every field
@@ -44,7 +45,7 @@ const { ESPN_IDS, UNMAPPED } = require('./espn-ids');
 
 const { str, int, isoOrEmpty, gameState, obj, arr } = live;
 
-const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football';
+const ESPN_BASE = `${live.ESPN_HOST}/apis/site/v2/sports/football/college-football`;
 const TEAMS_URL = `${ESPN_BASE}/teams?groups=80&limit=500`;
 const RANKINGS_URL = `${ESPN_BASE}/rankings`;
 const scheduleUrl = (espnId, season) => `${ESPN_BASE}/teams/${encodeURIComponent(espnId)}/schedule?season=${season}`;
@@ -425,6 +426,7 @@ function pollRows(poll, allGames, nowMs) {
       rank: r.rank, team: r.team, record: r.record, game, time,
       line: g.state === 'pre' ? str(g.line, 40) : '',
       gameId: '',
+      dkUrl: g.dkUrl || '',
     };
   });
 }
@@ -528,23 +530,8 @@ function overlay(page, facts, poll, { teamId, meta, nowMs = Date.now() } = {}) {
  * Fetching, cached
  * ------------------------------------------------------------------ */
 
-async function fetchJson(fetchImpl, url, timeoutMs) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-  try {
-    const r = await fetchImpl(url, {
-      signal: ctrl.signal,
-      headers: { accept: 'application/json', 'user-agent': 'college-football-app (+https://footballapp.strongtechnicalconsulting.com)' },
-    });
-    if (!r || !r.ok) throw new Error(`upstream status ${r && r.status}`);
-    const len = Number(r.headers && r.headers.get ? r.headers.get('content-length') : 0);
-    if (len > MAX_BYTES) throw new Error('upstream body too large');
-    const text = await r.text();
-    if (text.length > MAX_BYTES) throw new Error('upstream body too large');
-    return JSON.parse(text);
-  } finally {
-    clearTimeout(timer);
-  }
+function fetchJson(fetchImpl, url, timeoutMs) {
+  return live.fetchEspnJson(fetchImpl, url, timeoutMs, MAX_BYTES);
 }
 
 /**
@@ -639,7 +626,7 @@ module.exports = {
 /* ------------------------------------------------------------------ *
  * Regenerating espn-ids.js
  *
- *   curl -s 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams?groups=80&limit=500' > /tmp/teams.json
+ *   curl -s 'https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/teams?groups=80&limit=500' > /tmp/teams.json
  *   node teamfacts.js --ids /tmp/teams.json > espn-ids.js
  *
  * Every teams.js id must map to exactly one ESPN team; any that does not is

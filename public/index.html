@@ -35,13 +35,19 @@
     --sep:rgba(60,60,67,.22);
     --bar-bg:rgba(249,249,249,.82);
     --text:#1D1D1F;
-    --text-dim:#6E6E73;
-    --text-faint:#8E8E93;
-    --label-2:#6E6E73;
-    --accent:#0071E3;
-    --tint:#0071E3;
+    /* Contrast (2026-09-26 audit): every text colour here clears 4.5:1 on
+       --bg, --surface and the grey --fill panels it sits on. The old
+       #8E8E93 faint grey was 3:1 and the #0071E3 blue 3.8-4.3:1 on grey. */
+    --text-dim:#56565B;
+    --text-faint:#636366;
+    --label-2:#56565B;
+    --accent:#0060C0;
+    --tint:#0060C0;
+    /* Solid buttons with white text. Its own token because dark mode's
+       --tint (#0A84FF) reads well as text on black but white on it is 3.6:1. */
+    --tint-fill:#0060C0;
     --accent-soft:#E8F1FE;
-    --positive:#1D8A3B;
+    --positive:#187A33;
     --positive-soft:#E5F7EA;
     --negative:#D70015;
     --negative-soft:#FDEAEA;
@@ -72,7 +78,8 @@
       --label-2:#AEAEB2;
       --accent:#0A84FF;
       --tint:#0A84FF;
-      --accent-soft:#0F2E4F;
+      --tint-fill:#0066CC;
+      --accent-soft:#081D33;
       --positive:#30D158;
       --positive-soft:#103A1E;
       --negative:#FF453A;
@@ -80,7 +87,7 @@
       --warning:#FF9F0A;
       --warning-soft:#3D2600;
       --parlay:#BF5AF2;
-      --parlay-soft:#341A47;
+      --parlay-soft:#2A1439;
       --team:#FF4B5C;
       --team-soft:#3A1319;
       --shadow: none;
@@ -101,7 +108,8 @@
     --label-2:#AEAEB2;
     --accent:#0A84FF;
     --tint:#0A84FF;
-    --accent-soft:#0F2E4F;
+    --tint-fill:#0066CC;
+    --accent-soft:#081D33;
     --positive:#30D158;
     --positive-soft:#103A1E;
     --negative:#FF453A;
@@ -109,7 +117,7 @@
     --warning:#FF9F0A;
     --warning-soft:#3D2600;
     --parlay:#BF5AF2;
-    --parlay-soft:#341A47;
+    --parlay-soft:#2A1439;
     --team:#FF4B5C;
     --team-soft:#3A1319;
     --shadow: none;
@@ -155,7 +163,7 @@
     font-size:13px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--tint);
     min-height:18px;
   }
-  .eyebrow #asof-line{color:var(--label-2); text-transform:none; letter-spacing:0; font-weight:500;}
+  .asof-line{color:var(--label-2); font-size:13px; font-weight:500; margin-top:1px;}
   .large-title{font-size:32px; font-weight:700; letter-spacing:-.02em; line-height:1.15; margin-top:2px; color:var(--text);}
   .auth-chip{
     flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; gap:6px;
@@ -166,7 +174,7 @@
   .auth-chip svg{width:24px; height:24px; display:block;}
   .auth-chip .auth-chip-label{display:none; font-size:15px; font-weight:600; padding-right:14px;}
   .auth-chip[data-state="in"]{color:var(--label-2);}
-  .auth-chip[data-state="armed"]{background:var(--tint); color:#fff;}
+  .auth-chip[data-state="armed"]{background:var(--tint-fill); color:#fff;}
   .auth-chip:active{transform:scale(.94);}
 
   .compact-header{
@@ -252,7 +260,7 @@
     width:100%; min-height:50px; border:none; border-radius:14px; background:var(--fill);
     color:var(--tint); font-size:17px; font-weight:600; cursor:pointer; transition:transform .12s ease;
   }
-  .sheet-action.primary{background:var(--tint); color:#fff;}
+  .sheet-action.primary{background:var(--tint-fill); color:#fff;}
   .sheet-action.destructive{color:var(--negative);}
   .sheet-action:active{transform:scale(.97);}
   .sheet-cancel{margin-top:2px;}
@@ -332,11 +340,11 @@
   .auth-go:active, .refresh-btn:active, .reset-btn:active, .text-toggle-btn:active, .add-slip-btn:active, .remove-card-btn:active, .chat-send:active{transform:scale(.97);}
   .auth-go{
     display:block; width:100%; min-height:50px; border:none; border-radius:14px;
-    background:var(--tint); color:#fff; font-size:17px; font-weight:600; cursor:pointer; margin-top:10px;
+    background:var(--tint-fill); color:#fff; font-size:17px; font-weight:600; cursor:pointer; margin-top:10px;
   }
   .refresh-btn{
     flex:0 0 auto; min-height:44px; min-width:44px; padding:0 16px; border:none; border-radius:12px;
-    background:var(--tint); color:#fff; font-size:15px; font-weight:600; cursor:pointer; white-space:nowrap;
+    background:var(--tint-fill); color:#fff; font-size:15px; font-weight:600; cursor:pointer; white-space:nowrap;
   }
   .refresh-btn:disabled, .auth-go:disabled{opacity:.5; cursor:default;}
   .reset-btn{
@@ -366,8 +374,8 @@
   .top25-row .gm{flex:1; display:flex; flex-direction:column; align-items:flex-end; gap:1px;
     text-align:right; font-size:13.5px; color:var(--label-2); min-width:0;}
   .top25-row .gm .ln{font-size:12px; color:var(--text-faint);}
-  .card-tools{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; padding-top:10px; box-shadow:inset 0 1px 0 var(--sep);}
-  .card-tool{min-height:32px; padding:0 10px; border:0; border-radius:8px; background:var(--fill);
+  .card-tools{display:flex; gap:6px; flex-wrap:wrap; padding:10px 16px 12px; box-shadow:inset 0 1px 0 var(--sep);}
+  .card-tool{min-height:44px; min-width:44px; padding:0 12px; border:0; border-radius:10px; background:var(--fill);
     color:var(--label-2); font:inherit; font-size:13px; font-weight:600; cursor:pointer;}
   .card-tool:hover{background:var(--fill-2);}
   .card-tool[aria-pressed="true"]{background:var(--accent-soft); color:var(--tint);}
@@ -435,12 +443,13 @@
   .results-record{font-size:13px; color:var(--text-faint); font-variant-numeric:tabular-nums;}
   .result-row{display:flex; gap:10px; align-items:baseline; padding:7px 0; border-top:1px solid var(--sep);}
   .result-row:first-of-type{border-top:0;}
-  .result-badge{flex:0 0 auto; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+  .result-badge{flex:0 0 auto; min-width:50px; text-align:center; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
     padding:2px 7px; border-radius:6px; background:var(--fill); color:var(--text-faint);}
   .result-badge.win{background:#1c7c3f22; color:#1c7c3f;}
   .result-badge.loss{background:#c2323222; color:#c23232;}
-  .result-badge.push{background:#8884; color:var(--text-faint);}
-  .result-text{min-width:0;}
+  .result-badge.push{background:#8884; color:var(--text-dim);}
+  .result-badge.void{color:var(--text-dim);}
+  .result-text{min-width:0; display:flex; flex-direction:column; gap:2px;}
   .result-title{font-size:14px; font-weight:600;}
   .result-sub{font-size:12.5px; color:var(--text-faint); line-height:1.45;}
   .board-note{font-size:13px; color:var(--text-faint); margin:8px 0 0;}
@@ -507,7 +516,8 @@
   .switch-row{display:flex; align-items:center; justify-content:space-between; min-height:44px; cursor:pointer; gap:12px;}
   .switch-row .switch-label{font-size:17px; color:var(--text);}
   .switch{position:relative; display:inline-block; width:51px; height:31px; flex:0 0 auto;}
-  .switch input{position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer; z-index:1;}
+  /* The input is the tap target, so it reaches past the 51x31 track to 44px. */
+  .switch input{position:absolute; top:-7px; bottom:-7px; left:-4px; right:-4px; width:auto; height:auto; margin:0; opacity:0; cursor:pointer; z-index:1;}
   .switch .track{
     position:absolute; inset:0; border-radius:16px; background:var(--fill-2);
     transition:background .2s ease;
@@ -790,7 +800,7 @@
      unreadable, and the chip already carries a stripe in that colour. */
   .ltag.team{background:var(--fill-2); color:var(--text);}
   .ltag.slip{background:var(--accent-soft); color:var(--tint);}
-  .live-all{padding:0 2px; margin:-2px 0 6px; font-size:14px; min-height:32px;}
+  .live-all{padding:0 2px; margin:-2px 0 6px; font-size:14px; min-height:44px;}
   .sweat-all{padding:0; min-height:44px; font-size:14px; border-top:1px solid var(--sep); width:100%; text-align:left; border-radius:0;}
   .live-more{flex:0 0 auto; align-self:stretch; border:none; border-radius:12px; background:var(--fill); color:var(--tint); font-weight:600; font-size:14px; padding:0 14px; cursor:pointer;}
   /* Game day: the scoreboard leads the home view, and the static intro that
@@ -866,6 +876,30 @@
   .live-alert .x:active{background:var(--fill);}
   @keyframes alert-in{from{opacity:0; transform:translateY(-10px);} to{opacity:1; transform:none;}}
 
+  /* DraftKings links (2026-09-26): small, tappable, never louder than the pick. */
+  .dk-link{display:inline-flex; align-items:center; min-height:44px; font-size:14px; font-weight:600;
+    color:var(--tint); text-decoration:none;}
+  .dk-link:hover{text-decoration:underline;}
+  .dk-note{font-size:12.5px; color:var(--text-faint); margin:14px 0 0; line-height:1.4;}
+  .dk-note + .card-list{margin-top:8px;}
+  .top25-row .gm .dk-link{min-height:32px; font-size:12.5px;}
+  .gs-dk{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 8px;}
+  .gs-dk span{font-size:12.5px; color:var(--text-faint);}
+  /* The live score and line-now on a card. */
+  .card-live:empty{display:none;}
+  .card-live{display:flex; flex-direction:column; gap:6px; margin:2px 16px 10px;}
+  .pick > .dk-link{margin:-6px 16px 4px;}
+  .game-card > .dk-link{margin:0 16px;}
+  .game-state.live{background:var(--negative-soft); color:var(--negative);}
+  .cl-score{display:flex; align-items:center; gap:8px; font-size:14px; font-variant-numeric:tabular-nums;}
+  .cl-line{display:flex; flex-direction:column; gap:1px; font-size:13.5px; color:var(--label-2); font-variant-numeric:tabular-nums;}
+  .cl-line .k{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint);}
+  .cl-line b.good{color:var(--positive);}
+  .cl-line b.bad{color:var(--negative); font-weight:600;}
+  .cl-line .src{color:var(--text-faint); font-size:12px;}
+  .game-state{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+    padding:2px 7px; border-radius:6px; background:var(--fill); color:var(--label-2); margin-left:6px; vertical-align:middle;}
+
   @media (prefers-reduced-motion: reduce){
     *{transition:none!important; animation:none!important;}
   }
@@ -877,7 +911,8 @@
 <header class="app-header">
   <div class="header-row">
     <div>
-      <div class="eyebrow"><span>CFB · Week 3</span><span aria-hidden="true">·</span><span id="asof-line">Odds as of Sat, Sep 19, 2026 · AM ET</span></div>
+      <div class="eyebrow"><span id="week-label">CFB</span></div>
+      <div class="asof-line" id="asof-line">Loading this week’s lines…</div>
       <h1 class="large-title" id="large-title">College Football</h1>
     </div>
     <button class="auth-chip" id="auth-chip" type="button" aria-label="Account" hidden>
@@ -925,7 +960,7 @@
        is down - it decorates the board and must never break it. -->
   <section class="live-root" id="live-root" aria-label="Live scores"></section>
   <div class="intro">
-    <p>Plays off Saturday's board — straight bets and 3-leg parlays — built from DraftKings-market lines and this week's injury and personnel notes. Confidence dots reflect how much the number, not just the winner, is in our favor.</p>
+    <p>This week’s plays — straight bets and parlays — built from DraftKings-market lines and this week’s injury and personnel notes. Confidence dots reflect how much the number, not just the winner, is in our favor.</p>
     <div class="slate-strip" id="slate-strip"></div>
     <p class="board-note" id="board-note" hidden></p>
   </div>
@@ -938,6 +973,11 @@
     </button>
     <div class="top25-list" id="top25-list" hidden></div>
   </section>
+  <!-- Said once, just above the first "on DraftKings" link, not on every card. -->
+  <p class="dk-note" id="dk-note">“On DraftKings” links open DraftKings, where the price may differ from ours. Only where sports betting is legal and you’re 21+.</p>
+  <div class="card-list dk-grid" id="card-list"></div>
+  <!-- Below the picks since 2026-09-26: on a phone the first pick used to
+       start 780px down, under two forms most readers never open. -->
   <div class="add-card-block">
     <div class="add-card-label">Add a game the board missed</div>
     <div class="add-card-row">
@@ -971,26 +1011,27 @@
       <div class="copy-status" id="own-card-status"></div>
     </div>
   </div>
-  <div class="card-list dk-grid" id="card-list"></div>
 </section>
 
 <section role="tabpanel" id="panel-games" aria-labelledby="tab-games" hidden>
-  <div class="intro"><p>Every Top 25 and notable game we're tracking, refreshed from a research pass roughly hourly Thursday through Saturday. Click a game to see the full detail and ask about it directly.</p></div>
+  <div class="intro"><p>This week’s games from the board, with research notes where a research pass has covered them. Notes stop updating once a game kicks off. Open a game for the detail.</p></div>
   <div class="games-search-row sticky-search">
     <input type="search" id="games-search" placeholder="Search a team or matchup…" aria-label="Search tracked games" enterkeyhint="search" autocomplete="off" autocapitalize="words">
   </div>
   <div class="games-actions">
-    <button class="refresh-btn" id="refresh-research-btn" type="button">Refresh research</button>
+    <!-- Owner-only: shown when /api/auth/status says canResearch. -->
+    <button class="refresh-btn" id="refresh-research-btn" type="button" hidden>Refresh research</button>
   </div>
-  <div class="games-status" id="games-status">Loading the live board…</div>
+  <div class="games-status" id="games-status">Loading this week’s games…</div>
   <div class="refresh-meta" id="refresh-action-status"></div>
   <div class="games-grid dk-grid" id="games-grid"></div>
   <div class="games-empty" id="games-empty" hidden></div>
 </section>
 
 <section role="tabpanel" id="panel-research" aria-labelledby="tab-research" hidden>
-  <div class="intro"><p>Game-by-game notes behind today's card, including the injury situation driving the LSU–Ole Miss number and the usage rates behind the two blowout-adjacent plays.</p></div>
-  <div class="custom-research">
+  <div class="intro"><p>Game-by-game research notes behind this week’s card: the line, the injuries and the reasoning, game by game.</p></div>
+  <!-- Owner-only: shown when /api/auth/status says canResearch. -->
+  <div class="custom-research" id="custom-research" hidden>
     <div class="custom-research-label">Custom research</div>
     <div class="games-search-row">
       <input type="text" id="custom-research-input" placeholder="e.g. &quot;find me a bet I should make&quot; or &quot;research the Alabama-Florida State game&quot;" maxlength="300" enterkeyhint="search" autocomplete="off" autocapitalize="sentences" aria-label="Custom research question">
@@ -1003,12 +1044,12 @@
 </section>
 
 <section role="tabpanel" id="panel-futures" aria-labelledby="tab-futures" hidden>
-  <div class="intro"><p>Season-long DraftKings futures, tracked separately from the daily card. These are watch-list positions, not part of the 3–5 daily plays.</p></div>
+  <div class="intro"><p>Season-long DraftKings futures, tracked separately from the weekly card. These are watch-list positions, not part of this week’s plays — and a snapshot, not live odds.</p></div>
   <div id="futures-list"></div>
 </section>
 
 <section role="tabpanel" id="panel-slip" aria-labelledby="tab-slip" hidden>
-  <div class="intro"><p>Check off what you actually place and set a stake. You'll get a full summary of your week below — every pick, the full "why," and your payout — plus a Good / Bad / Different read on the slip you've built. Everything here stays in your browser only; nothing connects to DraftKings or anywhere else.</p></div>
+  <div class="intro"><p>Check off what you actually place and set a stake. You'll get a full summary of your week below — every pick, the full "why," and your payout — plus a Good / Bad / Different read on the slip you've built. <span id="slip-where">Your slip stays in this browser unless you sign in.</span> Nothing here places a bet.</p></div>
   <div class="bankroll-row">
     <label for="bankroll-input">Bankroll for this slate<span class="bankroll-hint">Optional — powers the risk-% notes below</span></label>
     <div class="bankroll-input-wrap"><span>$</span><input type="number" min="0" step="25" id="bankroll-input" placeholder="e.g. 500" inputmode="decimal" enterkeyhint="done" autocomplete="off"></div>
@@ -1020,11 +1061,12 @@
     <button class="reset-btn" id="reset-slip" type="button">Clear my slip</button>
     <button class="text-toggle-btn" id="passkey-signin-btn" type="button" hidden>Sign in with Face ID</button>
     <button class="text-toggle-btn" id="passkey-setup-btn" type="button" hidden>Register an account</button>
-    <button class="text-toggle-btn" id="slip-sync-btn" type="button">Sign in with password</button>
+    <!-- The owner's password door; hidden unless /api/auth/status says canResearch. -->
+    <button class="text-toggle-btn" id="slip-sync-btn" type="button" hidden>Sign in with password</button>
     <button class="text-toggle-btn" id="passkey-logout-btn" type="button" hidden>Sign out</button>
     <div class="copy-status" id="slip-sync-status"></div>
   </div>
-  <p class="muted" style="margin-top:10px;">Your slip clears automatically each Tuesday when the new football week starts.</p>
+  <p class="muted" style="margin-top:10px;">Your slip clears automatically early Sunday morning (6 AM Eastern), once the weekend’s games are final and the next board is on its way.</p>
 </section>
 
 <section role="tabpanel" id="panel-uga" aria-labelledby="tab-uga" hidden>
@@ -1037,7 +1079,7 @@
     <strong>Independent analysis, not a guarantee.</strong> This page is research and commentary compiled from public reporting — it is not affiliated with, endorsed by, or operated by DraftKings or any sportsbook. Lines move constantly; confirm the current number on your own bet slip before wagering, and shop for the best price. Nothing here predicts an outcome, and past coverage rates don't guarantee future ones. Bet only what you can afford to lose. Must be 21+ and physically located where sports wagering is legal.
     If gambling stops being fun, call or text <strong>1-800-GAMBLER</strong> (US) or visit <strong>ncpgambling.org</strong>.
   </p>
-  <p class="sources">Sources: DraftKings Sportsbook &amp; DK Network, CBS Sports, Covers.com, FanDuel Research, Action Network, TheSpread.com, SportsGrid, SI.com, RotoWire — compiled Sep 19, 2026.</p>
+  <p class="sources">Sources: DraftKings Sportsbook &amp; DK Network, CBS Sports, Covers.com, FanDuel Research, Action Network, TheSpread.com, SportsGrid, SI.com, RotoWire. <span id="sources-asof"></span></p>
 </footer>
 </div>
 
@@ -1169,6 +1211,9 @@
   // The server owns the board now (board.js is the seed, Firestore holds the
   // current one) and the page draws whatever it is handed.
   var GAMES = [], PICKS = [], PARLAYS = [], RESULTS = [], RANKINGS = [], RANKINGS_FROM = null;
+  // Each slate game as the live scoreboard sees it (board.feed, by game id):
+  // kickoff, state, the feed's line and a DraftKings link if it carries one.
+  var FEED = {};
   var BOARD_CACHE_KEY = 'cfb-board-v1';
 
   var FUTURES_NC = [
@@ -1200,18 +1245,9 @@
     {team:'Josh Hoover, QB TCU', odds:'+1900'}
   ];
 
-  var PICK_GAMES = {
-    'georgia-spread': ['uga-ark'],
-    'clemson-spread': ['unc-clem'],
-    'lsu-om-under': ['lsu-om'],
-    'fla-aub-dog': ['fla-aub'],
-    'blowout-board': ['fsu-bama','nm-ou','msu-nd'],
-    'scoreboard-overs': ['uga-ark','ks-osu','msst-sc'],
-    'night-slate-mix': ['msu-nd','nm-ou','fla-aub'],
-    'notre-dame-spread': ['msu-nd'],
-    'oklahoma-spread': ['nm-ou'],
-    'msst-sc-over': ['msst-sc']
-  };
+  // Which slate games a card is about - derived from the board (a pick's
+  // matchup, a parlay's legs) since 2026-09-26. It was a hand-kept map of the
+  // September 19 ids, so every later week's cards matched no game at all.
 
   // ---------- capability state ----------
   var dbCap = null, sampleCap = null, commentsCap = null;
@@ -1225,20 +1261,15 @@
 
   var CHAT_INSTRUCTIONS = 'You are a sharp, honest college football betting analyst inside "College Football App," a page the viewer built to track their own DraftKings-market bets. Answer from the research notes below, which were compiled from public reporting as of the "last updated" time given — you have no live internet access in this chat, so if asked about anything that may have moved since then (a new injury, a line change, a lineup swap), say plainly you cannot check live and suggest confirming on DraftKings before betting. Be direct about risk and uncertainty, never promise an outcome, and keep answers conversational — a few sentences unless asked for more. Here is what we know about this game:\n\n';
 
-  // Used only when the live "All Games" board (the db capability) is unavailable in this view.
-  var GAMES_FALLBACK = [
-    {id:'uga-ark', label:'Georgia at Arkansas', home:'Arkansas', away:'Georgia', kickoff:'Sat 12:00p ET · ABC', tag:'top25', ranked:'#2 Georgia', market:'Georgia -24.5 (-115) · O/U 54.5', pick:'Georgia -24.5', pickConfidence:4, summary:'Georgia is unbeaten ATS as a 24.5+ favorite this year; Arkansas hasn’t covered a line yet.', why:'Georgia is 2-0 against the spread as a favorite of 24.5+ this season, while Arkansas is 0-for-the-year against the number. Georgia has also gone over its own total in every game so far.', lastChecked:'Sep 19, 2026'},
-    {id:'unc-clem', label:'North Carolina at Clemson', home:'Clemson', away:'North Carolina', kickoff:'Sat 12:00p ET · ESPN', tag:'interesting', ranked:'', market:'Clemson -3.5 (-110) · O/U 43.5', pick:'Clemson -3.5', pickConfidence:3, summary:'A modest home number for a blue blood — Clemson is still replacing Cade Klubnik at quarterback.', why:'North Carolina is 2-0 but hasn’t faced a real road test yet. Clemson (1-1) is favored but only by 3.5, reflecting the market’s uncertainty post-Klubnik.', lastChecked:'Sep 19, 2026'},
-    {id:'lsu-om', label:'LSU at Ole Miss', home:'Ole Miss', away:'LSU', kickoff:'Sat 7:30p ET', tag:'top25', ranked:'#7 LSU at #8 Ole Miss', market:'LSU -2.5 (-110) · O/U 58.5', pick:'Under 58.5', pickConfidence:3, summary:'LSU QB Sam Leavitt went doubtful-to-questionable on a sore throwing shoulder this week.', why:'Leavitt was limited in practice and the spread whipsawed on the news before settling back near -2.5. If he’s limited, backup Landen Clark takes over a run-heavier approach.', injuryNote:'Sam Leavitt (LSU QB) — questionable, throwing shoulder.', lastChecked:'Sep 19, 2026'},
-    {id:'fsu-bama', label:'Florida State at Alabama', home:'Alabama', away:'Florida State', kickoff:'Sat 3:30p ET · ABC', tag:'top25', ranked:'#10 Alabama', market:'Alabama -20 (-110) · O/U 48.5', pick:'Alabama -20', pickConfidence:4, summary:'Alabama is a -2000 moneyline favorite at home against a rebuilding FSU front.', why:'Alabama’s front seven profiles as one of the most talented in the country through three weeks — a big mismatch up front against Florida State.', lastChecked:'Sep 19, 2026'},
-    {id:'msu-nd', label:'Michigan State at Notre Dame', home:'Notre Dame', away:'Michigan State', kickoff:'Sat 7:30p ET', tag:'top25', ranked:'#3 Notre Dame', market:'Notre Dame -29.5 (-110) · O/U 52.5', pick:'Notre Dame -29.5', pickConfidence:4, summary:'The number hasn’t moved all week despite tickets running close to even.', why:'Notre Dame opened -29.5/-30 and it hasn’t budged, even with the public split roughly 50/50 — usually a sign the book likes where the line sits.', lastChecked:'Sep 19, 2026'},
-    {id:'nm-ou', label:'New Mexico at Oklahoma', home:'Oklahoma', away:'New Mexico', kickoff:'Sat 7:30p ET · ESPN2', tag:'top25', ranked:'#24 Oklahoma', market:'Oklahoma -22.5 (-110) · O/U 46.5', pick:'Oklahoma -22.5', pickConfidence:4, summary:'A get-right spot for QB John Mateer after a rough outing against Michigan.', why:'Mateer threw for 414 yards and 4 TDs in his first two games before managing just 189 yards with a pick against Michigan. New Mexico’s defense is a big step down in class.', lastChecked:'Sep 19, 2026'},
-    {id:'ks-osu', label:'Kent State at Ohio State', home:'Ohio State', away:'Kent State', kickoff:'Sat 12:00p ET', tag:'top25', ranked:'#6 Ohio State', market:'Ohio State -52.5 (-110) · O/U 59.5', pick:'Over 59.5', pickConfidence:3, summary:'WR Jeremiah Smith is now the No. 2 Heisman price (+700) off a huge two-game start.', why:'Smith has 16 catches, 315 yards and 3 TDs through two games. Kent State’s defense isn’t built to slow him or keep this under 60 combined.', lastChecked:'Sep 19, 2026'},
-    {id:'msst-sc', label:'Mississippi State at South Carolina', home:'South Carolina', away:'Mississippi State', kickoff:'Sat 7:00p ET · ESPN', tag:'interesting', ranked:'', market:'South Carolina -4 · O/U 58.5', pick:'Over 58.5', pickConfidence:3, summary:'The tightest number on the marquee slate, with a total that says both offenses will move the ball.', why:'A 4-point home number with a 58.5 total suggests the market expects a track meet more than a defensive struggle.', lastChecked:'Sep 19, 2026'}
-  ];
 
+  /** This week's games with their research notes (/api/games), or - until
+   *  that answers, or if it cannot - the board's own slate with no notes.
+   *  There used to be a hardcoded GAMES_FALLBACK of the September 19 games
+   *  here, which a slow network turned into last week's games on this
+   *  week's tab. */
   function gamesSource(){
-    return lastGamesDocs.length ? lastGamesDocs : GAMES_FALLBACK;
+    if (lastGamesDocs.length) return lastGamesDocs;
+    return GAMES.map(function(g){ return { id: g.id, label: g.label, kickoff: g.time, ranked: g.kicker, onBoard: true }; });
   }
 
   // Used only when the live db doc for "My Dawgs" is unavailable.
@@ -1435,26 +1466,65 @@
   }
 
   // ---------- storage ----------
-  // A college football week runs Tuesday->Monday (games Thu-Sat with a
-  // Sun/Mon tail), so Tuesday is the quiet point to roll the slip over.
-  // Anything stamped with an older week is last week's bets - drop it.
-  var WEEK_KEY_STORE = 'cfb-week-key-v1';
-  function currentWeekKey(){
-    var d = new Date();
-    d.setDate(d.getDate() - ((d.getDay() - 2 + 7) % 7));
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  // The week: the Tuesday that starts the week containing the next Saturday
+  // of games, in US Eastern, turning over at 6 AM Eastern on Sunday. The SAME
+  // week as the board (board.weekKeyAt on the server; test/render.js holds
+  // the two to agreement). Until 2026-09-26 the slip rolled on Tuesday in the
+  // phone's own time zone while the board rolled on Sunday, so a play placed
+  // on Sunday from the new board was wiped two days later. 6 AM, not
+  // midnight: a West Coast kickoff is still being played at 1 AM Eastern.
+  var WEEK_KEY_STORE = 'cfb-week-key-v2';
+  var WEEK_ROLL_HOURS = 6;
+  function weekKeyAt(ms){
+    var parts = {};
+    new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', weekday: 'short' })
+      .formatToParts(new Date(ms))
+      .forEach(function(p){ parts[p.type] = p.value; });
+    var t = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day)));
+    // Before 6 AM Sunday, Eastern wall clock, still counts as Saturday.
+    if (parts.weekday === 'Sun' && Number(parts.hour) % 24 < WEEK_ROLL_HOURS) t.setUTCDate(t.getUTCDate() - 1);
+    t.setUTCDate(t.getUTCDate() + ((6 - t.getUTCDay() + 7) % 7));   // forward to Saturday
+    t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() - 2 + 7) % 7));   // back to its Tuesday
+    return t.toISOString().slice(0, 10);
   }
+  function currentWeek(){ return weekKeyAt(Date.now()); }
+  function addDaysIso(iso, n){
+    var t = new Date(iso + 'T00:00:00Z');
+    if (isNaN(t)) return '';
+    t.setUTCDate(t.getUTCDate() + n);
+    return t.toISOString().slice(0, 10);
+  }
+  /** Drops last week's slip, custom picks, bankroll AND board arrangement
+   *  (hides and pins name card ids, which mean different games next week).
+   *  Returns true when it dropped anything. Run at load and whenever the page
+   *  comes back to the foreground: an iPhone resumes a home-screen app from
+   *  memory for days. */
   function expireStaleWeek(){
     try{
+      var now = currentWeek();
       var stored = localStorage.getItem(WEEK_KEY_STORE);
-      var now = currentWeekKey();
-      if (stored !== now){
-        localStorage.removeItem('cover-sheet-slip-v1');
-        localStorage.removeItem('cover-sheet-custom-picks-v1');
-        localStorage.removeItem('cover-sheet-bankroll-v1');
-        localStorage.setItem(WEEK_KEY_STORE, now);
+      if (stored === null){
+        // First run under this scheme. The old key named the Tuesday of the
+        // week (Tuesday to Monday) when the slip was last touched; under the
+        // new scheme that slip belongs to that week or, if it was touched on
+        // a Sunday or Monday, the next. Keep it if either is this week -
+        // one transition week of benefit of the doubt, not a wiped slip.
+        var old = localStorage.getItem('cfb-week-key-v1');
+        localStorage.removeItem('cfb-week-key-v1');
+        if (!old || old === now || addDaysIso(old, 7) === now){
+          localStorage.setItem(WEEK_KEY_STORE, now);
+          return false;
+        }
+      } else if (stored === now) {
+        return false;
       }
-    }catch(e){}
+      localStorage.removeItem('cover-sheet-slip-v1');
+      localStorage.removeItem('cover-sheet-custom-picks-v1');
+      localStorage.removeItem('cover-sheet-bankroll-v1');
+      localStorage.removeItem('cover-sheet-board-v1');
+      localStorage.setItem(WEEK_KEY_STORE, now);
+      return true;
+    }catch(e){ return false; }
   }
   expireStaleWeek();
 
@@ -1694,9 +1764,32 @@
     var supported = passkeySupported();
     signIn.hidden = !(supported && state.passkeyRegistered && !state.signedIn);
     setup.hidden = !(supported && !state.signedIn);
-    pwd.hidden = state.signedIn;
+    // The owner's password door. Everyone else has no password to type, and
+    // the button used to raise the browser's native password box at them.
+    pwd.hidden = !!(state.signedIn || state.signedInAnywhere) || !state.canResearch;
     out.hidden = !state.signedIn;
+    paintOwnerControls(state);
   }
+
+  /** Owner-only controls - "Refresh research" and custom research - shown
+   *  only when /api/auth/status says this reader may use them. The server
+   *  refuses everyone else regardless; this just stops offering a button
+   *  whose only answer is "no". */
+  var canResearch = false;
+  function paintOwnerControls(state){
+    canResearch = !!(state && state.canResearch);
+    var refresh = document.getElementById('refresh-research-btn');
+    if (refresh) refresh.hidden = !canResearch;
+    var custom = document.getElementById('custom-research');
+    if (custom) custom.hidden = !canResearch;
+    var where = document.getElementById('slip-where');
+    if (where) where.textContent = (state && (state.signedIn || state.signedInAnywhere))
+      ? 'Signed in, so your slip follows you to your other devices.'
+      : 'Your slip stays in this browser unless you sign in.';
+    // Their own questions are the owner's; nobody else asks for them.
+    if (canResearch && dbCap && !asksSubscribed){ asksSubscribed = true; subscribeAsks(); }
+  }
+  var asksSubscribed = false;
   function refreshAuthStatus(){
     return fetch('/api/auth/status').then(function(r){ return r.json(); }).then(function(state){
       syncEnabled = !!state.signedIn || syncEnabled;
@@ -2026,7 +2119,7 @@
     var el = document.getElementById('slip-sync-status');
     if (el){ el.textContent = msg; el.className = 'copy-status' + (cls ? ' ' + cls : ''); }
     var btn = document.getElementById('slip-sync-btn');
-    if (btn) btn.hidden = syncEnabled;
+    if (btn) btn.hidden = syncEnabled || !lastAuthState.canResearch;
   }
   function pushSlipState(){
     if (!syncEnabled) return;
@@ -2086,13 +2179,15 @@
   function signInForSync(){
     // Hitting the prompting route is what makes the browser ask for
     // credentials; after that the silent slip routes start returning 200.
+    // No browser password box any more (it answers JSON 401): this works
+    // when the browser already holds the owner's credentials.
     fetch('/api/login').then(function(r){
       if (!r.ok) throw new Error('declined');
       setSyncStatus('Signed in — syncing…');
       initSlipSync();
       pushSlipState();
     }).catch(function(){
-      setSyncStatus('Sign-in cancelled — saving on this device only', 'error');
+      setSyncStatus('Not signed in — use Face ID or your account from the account button. Saving on this device only.', 'error');
     });
   }
 
@@ -2175,10 +2270,25 @@
     redrawTeam();
   }
 
+  /** The slate games a card is about, by id: a pick's matchup, a parlay's
+   *  legs, a card added from All Games, or the game a hand-written card
+   *  named. Matched on the label, which is how the board writes both. */
+  function gameIdByLabel(label){
+    var want = String(label || '').trim().toLowerCase();
+    if (!want) return null;
+    for (var i = 0; i < GAMES.length; i++) if (String(GAMES[i].label).trim().toLowerCase() === want) return GAMES[i].id;
+    return null;
+  }
   function pickGameIds(id){
-    if (PICK_GAMES[id]) return PICK_GAMES[id];
-    if (id.indexOf('game-') === 0) return [id.slice(5)];
-    return [];
+    if (String(id).indexOf('game-') === 0) return [String(id).slice(5)];
+    var i, out = [];
+    for (i = 0; i < PICKS.length; i++) if (PICKS[i].id === id){ var g = gameIdByLabel(PICKS[i].matchup); return g ? [g] : []; }
+    for (i = 0; i < PARLAYS.length; i++) if (PARLAYS[i].id === id){
+      (PARLAYS[i].legs || []).forEach(function(l){ var lg = gameIdByLabel(l.game); if (lg && out.indexOf(lg) === -1) out.push(lg); });
+      return out;
+    }
+    var own = (arrangement.own || []).filter(function(c){ return c.id === id; })[0];
+    return own && own.gameId ? [own.gameId] : [];
   }
 
   var BANKROLL_KEY = 'cover-sheet-bankroll-v1';
@@ -2211,7 +2321,7 @@
   function renderSlate(){
     var el = document.getElementById('slate-strip');
     el.innerHTML = GAMES.map(function(g){
-      return '<div class="slate-chip"><b>' + g.time.split(' · ')[0] + '</b> · ' + g.label + '</div>';
+      return '<div class="slate-chip"><b>' + esc(String(g.time || '').split(' · ')[0]) + '</b> · ' + esc(g.label) + '</div>';
     }).join('');
   }
 
@@ -2224,12 +2334,12 @@
 
   function stakeInputHtml(id){
     var saved = slipState[id] && slipState[id].stake != null ? slipState[id].stake : 25;
-    return '<div class="stake-field"><span>Stake</span><input type="number" min="0" step="5" inputmode="decimal" enterkeyhint="done" autocomplete="off" aria-label="Stake in dollars" value="' + saved + '" data-stake-for="' + id + '" id="stake-' + id + '"></div>';
+    return '<div class="stake-field"><span>Stake</span><input type="number" min="0" step="5" inputmode="decimal" enterkeyhint="done" autocomplete="off" aria-label="Stake in dollars" value="' + esc(Number(saved) || 0) + '" data-stake-for="' + esc(id) + '" id="stake-' + esc(id) + '"></div>';
   }
 
   function switchRowHtml(id){
     return '<label class="switch-row"><span class="switch-label">On my slip</span>' +
-      '<span class="switch"><input type="checkbox" data-placed-for="' + id + '" ' + checkedFor(id) + '><span class="track" aria-hidden="true"></span></span></label>';
+      '<span class="switch"><input type="checkbox" data-placed-for="' + esc(id) + '" ' + checkedFor(id) + '><span class="track" aria-hidden="true"></span></span></label>';
   }
 
   function checkedFor(id){
@@ -2347,9 +2457,11 @@
         '<div class="pick-title">' + escapeHtml(c.title) + '</div>' +
         (c.matchup ? '<div class="pick-sub">' + escapeHtml(c.matchup) + '</div>' : '') +
         '<div class="pick-time">' + (meta ? escapeHtml(meta) + ' \u00b7 ' : '') +
-          fmtAmerican(c.odds) + '</div>' +
+          esc(fmtAmerican(c.odds)) + '</div>' +
       '</div></div>' +
+      cardLiveHtml(c.id) +
       (c.thesis ? '<div class="pick-thesis">' + escapeHtml(c.thesis) + '</div>' : '') +
+      dkLinkHtml({ label: c.matchup, line: c.title }) +
       '<div class="slip-row">' +
         switchRowHtml(c.id) +
         '<div class="stake-row">' + stakeInputHtml(c.id) +
@@ -2437,6 +2549,71 @@
     saveArrangement();
   }
 
+  /** One researched card - a board pick, or a game added from All Games.
+   *  Every field is model text and goes through esc(), attributes included:
+   *  board.clean() strips angle brackets, but an escape here is what makes
+   *  the page safe whatever the server let through. */
+  function straightCardHtml(p, opts){
+    opts = opts || {};
+    var id = esc(p.id);
+    return '' +
+      '<article class="pick" data-pick="' + id + '">' +
+        '<div class="pick-head">' +
+          '<div>' +
+            '<span class="pick-kind straight">' + (opts.added ? 'Straight bet · added by you' : 'Straight bet') + '</span>' +
+            '<div class="pick-title">' + esc(p.title) + '</div>' +
+            '<div class="pick-sub">' + esc(p.matchup) + '</div>' +
+            '<div class="pick-time">' + esc(p.time) + ' &middot; ' + esc(p.market) + ' (' + esc(fmtAmerican(p.odds)) + ')</div>' +
+          '</div>' +
+          '<div class="confidence"><span class="lbl">Conviction</span><span class="dots">' + dotsHtml(p.confidence) + '</span></div>' +
+        '</div>' +
+        cardLiveHtml(p.id) +
+        '<div class="pick-thesis">' + esc(p.thesis) + '</div>' +
+        dkLinkHtml({ label: p.matchup, line: p.title }) +
+        '<button class="why-toggle" aria-expanded="false" data-why="' + id + '">Why this number <span class="arrow">&#9662;</span></button>' +
+        '<div class="why-body" id="why-' + id + '" hidden><p>' + esc(p.why) + '</p><div class="risk-line">Risk: ' + esc(p.risk) + '</div>' + chatBlockHtml(p.id) + '</div>' +
+        '<div class="slip-row">' +
+          switchRowHtml(p.id) +
+          '<div class="stake-row">' + stakeInputHtml(p.id) + '<span class="payout" data-payout-for="' + id + '"></span>' +
+            (opts.added ? '<button class="remove-card-btn" data-remove-card="' + esc(String(p.id).slice(5)) + '" type="button">Remove card</button>' : '') +
+          '</div>' +
+        '</div>' +
+        (opts.tools ? cardToolsHtml(p.id, false) : '') +
+      '</article>';
+  }
+
+  function parlayCardHtml(p){
+    var id = esc(p.id);
+    var legs = p.legs || [];
+    var legsHtml = legs.map(function(l){
+      return '<div class="leg"><span class="g">' + esc(l.game) + '</span><span class="m">' + esc(l.market) + ' (' + esc(fmtAmerican(l.odds)) + ')</span></div>';
+    }).join('');
+    var dec = parlayDecimal(legs);
+    return '' +
+      '<article class="pick" data-pick="' + id + '">' +
+        '<div class="pick-head">' +
+          '<div>' +
+            '<span class="pick-kind parlay">' + legs.length + '-leg parlay</span>' +
+            '<div class="pick-title">' + esc(p.title) + '</div>' +
+            '<div class="pick-sub">' + legs.length + ' selections &middot; combined ' + esc(fmtAmerican(Number(decimalToAmerican(dec)))) + '</div>' +
+          '</div>' +
+          '<div class="confidence"><span class="lbl">Conviction</span><span class="dots">' + dotsHtml(p.confidence) + '</span></div>' +
+        '</div>' +
+        '<div class="pick-legs">' + legsHtml + '</div>' +
+        cardLiveHtml(p.id) +
+        '<div class="pick-thesis">' + esc(p.thesis) + '</div>' +
+        // A parlay is placed as one ticket, so one link: the college football
+        // page, where every leg can be found.
+        dkLinkHtml({ parlay: true }) +
+        '<button class="why-toggle" aria-expanded="false" data-why="' + id + '">Why this parlay <span class="arrow">&#9662;</span></button>' +
+        '<div class="why-body" id="why-' + id + '" hidden><p>' + esc(p.why) + '</p><div class="risk-line">Risk: ' + esc(p.risk) + '</div>' + chatBlockHtml(p.id) + '</div>' +
+        '<div class="slip-row">' +
+          switchRowHtml(p.id) +
+          '<div class="stake-row">' + stakeInputHtml(p.id) + '<span class="payout" data-payout-for="' + id + '"></span></div>' +
+        '</div>' +
+      '</article>';
+  }
+
   function renderCards(){
     var list = document.getElementById('card-list');
     var html = hiddenNoticeHtml();
@@ -2444,77 +2621,10 @@
 
     shown.forEach(function(p){
       if (p.type === 'own'){ html += ownCardHtml(p); return; }
-      var dec = americanToDecimal(p.odds);
-      html += '' +
-      '<article class="pick" data-pick="' + p.id + '">' +
-        '<div class="pick-head">' +
-          '<div>' +
-            '<span class="pick-kind straight">Straight bet</span>' +
-            '<div class="pick-title">' + p.title + '</div>' +
-            '<div class="pick-sub">' + p.matchup + '</div>' +
-            '<div class="pick-time">' + p.time + ' &middot; ' + p.market + ' (' + fmtAmerican(p.odds) + ')</div>' +
-          '</div>' +
-          '<div class="confidence"><span class="lbl">Conviction</span><span class="dots">' + dotsHtml(p.confidence) + '</span></div>' +
-        '</div>' +
-        '<div class="pick-thesis">' + p.thesis + '</div>' +
-        '<button class="why-toggle" aria-expanded="false" data-why="' + p.id + '">Why this number <span class="arrow">&#9662;</span></button>' +
-        '<div class="why-body" id="why-' + p.id + '" hidden><p>' + p.why + '</p><div class="risk-line">Risk: ' + p.risk + '</div>' + chatBlockHtml(p.id) + '</div>' +
-        '<div class="slip-row">' +
-          switchRowHtml(p.id) +
-          '<div class="stake-row">' + stakeInputHtml(p.id) + '<span class="payout" data-payout-for="' + p.id + '"></span></div>' +
-        '</div>' +
-        cardToolsHtml(p.id, false) +
-      '</article>';
+      html += straightCardHtml(p, { tools: true });
     });
-
-    PARLAYS.forEach(function(p){
-      var legsHtml = p.legs.map(function(l){
-        return '<div class="leg"><span class="g">' + l.game + '</span><span class="m">' + l.market + ' (' + fmtAmerican(l.odds) + ')</span></div>';
-      }).join('');
-      var dec = parlayDecimal(p.legs);
-      html += '' +
-      '<article class="pick" data-pick="' + p.id + '">' +
-        '<div class="pick-head">' +
-          '<div>' +
-            '<span class="pick-kind parlay">3-leg parlay</span>' +
-            '<div class="pick-title">' + p.title + '</div>' +
-            '<div class="pick-sub">3 selections &middot; combined ' + fmtAmerican(decimalToAmerican(dec)) + '</div>' +
-          '</div>' +
-          '<div class="confidence"><span class="lbl">Conviction</span><span class="dots">' + dotsHtml(p.confidence) + '</span></div>' +
-        '</div>' +
-        '<div class="pick-legs">' + legsHtml + '</div>' +
-        '<div class="pick-thesis">' + p.thesis + '</div>' +
-        '<button class="why-toggle" aria-expanded="false" data-why="' + p.id + '">Why this parlay <span class="arrow">&#9662;</span></button>' +
-        '<div class="why-body" id="why-' + p.id + '" hidden><p>' + p.why + '</p><div class="risk-line">Risk: ' + p.risk + '</div>' + chatBlockHtml(p.id) + '</div>' +
-        '<div class="slip-row">' +
-          switchRowHtml(p.id) +
-          '<div class="stake-row">' + stakeInputHtml(p.id) + '<span class="payout" data-payout-for="' + p.id + '"></span></div>' +
-        '</div>' +
-      '</article>';
-    });
-
-    customPicksList().forEach(function(p){
-      html += '' +
-      '<article class="pick" data-pick="' + p.id + '">' +
-        '<div class="pick-head">' +
-          '<div>' +
-            '<span class="pick-kind straight">Straight bet · added by you</span>' +
-            '<div class="pick-title">' + p.title + '</div>' +
-            '<div class="pick-sub">' + p.matchup + '</div>' +
-            '<div class="pick-time">' + p.time + ' &middot; ' + p.market + ' (' + fmtAmerican(p.odds) + ')</div>' +
-          '</div>' +
-          '<div class="confidence"><span class="lbl">Conviction</span><span class="dots">' + dotsHtml(p.confidence) + '</span></div>' +
-        '</div>' +
-        '<div class="pick-thesis">' + p.thesis + '</div>' +
-        '<button class="why-toggle" aria-expanded="false" data-why="' + p.id + '">Why this number <span class="arrow">&#9662;</span></button>' +
-        '<div class="why-body" id="why-' + p.id + '" hidden><p>' + p.why + '</p><div class="risk-line">Risk: ' + p.risk + '</div>' + chatBlockHtml(p.id) + '</div>' +
-        '<div class="slip-row">' +
-          switchRowHtml(p.id) +
-          '<div class="stake-row">' + stakeInputHtml(p.id) + '<span class="payout" data-payout-for="' + p.id + '"></span>' +
-            '<button class="remove-card-btn" data-remove-card="' + p.id.slice(5) + '" type="button">Remove card</button></div>' +
-        '</div>' +
-      '</article>';
-    });
+    PARLAYS.forEach(function(p){ html += parlayCardHtml(p); });
+    customPicksList().forEach(function(p){ html += straightCardHtml(p, { added: true }); });
 
     var cardDrafts = captureChatDrafts();
     list.innerHTML = html;
@@ -2580,22 +2690,33 @@
   }
 
   // ---------- render: research ----------
+  /** Where a game stands, for a card: Final, Live or its kickoff. */
+  function gameStateHtml(g){
+    if (g.final) return '<span class="game-state final">Final</span>';
+    if (g.state === 'in' || g.state === 'half') return '<span class="game-state live">Live</span>';
+    if (g.started) return '<span class="game-state">Kicked off</span>';
+    return '';
+  }
+
   function researchGameCardHtml(g){
     var recent = recentChangeMap[g.id];
     var flag = g.injuryNote ? '<span class="flag injury">Injury watch</span>' : '';
+    var hasNotes = g.summary || g.why || g.pick || g.pass;
     return '<div class="research-game' + (recent ? ' has-update' : '') + '">' +
-      (recent ? '<span class="updated-badge">Updated</span>' : '') + flag +
-      '<h3>' + g.label + '</h3>' +
-      '<div class="research-meta">' + (g.ranked ? g.ranked + ' · ' : '') + (g.kickoff || '') + (g.market ? ' · ' + g.market : '') + '</div>' +
-      (g.summary ? '<p>' + g.summary + '</p>' : '') +
-      (g.why ? '<p>' + g.why + '</p>' : '') +
-      (g.injuryNote ? '<div class="risk-line">' + g.injuryNote + '</div>' : '') +
+      (recent ? '<span class="updated-badge">Updated</span>' : '') + flag + gameStateHtml(g) +
+      '<h3>' + esc(g.label) + '</h3>' +
+      '<div class="research-meta">' + esc([g.ranked, g.kickoff, g.market].filter(Boolean).join(' · ')) + '</div>' +
+      (g.summary ? '<p>' + esc(g.summary) + '</p>' : '') +
+      (g.why ? '<p>' + esc(g.why) + '</p>' : '') +
+      (g.injuryNote ? '<div class="risk-line">' + esc(g.injuryNote) + '</div>' : '') +
       (g.pick ?
-        '<div class="game-lean"><span class="lean-label">Best bet</span><span class="lean-pick">' + g.pick + '</span><span class="dots">' + dotsHtml(g.pickConfidence || 3) + '</span></div>' +
-        '<div class="add-slip-row"><button class="add-slip-btn' + (isGameOnSlip(g.id) ? ' on-slip' : '') + '" data-add-slip="' + g.id + '" type="button">' + (isGameOnSlip(g.id) ? '✓ On my slip — remove' : '+ Add to my slip') + '</button></div>' :
-        g.pass ? '<div class="game-pass">No lean — ' + (g.passReason || 'no real edge either side.') + '</div>' : ''
+        '<div class="game-lean"><span class="lean-label">Best bet</span><span class="lean-pick">' + esc(g.pick) + '</span><span class="dots">' + dotsHtml(g.pickConfidence || 3) + '</span></div>' +
+        '<div class="add-slip-row"><button class="add-slip-btn' + (isGameOnSlip(g.id) ? ' on-slip' : '') + '" data-add-slip="' + esc(g.id) + '" type="button">' + (isGameOnSlip(g.id) ? '✓ On my slip — remove' : '+ Add to my slip') + '</button></div>' :
+        g.pass ? '<div class="game-pass">No lean — ' + esc(g.passReason || 'no real edge either side.') + '</div>' : ''
       ) +
-      '<div class="games-status" style="margin-top:8px;">Updated ' + relativeTime(g.lastChecked) + '</div>' +
+      (hasNotes ? '' : '<p class="muted">No research notes for this game yet.</p>') +
+      dkLinkHtml({ id: g.id, dkUrl: g.dkUrl, line: g.pick || '' }) +
+      (g.lastChecked ? '<div class="games-status" style="margin-top:8px;">Updated ' + esc(relativeTime(g.lastChecked)) + '</div>' : '') +
     '</div>';
   }
 
@@ -2609,7 +2730,7 @@
   // ---------- render: futures ----------
   function futuresRows(rows){
     return rows.map(function(r){
-      return '<tr class="' + (r.value?'value':'') + '"><td>' + r.team + (r.value?'<span class="value-tag">Value</span>':'') + '</td><td class="odds">' + r.odds + '</td></tr>';
+      return '<tr class="' + (r.value?'value':'') + '"><td>' + esc(r.team) + (r.value?'<span class="value-tag">Value</span>':'') + '</td><td class="odds">' + esc(r.odds) + '</td></tr>';
     }).join('');
   }
   function renderFutures(){
@@ -2617,13 +2738,15 @@
     el.innerHTML = '' +
       '<div class="futures-block">' +
         '<h2>National Championship</h2>' +
-        '<div class="futures-note">DraftKings, tracked as of Sep 10, 2026</div>' +
+        // No free source for futures prices, so these are a dated snapshot and
+        // say so, rather than passing for current odds.
+        '<div class="futures-note">Snapshot from Sep 10, 2026 · DraftKings · not live odds</div>' +
         '<table class="futures-table"><thead><tr><th>Team</th><th style="text-align:right">Odds</th></tr></thead><tbody>' + futuresRows(FUTURES_NC) + '</tbody></table>' +
         '<div class="futures-why">Georgia at +720 looks like the sharpest number relative to the top three. Through three weeks the Bulldogs have been the most complete team on either side of the ball — unbeaten against the spread as a heavy favorite, and yet to let a game stay under its total — while still pricing behind three teams Georgia would be favored against on a neutral field.</div>' +
       '</div>' +
       '<div class="futures-block">' +
         '<h2>Heisman Trophy</h2>' +
-        '<div class="futures-note">DraftKings, tracked mid-September 2026 — moves weekly</div>' +
+        '<div class="futures-note">Snapshot from mid-September 2026 · DraftKings · moves weekly, not live odds</div>' +
         '<table class="futures-table"><thead><tr><th>Player</th><th style="text-align:right">Odds</th></tr></thead><tbody>' + futuresRows(FUTURES_HEISMAN) + '</tbody></table>' +
         '<div class="futures-why">Jeremiah Smith moved from +1000 to +700 in a single week off a 16-catch, 315-yard, 3-touchdown start. A dominant receiver still has more garbage-time upside than a starting quarterback who gets pulled once a game is decided — worth watching if Ohio State stays unbeaten.</div>' +
       '</div>';
@@ -2695,9 +2818,16 @@
     renderReview(placedOnes);
   }
 
+  /** Every string that reaches innerHTML - text or attribute - goes through
+   *  this. It escapes quotes as well since 2026-09-26: it used to stop at
+   *  &, < and >, which is safe in a text node and not in an attribute, and
+   *  model and feed text reach both. */
   function escapeHtml(s){
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return String(s === undefined || s === null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
+  function esc(v){ return escapeHtml(v); }
 
   // Model answers come back as markdown, and some of that text is summarized
   // from web pages - so this escapes the input FIRST and only then emits the
@@ -2768,7 +2898,7 @@
   function slipLiveHtml(pickId){
     var gameIds = pickGameIds(pickId);
     var liveGames = gameIds.map(function(gid){
-      return gamesSource().filter(function(g){ return g.id === gid; })[0];
+      return gamesSource().filter(function(g){ return g.id === gid && g.summary; })[0];
     }).filter(Boolean);
     if (!liveGames.length) return '';
     return '<div class="slip-live">' +
@@ -2776,7 +2906,7 @@
       // now, and two blocks both called Live would contradict each other.
       '<div class="slip-live-label">Latest research</div>' +
       liveGames.map(function(g){
-        return '<div class="slip-live-row"><b>' + g.label + ':</b> ' + (g.summary || 'No live update yet') + ' <span class="slip-live-time">(' + relativeTime(g.lastChecked) + ')</span></div>';
+        return '<div class="slip-live-row"><b>' + esc(g.label) + ':</b> ' + esc(g.summary) + ' <span class="slip-live-time">(' + esc(relativeTime(g.lastChecked)) + ')</span></div>';
       }).join('') +
     '</div>';
   }
@@ -2872,7 +3002,7 @@
 
   function buildSummary(placedOnes){
     var totalRisk = 0, totalToWin = 0;
-    var textLines = ['COVER SHEET — WEEKLY SUMMARY', 'Generated ' + new Date().toLocaleString(), ''];
+    var textLines = ['COLLEGE FOOTBALL APP — MY SLIP', 'Generated ' + new Date().toLocaleString(), ''];
     var itemsHtml = '';
 
     placedOnes.forEach(function(x){
@@ -2887,21 +3017,22 @@
       var kindLabel = x.kind === 'parlay' ? 'Parlay' : 'Straight';
       var metaHtml, metaText;
       if (x.kind === 'straight'){
-        metaHtml = x.data.matchup + ' &middot; ' + x.data.time + ' &middot; ' + x.data.market + ' (' + fmtAmerican(x.data.odds) + ')';
+        metaHtml = esc(x.data.matchup) + ' &middot; ' + esc(x.data.time) + ' &middot; ' + esc(x.data.market) + ' (' + esc(fmtAmerican(x.data.odds)) + ')';
         metaText = x.data.matchup + ' — ' + x.data.market + ' (' + fmtAmerican(x.data.odds) + ')';
       } else {
-        metaHtml = x.data.legs.map(function(l){ return l.game + ': ' + l.market + ' (' + fmtAmerican(l.odds) + ')'; }).join(' &middot; ');
+        metaHtml = x.data.legs.map(function(l){ return esc(l.game) + ': ' + esc(l.market) + ' (' + esc(fmtAmerican(l.odds)) + ')'; }).join(' &middot; ');
         metaText = x.data.legs.map(function(l){ return '  leg — ' + l.game + ': ' + l.market + ' (' + fmtAmerican(l.odds) + ')'; }).join('\n');
       }
 
       itemsHtml += '<div class="research-game">' +
-        '<h3>' + x.data.title + ' <span class="pick-kind ' + (x.kind === 'parlay' ? 'parlay' : 'straight') + '" style="margin-left:8px; vertical-align:middle;">' + kindLabel + '</span></h3>' +
+        '<h3>' + esc(x.data.title) + ' <span class="pick-kind ' + (x.kind === 'parlay' ? 'parlay' : 'straight') + '" style="margin-left:8px; vertical-align:middle;">' + kindLabel + '</span></h3>' +
         '<div class="research-meta">' + metaHtml + '</div>' +
-        '<p>' + x.data.why + '</p>' +
-        '<div class="risk-line">Stake ' + fmtMoney(s.stake) + ' &rarr; to win ' + fmtMoney(toWin) + ' (returns ' + fmtMoney(s.stake + toWin) + '). Risk: ' + x.data.risk + '</div>' +
-        '<div class="live-status" data-live-for="' + liveEsc(id) + '">' + liveStatusInner(id) + '</div>' +
+        (x.data.why ? '<p>' + esc(x.data.why) + '</p>' : '') +
+        '<div class="risk-line">Stake ' + fmtMoney(s.stake) + ' &rarr; to win ' + fmtMoney(toWin) + ' (returns ' + fmtMoney(s.stake + toWin) + ').' + (x.data.risk ? ' Risk: ' + esc(x.data.risk) : '') + '</div>' +
+        '<div class="live-status" data-live-for="' + esc(id) + '">' + liveStatusInner(id) + '</div>' +
         slipLiveHtml(id) +
-        (id.indexOf('game-') === 0 ? '<button class="text-toggle-btn" data-remove-slip="' + id.slice(5) + '" type="button">Remove from slip</button>' : '') +
+        (x.kind === 'parlay' ? dkLinkHtml({ parlay: true }) : dkLinkHtml({ label: x.data.matchup, line: x.data.title })) +
+        (id.indexOf('game-') === 0 ? '<button class="text-toggle-btn" data-remove-slip="' + esc(id.slice(5)) + '" type="button">Remove from slip</button>' : '') +
       '</div>';
 
       textLines.push(x.data.title + ' (' + kindLabel + ')');
@@ -2938,14 +3069,14 @@
     placedOnes.forEach(function(x){
       pickGameIds(x.data.id).forEach(function(gid){
         gameMap[gid] = gameMap[gid] || [];
-        gameMap[gid].push(x.data.title);
+        gameMap[gid].push(esc(x.data.title));
       });
     });
     var overlaps = Object.keys(gameMap).filter(function(gid){ return gameMap[gid].length > 1; });
     if (overlaps.length){
       overlaps.forEach(function(gid){
         var g = GAMES.filter(function(x){ return x.id === gid; })[0] || gamesSource().filter(function(x){ return x.id === gid; })[0];
-        bad.push('<strong>' + (g ? g.label : gid) + '</strong> shows up in ' + gameMap[gid].length + ' of your plays (' + gameMap[gid].join(' + ') + '). Those aren’t independent bets — they live or die on the same game script.');
+        bad.push('<strong>' + esc(g ? g.label : gid) + '</strong> shows up in ' + gameMap[gid].length + ' of your plays (' + gameMap[gid].join(' + ') + '). Those aren’t independent bets — they live or die on the same game script.');
       });
     } else if (placedOnes.length > 1){
       good.push('No two plays lean on the same game — one bad bounce can’t take out more than one bet at a time.');
@@ -2966,7 +3097,7 @@
       }
     }
     if (inversion){
-      bad.push('You’re staking more on <strong>' + inversion.lo.data.title + '</strong> (' + inversion.lo.data.confidence + '-dot conviction) than on <strong>' + inversion.hi.data.title + '</strong> (' + inversion.hi.data.confidence + '-dot). Worth checking that’s on purpose and not just a leftover number.');
+      bad.push('You’re staking more on <strong>' + esc(inversion.lo.data.title) + '</strong> (' + esc(inversion.lo.data.confidence) + '-dot conviction) than on <strong>' + esc(inversion.hi.data.title) + '</strong> (' + esc(inversion.hi.data.confidence) + '-dot). Worth checking that’s on purpose and not just a leftover number.');
     } else if (placedOnes.length > 1){
       good.push('Your stakes roughly track conviction — more dollars on the plays you’re more sure about, not a flat amount across the board.');
     }
@@ -3030,14 +3161,15 @@
 
   // ---------- chat (sample capability) ----------
   function chatBlockHtml(gameId){
-    return '<div class="chat-block" data-chat-for="' + gameId + '">' +
+    var id = esc(gameId);
+    return '<div class="chat-block" data-chat-for="' + id + '">' +
       '<div class="chat-label">Ask about this game</div>' +
-      '<div class="chat-log" id="chat-log-' + gameId + '"></div>' +
+      '<div class="chat-log" id="chat-log-' + id + '"></div>' +
       '<div class="chat-composer">' +
-        '<textarea class="chat-input" id="chat-input-' + gameId + '" rows="1" enterkeyhint="send" autocomplete="off" autocapitalize="sentences" placeholder="e.g. how worried should I be about the QB?" aria-label="Ask about this game"></textarea>' +
-        '<button class="chat-send" type="button" data-chat-send="' + gameId + '" aria-label="Ask" disabled>' + SEND_GLYPH + '</button>' +
+        '<textarea class="chat-input" id="chat-input-' + id + '" rows="1" enterkeyhint="send" autocomplete="off" autocapitalize="sentences" placeholder="e.g. how worried should I be about the QB?" aria-label="Ask about this game"></textarea>' +
+        '<button class="chat-send" type="button" data-chat-send="' + id + '" aria-label="Ask" disabled>' + SEND_GLYPH + '</button>' +
       '</div>' +
-      '<div class="chat-hint" id="chat-hint-' + gameId + '"></div>' +
+      '<div class="chat-hint" id="chat-hint-' + id + '"></div>' +
     '</div>';
   }
 
@@ -3160,38 +3292,55 @@
   function gameCardHtml(g){
     var open = !!openGameIds[g.id];
     var recent = recentChangeMap[g.id];
-    return '<div class="game-card' + (recent ? ' has-update' : '') + '" data-game-card="' + g.id + '">' +
+    var id = esc(g.id);
+    return '<div class="game-card' + (recent ? ' has-update' : '') + '" data-game-card="' + id + '">' +
       '<div class="game-card-head">' +
         '<div>' +
-          '<span class="game-tag ' + (g.tag === 'top25' ? 'top25' : 'interesting') + '">' + (g.tag === 'top25' ? 'Top 25' : 'Interesting') + '</span>' +
-          (recent ? '<span class="updated-badge">Updated</span>' : '') +
-          '<div class="game-title">' + g.label + '</div>' +
-          '<div class="game-meta">' + (g.ranked ? g.ranked + ' · ' : '') + (g.kickoff || '') + '</div>' +
-          '<div class="game-market">' + (g.market || 'Line not posted yet') + '</div>' +
+          '<span class="game-tag ' + (g.tag === 'top25' ? 'top25' : 'interesting') + '">' + (g.tag === 'top25' ? 'Top 25' : g.onBoard ? 'On the board' : 'Interesting') + '</span>' +
+          (recent ? '<span class="updated-badge">Updated</span>' : '') + gameStateHtml(g) +
+          '<div class="game-title">' + esc(g.label) + '</div>' +
+          '<div class="game-meta">' + esc([g.ranked, g.kickoff].filter(Boolean).join(' · ')) + '</div>' +
+          '<div class="game-market">' + esc(g.market || (g.line ? g.line + (g.lineSource ? ' (' + g.lineSource + ' via ESPN)' : '') : 'Line not posted yet')) + '</div>' +
         '</div>' +
-        '<div class="game-updated">' + relativeTime(g.lastChecked) + '</div>' +
+        '<div class="game-updated">' + esc(relativeTime(g.lastChecked)) + '</div>' +
       '</div>' +
       (g.pick ?
-        '<div class="game-lean"><span class="lean-label">Best bet</span><span class="lean-pick">' + g.pick + '</span><span class="dots">' + dotsHtml(g.pickConfidence || 3) + '</span></div>' +
-        '<div class="add-slip-row"><button class="add-slip-btn' + (isGameOnSlip(g.id) ? ' on-slip' : '') + '" data-add-slip="' + g.id + '" type="button">' + (isGameOnSlip(g.id) ? '✓ On my slip — remove' : '+ Add to my slip') + '</button></div>' :
+        '<div class="game-lean"><span class="lean-label">Best bet</span><span class="lean-pick">' + esc(g.pick) + '</span><span class="dots">' + dotsHtml(g.pickConfidence || 3) + '</span></div>' +
+        '<div class="add-slip-row"><button class="add-slip-btn' + (isGameOnSlip(g.id) ? ' on-slip' : '') + '" data-add-slip="' + id + '" type="button">' + (isGameOnSlip(g.id) ? '✓ On my slip — remove' : '+ Add to my slip') + '</button></div>' :
         g.pass ?
-        '<div class="game-pass">No lean — ' + (g.passReason || 'no real edge either side.') + '</div>' : ''
+        '<div class="game-pass">No lean — ' + esc(g.passReason || 'no real edge either side.') + '</div>' : ''
       ) +
-      '<button class="why-toggle" aria-expanded="' + open + '" data-game-toggle="' + g.id + '">Details &amp; chat <span class="arrow">&#9662;</span></button>' +
-      '<div class="game-detail" id="game-detail-' + g.id + '" ' + (open ? '' : 'hidden') + '>' +
-        (g.summary ? '<p>' + g.summary + '</p>' : '') +
-        (g.why ? '<p>' + g.why + '</p>' : '') +
-        (g.injuryNote ? '<div class="risk-line">' + g.injuryNote + '</div>' : '') +
+      dkLinkHtml({ id: g.id, dkUrl: g.dkUrl, line: g.pick || '' }) +
+      '<button class="why-toggle" aria-expanded="' + open + '" data-game-toggle="' + id + '">Details &amp; chat <span class="arrow">&#9662;</span></button>' +
+      '<div class="game-detail" id="game-detail-' + id + '" ' + (open ? '' : 'hidden') + '>' +
+        (g.summary ? '<p>' + esc(g.summary) + '</p>' : '') +
+        (g.why ? '<p>' + esc(g.why) + '</p>' : '') +
+        (g.injuryNote ? '<div class="risk-line">' + esc(g.injuryNote) + '</div>' : '') +
+        (g.summary || g.why ? '' : '<p class="muted">No research notes for this game yet.</p>') +
         chatBlockHtml(g.id) +
       '</div>' +
     '</div>';
   }
 
+  var lastRefreshedText = '';
   function renderGamesGrid(docs, statusText){
     lastGamesDocs = docs;
-    var status = document.getElementById('games-status');
-    if (status) status.textContent = statusText || (docs.length + ' games tracked · live board' + (dbCap ? '' : ' (offline snapshot)'));
+    paintGamesStatus(statusText);
     applyGamesFilter();
+  }
+  /** One line under the search: how many games, how many researched, and when
+   *  research last ran. It used to read "0 games tracked · live board" above a
+   *  grid of games, which was the fallback list contradicting itself. */
+  function paintGamesStatus(statusText){
+    var status = document.getElementById('games-status');
+    if (!status) return;
+    if (statusText){ status.textContent = statusText; return; }
+    var src = gamesSource();
+    if (!src.length){ status.textContent = 'No games on this week’s board yet.'; return; }
+    var researched = src.filter(function(g){ return g.summary || g.pick || g.pass; }).length;
+    status.textContent = src.length + (src.length === 1 ? ' game' : ' games') + ' this week · ' +
+      (researched ? researched + ' with research notes' : 'no research notes yet') +
+      (lastRefreshedText ? ' · ' + lastRefreshedText : '');
   }
 
   // Rebuilding a card list replaces its chat inputs with fresh empty ones.
@@ -3245,20 +3394,16 @@
       emptyEl.hidden = false;
       emptyEl.innerHTML = EMPTY_GLYPH + '<p>No tracked game matches “' + escapeHtml(q) + '.”</p>' +
         (dbCap ?
-          '<button class="reset-btn" id="request-game-btn" type="button">Add it to the research queue</button><span class="copy-status" id="request-status"></span>' :
+          '<button class="reset-btn" id="request-game-btn" type="button">Research it and add it (your AI credit)</button><span class="copy-status" id="request-status"></span>' :
           '<p>Live search isn’t connected in this preview — open the published page to search and queue new games.</p>');
     }
   }
 
+  /** When research last ran, on the Games tab's status line. It used to
+   *  overwrite the header, which now says what the lines are from. */
   function renderLastRefreshed(status){
-    var el = document.getElementById('asof-line');
-    if (!el) return;
-    if (!status || !status.lastRunAt){
-      el.textContent = 'Live board — last refresh time not recorded yet';
-      return;
-    }
-    el.textContent = 'Research last refreshed ' + relativeTime(status.lastRunAt);
-    el.title = new Date(status.lastRunAt).toLocaleString();
+    lastRefreshedText = status && status.lastRunAt ? 'research ' + relativeTime(status.lastRunAt) : '';
+    paintGamesStatus();
   }
 
   function subscribeChangelog(){
@@ -3303,11 +3448,11 @@
     var g = a.relatedGameId ? gamesSource().filter(function(x){ return x.id === a.relatedGameId; })[0] : null;
     return '<div class="ask-item">' +
       '<div class="ask-item-head"><span class="ask-q">“' + escapeHtml(a.query || '') + '”</span>' + badge + '</div>' +
-      '<div class="ask-time">Asked ' + relativeTime(a.askedAt) + (a.answeredAt ? ' · answered ' + relativeTime(a.answeredAt) : '') + '</div>' +
+      '<div class="ask-time">Asked ' + esc(relativeTime(a.askedAt)) + (a.answeredAt ? ' · answered ' + esc(relativeTime(a.answeredAt)) : '') + '</div>' +
       (a.answer ? '<div class="ask-answer">' + renderMarkdown(a.answer) + '</div>' : '<div class="ask-waiting">Waiting on the next research pass…</div>') +
       (g && g.pick ?
-        '<div class="game-lean"><span class="lean-label">Best bet</span><span class="lean-pick">' + g.pick + '</span><span class="dots">' + dotsHtml(g.pickConfidence || 3) + '</span></div>' +
-        '<div class="add-slip-row"><button class="add-slip-btn' + (isGameOnSlip(g.id) ? ' on-slip' : '') + '" data-add-slip="' + g.id + '" type="button">' + (isGameOnSlip(g.id) ? '✓ On my slip — remove' : '+ Add to my slip') + '</button></div>' :
+        '<div class="game-lean"><span class="lean-label">Best bet</span><span class="lean-pick">' + esc(g.pick) + '</span><span class="dots">' + dotsHtml(g.pickConfidence || 3) + '</span></div>' +
+        '<div class="add-slip-row"><button class="add-slip-btn' + (isGameOnSlip(g.id) ? ' on-slip' : '') + '" data-add-slip="' + esc(g.id) + '" type="button">' + (isGameOnSlip(g.id) ? '✓ On my slip — remove' : '+ Add to my slip') + '</button></div>' :
         ''
       ) +
     '</div>';
@@ -3487,10 +3632,11 @@
         renderResearchList();
         renderSlipTab();
       }, function(){
-        renderGamesGrid([], (GAMES_FALLBACK.length) + ' games tracked · offline snapshot (live board unreachable)');
+        // The board's own slate, without notes, and say why.
+        renderGamesGrid(lastGamesDocs, lastGamesDocs.length ? '' : 'Research notes could not be loaded — showing the board’s games without them.');
       });
     }catch(e){
-      renderGamesGrid([], GAMES_FALLBACK.length + ' games tracked · offline snapshot');
+      renderGamesGrid([], 'Research notes could not be loaded — showing the board’s games without them.');
     }
   }
 
@@ -3521,15 +3667,15 @@
       var g = gamesSource().filter(function(x){ return x.id === gameId; })[0];
       if (g){
         out += '<div class="team-research">' +
-          '<h3>Research: ' + g.label + '</h3>' +
+          '<h3>Research: ' + esc(g.label) + '</h3>' +
           (g.pick ?
-            '<div class="game-lean"><span class="lean-label">Best bet</span><span class="lean-pick">' + g.pick + '</span><span class="dots">' + dotsHtml(g.pickConfidence || 3) + '</span></div>' :
-            g.pass ? '<div class="game-pass">No lean — ' + (g.passReason || 'no real edge either side.') + '</div>' : ''
+            '<div class="game-lean"><span class="lean-label">Best bet</span><span class="lean-pick">' + esc(g.pick) + '</span><span class="dots">' + dotsHtml(g.pickConfidence || 3) + '</span></div>' :
+            g.pass ? '<div class="game-pass">No lean — ' + esc(g.passReason || 'no real edge either side.') + '</div>' : ''
           ) +
-          (g.summary ? '<p>' + g.summary + '</p>' : '') +
-          (g.why ? '<p>' + g.why + '</p>' : '') +
-          (g.injuryNote ? '<div class="risk-line">' + g.injuryNote + '</div>' : '') +
-          '<div class="games-status" style="margin-top:8px;">From All Games · updated ' + relativeTime(g.lastChecked) + '</div>' +
+          (g.summary ? '<p>' + esc(g.summary) + '</p>' : '') +
+          (g.why ? '<p>' + esc(g.why) + '</p>' : '') +
+          (g.injuryNote ? '<div class="risk-line">' + esc(g.injuryNote) + '</div>' : '') +
+          '<div class="games-status" style="margin-top:8px;">From All Games · updated ' + esc(relativeTime(g.lastChecked)) + '</div>' +
         '</div>';
       }
     }
@@ -4069,6 +4215,7 @@
     if (panel) panel.hidden = false;
     var more = document.getElementById('tab-more');
     if (more) more.classList.toggle('more-active', tabEl.id === 'tab-futures' || tabEl.id === 'tab-uga');
+    if (dbCap && dbCap.kick) dbCap.kick();
     var hash = TAB_HASHES[tabEl.id];
     if (hash && !opts.fromHash){
       try{ history.replaceState(null, '', '#' + hash); }catch(e){ location.hash = hash; }
@@ -4225,19 +4372,30 @@
     // this they'd stack a new timer every time and never stop the old one.
     var activePollers = {};
 
+    // Polls only while somebody is looking at what it feeds: the Games or
+    // Research tab, in a visible page (audit, 2026-09-26 - four pollers ran
+    // every minute from every open page, hidden or on any tab). Games is
+    // asked for once at load whatever the tab, because the slip and team tabs
+    // show its notes too; the rest wait until they are wanted. kick() asks
+    // again, if due, when one of those tabs opens or the page comes back.
     function startPoller(url, intervalMs, tick){
-      if (activePollers[url]) activePollers[url]();
-      var stopped = false;
-      function run(){ if (!stopped) tick(); }
-      run();
-      var timer = setInterval(run, intervalMs);
-      var unsub = function(){
-        stopped = true;
-        clearInterval(timer);
-        if (activePollers[url] === unsub) delete activePollers[url];
+      if (activePollers[url]) activePollers[url].stop();
+      var p = { last: 0, stopped: false };
+      p.run = function(force){
+        if (p.stopped) return;
+        if (!force && (!pollersWanted() || Date.now() - p.last < intervalMs - 1000)) return;
+        p.last = Date.now();
+        tick();
       };
-      activePollers[url] = unsub;
-      return unsub;
+      var timer = setInterval(function(){ p.run(false); }, intervalMs);
+      p.stop = function(){
+        p.stopped = true;
+        clearInterval(timer);
+        if (activePollers[url] === p) delete activePollers[url];
+      };
+      activePollers[url] = p;
+      if (url === '/api/games' || pollersWanted()) p.run(true);
+      return p.stop;
     }
 
     // Only call back when the payload actually changed. A Firestore
@@ -4280,6 +4438,7 @@
     var COLLECTION_URLS = { games: '/api/games', changelog: '/api/changelog', asks: '/api/asks' };
     var DOC_URLS = { 'control/status': '/api/status', 'fan/uga': '/api/uga' };
     return {
+      kick: function(){ Object.keys(activePollers).forEach(function(k){ activePollers[k].run(false); }); },
       collection: function(name){
         var api = {
           orderBy: function(){ return api; },
@@ -4308,18 +4467,26 @@
     };
   }
 
+  /** The legacy pollers run only while the Games or Research tab is on
+   *  screen in a visible page. */
+  function pollersWanted(){
+    if (document.hidden) return false;
+    var sel = document.querySelector('.tab[role="tab"][aria-selected="true"]');
+    return !!sel && (sel.id === 'tab-games' || sel.id === 'tab-research');
+  }
+
   function initCapabilities(){
+    dbCap = makeDbShim();
     refreshAuthStatus();
     refreshBilling().then(noteBillingReturn);
     initSlipSync();
-    renderGamesGrid(GAMES_FALLBACK, GAMES_FALLBACK.length + ' games tracked · connecting to live board…');
+    renderGamesGrid([], 'Loading this week’s games…');
 
-    dbCap = makeDbShim();
     subscribeGames();
     loadTeams().then(loadTeam);
     subscribeStatus();
     subscribeChangelog();
-    subscribeAsks();
+    // subscribeAsks() waits for /api/auth/status: the asks are the owner's.
     startLive();
 
     // Per-game chat, backed by this app's own gated /api/chat route.
@@ -4364,7 +4531,7 @@
   var LC = window.LiveCore;
   var live = {
     resp: null, snap: null, timer: null, lastAt: 0, lastGoodAt: 0, inflight: false,
-    bySlip: {}, sheetId: null, showAll: false, seen: null, debounce: null
+    bySlip: {}, byCard: {}, sheetId: null, showAll: false, seen: null, debounce: null
   };
   var LIVE_PILL = { hitting: 'Hitting', missing: 'Missing', push: 'Push', pending: 'Too early', won: 'Won', lost: 'Lost', 'void': 'Off' };
   /** A leg that has not kicked off is "Later", not "Too early" - that one
@@ -4382,6 +4549,79 @@
   }
 
   function liveEsc(s){ return LC ? LC.esc(s) : escapeHtml(s); }
+
+  /* ---------- DraftKings links (2026-09-26) ----------
+   * Every "Bet on DraftKings" link goes through LiveCore.dkLink: a deep link
+   * to the game only when ESPN's feed carries one that is https on
+   * draftkings.com (query dropped - no tracking), otherwise DraftKings'
+   * college football page. No affiliate parameters, ever. */
+  function dkTarget(o){
+    o = o || {};
+    if (!LC) return null;
+    if (o.parlay) return LC.dkLink({});
+    var url = o.dkUrl || '';
+    if (!url && o.id && FEED[o.id]) url = FEED[o.id].dkUrl;
+    if (!url && o.label){ var gid = gameIdByLabel(o.label); if (gid && FEED[gid]) url = FEED[gid].dkUrl; }
+    return LC.dkLink({ url: url, line: o.line !== undefined ? o.line : (o.pick || '') });
+  }
+  function dkLinkHtml(o){
+    var t = dkTarget(o);
+    if (!t) return '';
+    return '<a class="dk-link" href="' + esc(t.href) + '" target="_blank" rel="noopener noreferrer"' +
+      ' title="Opens DraftKings in a new tab. The price there may differ from ours.">' + esc(o.compact ? 'DraftKings \u2197' : t.text) + '</a>';
+  }
+
+  /* ---------- the live score and line-now on every card ----------
+   * From the same poll as the ticker: the board's cards go up as `cards`
+   * (placed or not) and come back matched to the scoreboard. A card whose
+   * game cannot be matched with certainty shows nothing. */
+  function fmtSpread(n){
+    n = Number(n);
+    return n === 0 ? 'PK' : (n > 0 ? '+' : '\u2212') + Math.abs(n);
+  }
+  function cardLiveInner(id){
+    var s = live.byCard && live.byCard[id];
+    if (!s || !s.matched) return '';
+    var out = '';
+    if (s.state === 'live' || s.state === 'final'){
+      out += '<div class="cl-score"><span class="pill ' + esc(s.outcome) + '">' + esc(pillLabel(s)) + '</span>' +
+        '<span>' + esc([s.detail, s.text].filter(Boolean).join(' \u00b7 ')) + '</span></div>';
+    }
+    var ln = s.lineNow;
+    if (ln && typeof ln.now === 'number' && typeof ln.picked === 'number'){
+      // Before kickoff the feed's line is the line now; from kickoff on it
+      // is the closing line, and beating it is the one test of a pick that
+      // does not depend on the bounce of the ball.
+      var closing = s.state !== 'pre';
+      var f = ln.kind === 'total' ? function(n){ return String(n); } : fmtSpread;
+      var picked = (ln.kind === 'total' ? (ln.dir === 'over' ? 'over ' : 'under ') : '') + f(ln.picked);
+      var verdict = ln.better === null ? 'same number'
+        : ln.better ? (closing ? '\u2713 beat the close' : '\u2713 better than now')
+        : (closing ? 'worse than the close' : 'the line has moved past it');
+      out += '<div class="cl-line"><span class="k">' + (closing ? 'Closing line' : 'Line now') + '</span>' +
+        '<span>Picked ' + esc(picked) + ' \u00b7 ' + (closing ? 'closed ' : 'now ') + esc(f(ln.now)) +
+        ' <b class="' + (ln.better ? 'good' : ln.better === false ? 'bad' : '') + '">' + esc(verdict) + '</b>' +
+        (s.lineSource ? ' <span class="src">' + esc(s.lineSource) + ' line, via ESPN</span>' : '') + '</span></div>';
+    }
+    return out;
+  }
+  function cardLiveHtml(id){
+    return '<div class="card-live" data-card-live="' + esc(id) + '">' + (live ? cardLiveInner(id) : '') + '</div>';
+  }
+  function paintCardLive(){
+    document.querySelectorAll('[data-card-live]').forEach(function(el){
+      el.innerHTML = cardLiveInner(el.getAttribute('data-card-live'));
+    });
+  }
+  /** Every card on the board, in the shape the server matches. */
+  function liveCardItems(){
+    return allPicks().slice(0, 30).map(function(x){
+      var d = x.data;
+      if (x.kind === 'parlay') return { id: d.id, kind: 'parlay', title: d.title,
+        legs: (d.legs || []).map(function(l){ return { game: l.game, market: l.market }; }) };
+      return { id: d.id, kind: 'straight', title: d.title, matchup: d.matchup || '', market: d.market || '' };
+    });
+  }
   function liveTime(iso){
     var d = new Date(iso);
     return isNaN(d) ? '' : d.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
@@ -4416,7 +4656,7 @@
     live.inflight = true;
     fetch('/api/live/slip', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ items: liveSlipItems() })
+      body: JSON.stringify({ items: liveSlipItems(), cards: liveCardItems() })
     })
       .then(function(r){ if (!r.ok) throw new Error('status ' + r.status); return r.json(); })
       .then(function(resp){ applyLive(resp && typeof resp === 'object' ? resp : { available: false }); })
@@ -4446,9 +4686,11 @@
   function applyLive(resp){
     live.resp = resp;
     live.bySlip = {};
+    live.byCard = {};
     if (resp.available){
       live.lastGoodAt = Date.now();
       (resp.slip || []).forEach(function(s){ live.bySlip[s.id] = s; });
+      (resp.cards || []).forEach(function(s){ live.byCard[s.id] = s; });
       var snap = LC.snapshot(resp, live.snap);
       var fresh = live.seen.fresh(LC.detectSwings(live.snap, snap));
       live.snap = snap;
@@ -4459,8 +4701,10 @@
       shownAlerts.forEach(showLiveAlert);
     }
     document.body.classList.toggle('gameday', !!(resp.available && resp.anyLive));
+    paintBoardNote();
     renderLive();
     paintSlipLive();
+    paintCardLive();
     if (live.sheetId) renderLiveSheet(live.sheetId);
   }
 
@@ -4655,6 +4899,7 @@
       (mineHtml ? '<div class="gs-block"><div class="k">Your slip</div>' + mineHtml + '</div>' : '') +
       '<p class="gs-foot">' + foot.map(liveEsc).join('<br>') + (foot.length ? '<br>' : '') +
         'Scores from ESPN’s public feed, refreshed every 20 seconds while games are on. They can trail the broadcast.</p>' +
+      '<div class="gs-dk">' + dkLinkHtml({ dkUrl: g.dkUrl, line: '' }) + '<span>Price there may differ. 21+ where legal.</span></div>' +
       '<div class="sheet-actions"><button class="sheet-action sheet-cancel" type="button" data-live-close>Close</button></div>';
     sheet.scrollTop = scroll;
   }
@@ -4722,19 +4967,70 @@
     RESULTS = b.results || [];
     RANKINGS = b.rankings || [];
     RANKINGS_FROM = b.rankingsFrom || null;
+    FEED = (b.feed && typeof b.feed === 'object') ? b.feed : {};
     renderSlate();
     renderResults();
     renderTop25();
     renderCards();
     refreshAllRows();
+    paintBoardDates(b);
+    boardStale = !!b.stale;
+    paintBoardNote();
+    // The Games tab falls back to the slate until its notes arrive.
+    if (!lastGamesDocs.length) paintGamesStatus();
+  }
+
+  /** Say it plainly when the board is last week's. The alternative - what
+   *  this app actually did - is presenting finished games as Saturday's card
+   *  and letting the reader work it out from the scores. The server only
+   *  calls a board stale from 6 AM Eastern on Sunday, and it is not said
+   *  while anything is still live: at 1 AM a late game is on, and "last
+   *  week's board" is wrong about the game in front of them. */
+  var boardStale = false;
+  function paintBoardNote(){
     var note = document.getElementById('board-note');
-    if (note){
-      // Say it plainly when the board is last week's. The alternative - what
-      // this app actually did - is presenting finished games as Saturday's
-      // card and letting the reader work it out from the scores.
-      note.hidden = !b.stale;
-      note.textContent = b.stale ? 'This is last week\u2019s board \u2014 the new one has not been built yet.' : '';
+    if (!note) return;
+    var anyLive = !!(live && live.resp && live.resp.available && live.resp.anyLive);
+    var show = boardStale && !anyLive;
+    note.hidden = !show;
+    note.textContent = show ? 'This is last week\u2019s board \u2014 the new one has not been built yet.' : '';
+  }
+
+  /** "Week 4" from a board's weekKey, by the usual numbering: Week 1 is the
+   *  week of the Saturday before Labor Day. '' outside the regular season. */
+  function seasonWeekLabel(weekKey){
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(weekKey || ''));
+    if (!m) return '';
+    var day = 86400000;
+    var sat = Date.UTC(+m[1], +m[2] - 1, +m[3]) + 4 * day;
+    var sept1 = new Date(Date.UTC(+m[1], 8, 1));
+    var laborDay = Date.UTC(+m[1], 8, 1 + ((1 - sept1.getUTCDay() + 7) % 7));
+    var n = Math.round((sat - (laborDay - 2 * day)) / (7 * day)) + 1;
+    return n >= 0 && n <= 16 ? 'Week ' + n : '';
+  }
+
+  /** An instant as Eastern time: "Sun, Sep 21, 10:05 AM ET". */
+  function etStamp(iso){
+    var d = new Date(iso);
+    if (!iso || isNaN(d)) return '';
+    return d.toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' ET';
+  }
+
+  /** The header and the footer say which week and when its lines are from -
+   *  from the board, not from a date typed into the page. The header said
+   *  "CFB · Week 3 · Odds as of Sat, Sep 19" for every week after the 19th. */
+  function paintBoardDates(b){
+    var wk = seasonWeekLabel(b.weekKey);
+    var label = document.getElementById('week-label');
+    if (label) label.textContent = 'CFB' + (wk ? ' \u00b7 ' + wk : '');
+    var stamp = etStamp(b.generatedAt);
+    var asof = document.getElementById('asof-line');
+    if (asof){
+      asof.textContent = stamp ? 'Lines from ' + stamp : 'Lines time not recorded';
+      asof.title = b.seeded ? 'The built-in board - no week has been built yet' : '';
     }
+    var src = document.getElementById('sources-asof');
+    if (src) src.textContent = stamp ? 'This week\u2019s lines were gathered ' + stamp + '.' : '';
   }
 
   /** The Top 25, collapsed by default. Twenty-five rows above the cards would
@@ -4759,10 +5055,11 @@
       // layout bug rather than as two facts.
       var sub = [r.line, r.time].filter(Boolean).join(' \u00b7 ');
       var game = r.game
-        ? escapeHtml(r.game) + (sub ? '<span class="ln">' + escapeHtml(sub) + '</span>' : '')
+        ? escapeHtml(r.game) + (sub ? '<span class="ln">' + escapeHtml(sub) + '</span>' : '') +
+          dkLinkHtml({ dkUrl: r.dkUrl, id: r.gameId, line: '', compact: true })
         : noGame;
       return '<div class="top25-row' + (r.game ? '' : ' bye') + '">' +
-        '<span class="rk">' + r.rank + '</span>' +
+        '<span class="rk">' + esc(r.rank) + '</span>' +
         '<span class="tm">' + escapeHtml(r.team) + '</span>' +
         (r.record ? '<span class="rec">' + escapeHtml(r.record) + '</span>' : '') +
         '<span class="gm">' + game + '</span>' +
@@ -4806,7 +5103,9 @@
     }catch(e){ return null; }
   }
 
+  var boardLoadedAt = 0;
   function loadBoard(){
+    boardLoadedAt = Date.now();
     return fetch('/api/board', {headers:{'Accept':'application/json'}})
       .then(function(r){ return r.json(); })
       .then(function(b){
@@ -4824,7 +5123,29 @@
       });
   }
 
+  /** Back to the foreground, or ten minutes on screen: the week may have
+   *  turned (drop last week's slip), and the board may have been rebuilt. An
+   *  iPhone resumes a home-screen app from memory for days, and loadBoard()
+   *  used to run once, at page load. */
+  function freshenPage(){
+    if (document.hidden) return;
+    if (expireStaleWeek()){
+      slipState = {};
+      customPicks = {};
+      arrangement = emptyArrangement();
+      var bi = document.getElementById('bankroll-input');
+      if (bi) bi.value = '';
+      renderCards();
+      refreshAllRows();
+      if (syncEnabled) initSlipSync();
+    }
+    if (Date.now() - boardLoadedAt > 60 * 1000) loadBoard();
+    if (dbCap && dbCap.kick) dbCap.kick();
+  }
+
   function start(){
+    document.addEventListener('visibilitychange', freshenPage);
+    setInterval(function(){ if (!document.hidden && Date.now() - boardLoadedAt >= 10 * 60 * 1000 - 1000) loadBoard(); }, 60 * 1000);
     var cached = cachedBoard();
     if (cached) applyBoard(cached);
     else { renderSlate(); renderCards(); }
@@ -4836,6 +5157,23 @@
     initChrome();
     initCapabilities();
     loadBoard();
+  }
+
+  // A seam for test/render.js, which runs this script outside a browser and
+  // draws hostile data through the real render functions. Nothing sets it in
+  // a browser.
+  if (window.__CFB_TEST__ && typeof window.__CFB_TEST__ === 'object'){
+    window.__CFB_TEST__.api = {
+      applyBoard: applyBoard, applyLive: applyLive, renderCards: renderCards, renderSlipTab: renderSlipTab,
+      renderGamesGrid: renderGamesGrid, renderResearchList: renderResearchList, renderAsksFeed: renderAsksFeed,
+      gameCardHtml: gameCardHtml, researchGameCardHtml: researchGameCardHtml, slipLiveHtml: slipLiveHtml,
+      escapeHtml: escapeHtml, weekKeyAt: weekKeyAt, seasonWeekLabel: seasonWeekLabel, dkLinkHtml: dkLinkHtml,
+      paintOwnerControls: paintOwnerControls, expireStaleWeek: expireStaleWeek,
+      setSlip: function(slip, custom){ slipState = slip || {}; customPicks = custom || {}; },
+      setArrangement: function(a){ arrangement = a || emptyArrangement(); },
+      init: function(){ live.seen = LC.createSeen(null, 'x', 10); }
+    };
+    return;
   }
 
   if (window.claude && window.claude.hot && window.claude.hot.ready){

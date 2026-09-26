@@ -121,6 +121,9 @@ function createPasskeyAuth(opts) {
   const passwordOk = opts.passwordOk || (async () => false);
   const needsPasswordForEmail = opts.needsPasswordForEmail || (() => false);
   const isResearchEmail = opts.isResearchEmail || (() => false);
+  // Anything the app wants to add to /api/auth/status, answered per request -
+  // who may use which button is the app's rule, not this module's.
+  const statusExtra = opts.statusExtra || (async () => ({}));
 
   // The signed-in user, or null. The uid IS the normalized email - one
   // account per address, and it reads plainly in Firestore.
@@ -355,6 +358,7 @@ function createPasskeyAuth(opts) {
         // session is proof enough on its own, a password one is not.
         via: me ? sessionVia(req) : null,
         passkeyRegistered: registered,
+        ...(await statusExtra(req).catch(() => ({}))),
       });
     });
   }

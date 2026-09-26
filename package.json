@@ -11,7 +11,8 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",
     "@google-cloud/firestore": "^7.9.0",
-    "express": "^4.19.2",
-    "@simplewebauthn/server": "^14.0.2"
+    "@simplewebauthn/server": "^14.0.2",
+    "compression": "^1.8.2",
+    "express": "^4.19.2"
   }
 }

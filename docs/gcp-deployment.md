@@ -224,8 +224,9 @@ approach, confirmed reachable through the sandbox's egress proxy:
 
 ## App layout
 
-- `server.js` — Express app. Public GET routes (`/api/games`, `/api/asks`,
-  `/api/changelog`, `/api/uga`, `/api/status`); gated POST routes
+- `server.js` — Express app. Public GET routes (`/api/games` — this week's
+  games only, see CLAUDE.md "Audit fixes" — `/api/changelog`, `/api/uga`,
+  `/api/status`; `/api/asks` is owner-only since 2026-09-26); gated POST routes
   (`/api/chat`, `/api/research/custom`, `/api/research/add-game`,
   `/api/research/refresh-board`), plus slip sync (`/api/slip`, `/api/login`).
   The research routes ask the model for a JSON object and parse it — see
@@ -240,7 +241,13 @@ button stay on the live path. Batches usually land in minutes but are
 *allowed* up to 24 hours, so batching is only safe where freshness doesn't
 matter — which is exactly why game day is carved out.
 
-- `POST /api/research/batch-submit` — one batch request per tracked game
+Since 2026-09-26 every research job researches only **this week's games that
+have not kicked off** (`games.thisWeek()`: the current board's games plus games
+added this week), and logs how many it skipped. Before, they researched every
+document in `games`, which nothing retired - last week's finished games
+included, every run.
+
+- `POST /api/research/batch-submit` — one batch request per upcoming game
   (per-game rather than one combined call: batch is built for fan-out, each
   game gets focused research, and one bad response can't poison the rest).
   Records the batch id in `control/batch` and refuses to submit while one is

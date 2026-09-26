@@ -322,7 +322,7 @@ const STALE_UGA = {
   const realFetch = globalThis.fetch;
   globalThis.fetch = async (url, opts) => {
     const u = String(url);
-    if (!u.startsWith('https://site.api.espn.com/')) return realFetch(url, opts);
+    if (!u.match(/^https:\/\/site(\.web)?\.api\.espn\.com\//)) return realFetch(url, opts);
     espnCalls++;
     if (net === 'down') throw new Error('ENOTFOUND');
     if (/\/rankings/.test(u)) {

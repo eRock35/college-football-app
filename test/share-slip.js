@@ -66,7 +66,20 @@ const ITEMS = [
   ok('the prose travelled with it', (got.items[0].why || '').includes('roster gap'));
   ok('parlay legs survived', (got.items[1].legs || []).length === 2);
   ok('totals are the server’s own sum', got.totalRisk === 70, String(got.totalRisk));
-  ok('it says who shared it', got.by === 'fan', String(got.by));
+  // A share link is public: never the email's local part (audit, 2026-09-26).
+  ok('with no display name it says "A reader", not the email', got.by === 'A reader' && !JSON.stringify(got).includes('fan@'), String(got.by));
+
+  // With one, the first name only.
+  h.bag('identity').set('users/' + uidOf('fan@example.com'), { email: 'fan@example.com', createdAt: 'x', displayName: 'Jamie <b>Fan</b>' });
+  r = await fetch(B + '/api/slip/share', { method: 'POST', headers: { ...J, cookie: fan }, body: JSON.stringify({ items: ITEMS }) });
+  const named = await (await fetch(B + '/api/shared-slip/' + (await r.json()).shareId)).json();
+  ok('with a display name it says the first name only', named.by === 'Jamie', String(named.by));
+
+  // Links made before this stored the local part; they read as "A reader".
+  h.bag('college-football-app').set('shared-slips/legacy1', { items: ITEMS, weekKey: 'x', by: 'erik.strong', createdAt: new Date().toISOString() });
+  const legacy = await (await fetch(B + '/api/shared-slip/legacy1')).json();
+  ok('an old link no longer publishes the email local part', legacy.by === 'A reader', String(legacy.by));
+  ok('a share link is https behind the proxy', /^https:/.test(((await (await fetch(B + '/api/slip/share', { method: 'POST', headers: { ...J, cookie: fan, 'x-forwarded-proto': 'https' }, body: JSON.stringify({ items: ITEMS }) })).json()).url) || ''));
   ok('a current-week share is not stale', got.stale === false, String(got.stale));
 
   // The bankroll is the one number that must never ride along.

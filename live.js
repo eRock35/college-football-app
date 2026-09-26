@@ -20,9 +20,18 @@
  * requests.
  */
 
+const LiveCore = require('./public/live-core.js');
 const teams = require('./teams');
 
-const ESPN_SCOREBOARD = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&limit=300';
+// site.WEB.api, not site.api. Measured from Google's network on 2026-09-26:
+// site.api.espn.com answered 403 to this service's own User-Agent, to none,
+// to "node" and to a browser's - it admits curl's default and little else -
+// so the ticker and team facts had never loaded in production. site.web.api
+// answered 200 on every path we use. `fetchEspnJson` retries a 403 once on
+// the other host, so ESPN tightening one of them degrades, not blanks.
+const ESPN_HOST = 'https://site.web.api.espn.com';
+const ESPN_ALT_HOST = 'https://site.api.espn.com';
+const ESPN_SCOREBOARD = `${ESPN_HOST}/apis/site/v2/sports/football/college-football/scoreboard?groups=80&limit=300`;
 
 const TTL_MS = 20 * 1000;
 // A feed that fails briefly should not blank a Saturday. The last good board
@@ -368,7 +377,29 @@ function normaliseEvent(raw) {
     neutral: comp.neutralSite === true,
     line: str(odds.details, 40),
     overUnder: num(odds.overUnder, 20, 150),
+    // Whose line that is ("ESPN BET", "DraftKings"), so the page can say.
+    lineSource: str(obj(odds.provider).name, 30),
+    // A DraftKings link for this game, only if the feed carries one and it
+    // passes LiveCore.dkUrl (https, *.draftkings.com, query dropped).
+    dkUrl: dkUrlFromOdds(comp.odds),
   };
+}
+
+/** The first DraftKings href in a competition's odds entries - on the entry
+ *  (`link`, `links[]`) or its provider - reduced by LiveCore.dkUrl, or ''.
+ *  ESPN's scoreboard shape varies by season and provider; anything that is
+ *  not an https draftkings.com URL is ignored, never repaired. */
+function dkUrlFromOdds(list) {
+  for (const o of arr(list).slice(0, 6).map(obj)) {
+    const p = obj(o.provider);
+    const hrefs = [obj(o.link).href, ...arr(o.links).slice(0, 10).map((l) => obj(l).href),
+      obj(p.link).href, ...arr(p.links).slice(0, 10).map((l) => obj(l).href)];
+    for (const h of hrefs) {
+      const u = LiveCore.dkUrl(h);
+      if (u) return u;
+    }
+  }
+  return '';
 }
 
 /** The US Eastern calendar day an instant falls on - the day a college
@@ -639,6 +670,42 @@ function evaluate(bet, g) {
   return { ...base, outcome, pace: Math.round(proj), text: `On pace for ${Math.round(proj)} (${label})` };
 }
 
+/**
+ * The feed's current line for the side a bet took, beside the number it was
+ * picked at - closing-line value. `better` is true when the pick holds a
+ * better number than the market does now (a favourite laid fewer points, a
+ * dog given more, an over at a lower total, an under at a higher one), false
+ * when worse, null when level. Null when the feed's line cannot be read for
+ * that side: "UGA -6.5" names a team by abbreviation, and one that matches
+ * neither side is not guessed at.
+ */
+function lineNow(bet, g) {
+  if (!bet || !g) return null;
+  if (bet.type === 'total') {
+    if (typeof g.overUnder !== 'number') return null;
+    const now = g.overUnder;
+    return { kind: 'total', dir: bet.dir, picked: bet.line, now,
+      better: now === bet.line ? null : (bet.dir === 'over' ? bet.line < now : bet.line > now) };
+  }
+  if (bet.type !== 'spread') return null;
+  const text = String(g.line || '').trim();
+  let favSide = null;
+  let n;
+  if (/^(even|pk|pick'?em)$/i.test(text)) n = 0;
+  else {
+    const m = /^([A-Za-z0-9&'.]{2,10})\s+([+-]?\d{1,2}(?:\.[05])?)$/.exec(text);
+    if (!m) return null;
+    const ab = m[1].toUpperCase();
+    favSide = ab === g.home.abbr ? 'home' : ab === g.away.abbr ? 'away' : null;
+    if (!favSide) return null;
+    n = Number(m[2]);
+  }
+  const mine = g.home.teamId === bet.teamId ? 'home' : g.away.teamId === bet.teamId ? 'away' : null;
+  if (!mine) return null;
+  const now = n === 0 ? 0 : (mine === favSide ? n : -n);
+  return { kind: 'spread', picked: bet.line, now, better: now === bet.line ? null : bet.line > now };
+}
+
 /* ------------------------------------------------------------------ *
  * The reader's slip
  * ------------------------------------------------------------------ */
@@ -676,7 +743,8 @@ function statusFor(item, allGames) {
     const hit = matchBet({ texts: [item.title, item.market], market: item.market, matchup: item.matchup }, allGames);
     if (!hit) return { id: item.id, kind: 'straight', matched: false };
     const st = evaluate(hit.bet, hit.game) || notUnderway(hit.game);
-    return { id: item.id, kind: 'straight', matched: true, gameId: hit.game.id, title: item.title, ...st };
+    return { id: item.id, kind: 'straight', matched: true, gameId: hit.game.id, title: item.title, ...st,
+      lineNow: lineNow(hit.bet, hit.game), lineSource: hit.game.lineSource || '', dkUrl: hit.game.dkUrl || '' };
   }
 
   const legs = item.legs.map((l) => {
@@ -738,23 +806,47 @@ function slipGameIds(statuses) {
  * The feed, cached
  * ------------------------------------------------------------------ */
 
-async function fetchScoreboard(fetchImpl, url, timeoutMs) {
+// The User-Agent each host was measured to admit (see ESPN_HOST).
+const ESPN_UA = { [ESPN_HOST]: 'Mozilla/5.0', [ESPN_ALT_HOST]: 'curl/8.5.0' };
+
+async function fetchOnce(fetchImpl, url, timeoutMs, maxBytes) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const r = await fetchImpl(url, {
-      signal: ctrl.signal,
-      headers: { accept: 'application/json', 'user-agent': 'college-football-app (+https://footballapp.strongtechnicalconsulting.com)' },
-    });
-    if (!r || !r.ok) throw new Error(`upstream status ${r && r.status}`);
+    const host = Object.keys(ESPN_UA).find((h) => url.startsWith(`${h}/`));
+    const headers = { accept: 'application/json' };
+    if (host) headers['user-agent'] = ESPN_UA[host];
+    const r = await fetchImpl(url, { signal: ctrl.signal, headers });
+    if (!r || !r.ok) {
+      const err = new Error(`upstream status ${r && r.status}`);
+      err.status = r && r.status;
+      throw err;
+    }
     const len = Number(r.headers && r.headers.get ? r.headers.get('content-length') : 0);
-    if (len > MAX_BYTES) throw new Error('upstream body too large');
+    if (len > maxBytes) throw new Error('upstream body too large');
     const text = await r.text();
-    if (text.length > MAX_BYTES) throw new Error('upstream body too large');
+    if (text.length > maxBytes) throw new Error('upstream body too large');
     return JSON.parse(text);
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** One ESPN JSON read; a 403 is tried once more on the other host. */
+async function fetchEspnJson(fetchImpl, url, timeoutMs, maxBytes = MAX_BYTES) {
+  try {
+    return await fetchOnce(fetchImpl, url, timeoutMs, maxBytes);
+  } catch (e) {
+    if (e.status !== 403) throw e;
+    const other = url.startsWith(`${ESPN_HOST}/`) ? ESPN_ALT_HOST + url.slice(ESPN_HOST.length)
+      : url.startsWith(`${ESPN_ALT_HOST}/`) ? ESPN_HOST + url.slice(ESPN_ALT_HOST.length) : null;
+    if (!other) throw e;
+    return fetchOnce(fetchImpl, other, timeoutMs, maxBytes);
+  }
+}
+
+function fetchScoreboard(fetchImpl, url, timeoutMs) {
+  return fetchEspnJson(fetchImpl, url, timeoutMs, MAX_BYTES);
 }
 
 /**
@@ -803,6 +895,64 @@ function createFeed({ fetch: fetchImpl, url = ESPN_SCOREBOARD, ttlMs = TTL_MS, s
   return { get, stats: () => ({ upstreamCalls }) };
 }
 
+/**
+ * Finished games on the given days (YYYYMMDD, US calendar days as ESPN takes
+ * them), from the same scoreboard with `&dates=`. For grading last week's
+ * board from real finals rather than a model's reading of them. Never
+ * rejects: a day that cannot be read is simply missing, and whatever is not
+ * matched falls back to the model.
+ */
+async function fetchFinals(fetchImpl, days, { url = ESPN_SCOREBOARD, timeoutMs = FETCH_TIMEOUT_MS, now = Date.now, log = console } = {}) {
+  const seen = new Set();
+  const out = [];
+  for (const d of days) {
+    if (!/^\d{8}$/.test(String(d))) continue;
+    try {
+      const raw = await fetchScoreboard(fetchImpl, `${url}&dates=${d}`, timeoutMs);
+      for (const g of normalise(raw, now()).all) {
+        if (g.final && !seen.has(g.id)) { seen.add(g.id); out.push(g); }
+      }
+    } catch (err) {
+      log.error(`[live] finals for ${d} failed:`, err && err.message ? err.message : err);
+    }
+  }
+  return out;
+}
+
+/**
+ * Grades staked cards against finished games, deterministically: a card
+ * whose game (every leg's game, for a parlay) matched a final with certainty
+ * gets win / loss / push and the real final score; anything else is returned
+ * in `rest` for the model to grade. Same matching and maths as the live slip.
+ */
+function gradeFromFinals(items, finals) {
+  const graded = [];
+  const rest = [];
+  const OUT = { won: 'win', lost: 'loss', push: 'push' };
+  const scoreOf = (id) => {
+    const g = finals.find((x) => x.id === id);
+    return g ? `${g.away.name} ${g.away.score}, ${g.home.name} ${g.home.score}` : '';
+  };
+  const statuses = slipStatus(items, finals);
+  items.forEach((it, i) => {
+    const s = statuses[i];
+    const legsKnown = s && s.kind === 'parlay' ? (s.legs || []).every((l) => l.matched && l.state === 'final') : true;
+    // A parlay lost on one final leg is lost whatever the others did.
+    const decided = s && s.matched && s.state === 'final' && OUT[s.outcome] && (legsKnown || s.outcome === 'lost');
+    if (!decided) { rest.push(it); return; }
+    const ids = s.kind === 'parlay' ? (s.gameIds || []) : [s.gameId];
+    graded.push({
+      id: it.id, title: it.title, matchup: it.matchup || (it.legs || []).map((l) => l.game).join(' + '),
+      market: it.market || (it.legs || []).map((l) => l.market).join(' + '),
+      finalScore: ids.map(scoreOf).filter(Boolean).join('; '),
+      outcome: OUT[s.outcome],
+      note: `${s.text}. Graded from ESPN's final score.`,
+      source: 'espn',
+    });
+  });
+  return { graded, rest };
+}
+
 /** What a route sends: the ticker's games without the week-long `all`. */
 function publicView(result, { teamId = null, slipIds = new Set() } = {}) {
   if (!result || !result.available) return { available: false, message: UNAVAILABLE };
@@ -818,11 +968,11 @@ function publicView(result, { teamId = null, slipIds = new Set() } = {}) {
 }
 
 module.exports = {
-  ESPN_SCOREBOARD, TTL_MS, UNAVAILABLE, INDEX,
+  ESPN_SCOREBOARD, ESPN_HOST, ESPN_ALT_HOST, fetchEspnJson, TTL_MS, UNAVAILABLE, INDEX,
   teamKey, resolveTeam, resolveEspnTeam, matchupTeams,
   normalise, normaliseEvent, order, etDay,
-  parseBet, matchBet, evaluate, elapsedMinutes, pace, parlayStatus,
-  cleanSlipItems, slipStatus, slipGameIds,
+  parseBet, matchBet, evaluate, elapsedMinutes, pace, parlayStatus, lineNow, dkUrlFromOdds,
+  cleanSlipItems, slipStatus, slipGameIds, fetchFinals, gradeFromFinals,
   createFeed, publicView, STATES,
   // The cleaning helpers, for teamfacts.js: the same upstream, the same rules.
   str, int, isoOrEmpty, gameState, obj, arr,

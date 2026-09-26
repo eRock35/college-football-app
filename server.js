@@ -1,4 +1,5 @@
 const express = require('express');
+const compression = require('compression');
 const path = require('path');
 const crypto = require('crypto');
 const { Firestore } = require('@google-cloud/firestore');
@@ -7,6 +8,7 @@ const { createPasskeyAuth } = require('./auth');
 const analytics = require('./analytics');
 const sitepass = require('./sitepass');
 const board = require('./board');
+const gamesLib = require('./games');
 const teams = require('./teams');
 const fan = require('./fan');
 const live = require('./live');
@@ -42,6 +44,12 @@ const db = new Firestore({ projectId: PROJECT_ID, databaseId: FIRESTORE_DB });
 const anthropic = new Anthropic(); // reads ANTHROPIC_API_KEY from env
 
 const app = express();
+// Cloud Run terminates TLS in front of us, so without this req.protocol is
+// "http" and every share link went out as http:// (audit, 2026-09-26).
+app.set('trust proxy', true);
+// Text only: the page is ~250 KB of HTML and the board a few dozen KB of
+// JSON, both of which gzip to a fraction.
+app.use(compression());
 app.use(express.json());
 
 // Only the landing page may put this app in a frame - it shows a live
@@ -85,14 +93,19 @@ async function passwordOkForRegistration(req) {
 
 // Any registered account, or the password. Gates things every signed-in user
 // may do - keeping a slip - not the things that cost money.
+//
+// No `WWW-Authenticate` on any API answer (audit, 2026-09-26): with it, a
+// stranger who tapped an owner-only button got the browser's native password
+// box for a password they do not have. Every refusal is JSON the page can
+// explain. The one place a Basic prompt is still offered is /api/login?prompt=1,
+// which no button reaches - the owner types it.
 async function requireLogin(req, res, next) {
   if (!SITE_LOGIN_USERNAME || !SITE_LOGIN_PASSWORD) {
     return res.status(500).json({ error: 'Server login is not configured.' });
   }
   if (signedIn(req)) return next();
   if (await passwordOk(req)) return next();
-  res.set('WWW-Authenticate', 'Basic realm="College Football App"');
-  return res.status(401).send('Login required.');
+  return res.status(401).json({ error: 'not signed in' });
 }
 
 // Same credentials as requireLogin, but a 401 here deliberately omits the
@@ -109,34 +122,29 @@ async function requireLoginSilent(req, res, next) {
   return res.status(401).json({ error: 'not signed in' });
 }
 
-// A college football week runs Tuesday through Monday - games land Thu-Sat
-// with a Sunday/Monday tail, so Tuesday is the quiet boundary to roll on.
-// Anchored to US Eastern regardless of where the viewer is.
-function currentWeekKey() {
-  const et = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  et.setDate(et.getDate() - ((et.getDay() - 2 + 7) % 7));
-  return et.toISOString().slice(0, 10);
-}
-
 /**
- * Which week a BOARD belongs to: the Tuesday that starts the week containing
- * the next Saturday of games.
+ * Which week it is: the Tuesday that starts the week containing the next
+ * Saturday of games, turning over at 6 AM Eastern on Sunday (board.weekKeyAt).
  *
- * Deliberately not `currentWeekKey()`, which answers a different question -
- * which week's slip you are filling in - and rolls on Tuesday. Turning the
- * board over happens on Sunday or Monday, when the weekend is settled and the
- * next one is what anybody wants to read about. Labelling a Sunday rebuild
- * with `currentWeekKey()` would stamp the coming weekend's games with the
- * week that just finished, and the board would then look stale the moment it
- * was built.
+ * ONE week for the board, the slip and the board arrangement (2026-09-26).
+ * The slip used to have its own week, rolling on Tuesday, while the board
+ * turned over on Sunday - so plays placed Sunday or Monday from the new board
+ * were filed under the old week and wiped on Tuesday. The board still turns
+ * over on Sunday or Monday, when the weekend is settled; a Sunday rebuild is
+ * stamped with the coming weekend's week, never the one that just finished.
  */
 function boardWeekKey() {
-  const et = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  // Forward to the coming Saturday (today, if today is Saturday)...
-  et.setDate(et.getDate() + ((6 - et.getDay() + 7) % 7));
-  // ...then back to the Tuesday that starts its week.
-  et.setDate(et.getDate() - ((et.getDay() - 2 + 7) % 7));
-  return et.toISOString().slice(0, 10);
+  return board.weekKeyAt(Date.now());
+}
+
+/** The week a stored slip belongs to. Worked out from when it was SAVED
+ *  rather than from its stored weekKey: slips saved before 2026-09-26 carry
+ *  the old Tuesday week, and a Sunday save under that scheme was a play on the
+ *  new board. Reading every slip by its save time keeps those readable
+ *  through the switch, and new ones agree with their weekKey anyway. */
+function slipWeekOf(data) {
+  const t = Date.parse((data && data.updatedAt) || '');
+  return Number.isFinite(t) ? board.weekKeyAt(t) : (data && data.weekKey) || '';
 }
 
 const passkeyAuth = createPasskeyAuth({
@@ -150,6 +158,16 @@ const passkeyAuth = createPasskeyAuth({
   // anyone could register the owner's email and hand themselves research.
   needsPasswordForEmail: isResearchEmail,
   isResearchEmail,
+  // What the page may offer this reader (2026-09-26). canResearch here is the
+  // whole of requireResearch - the allowlist, a shared-account grant, or the
+  // site password - where auth.js alone only knows the allowlist; the owner's
+  // buttons are hidden from everyone it says no to.
+  statusExtra: async (req) => {
+    // This route is mounted before the shared account's middleware, so the
+    // shared session is read here or an owner signed in there reads as no one.
+    if (!req.user) await new Promise((done) => identity.attachUser(req, null, done));
+    return { canResearch: await mayResearch(req), signedInAnywhere: signedIn(req) };
+  },
 });
 passkeyAuth.mount(app);
 
@@ -232,11 +250,17 @@ async function requireResearch(req, res, next) {
   // grant on the shared account, or the site password above.
   if (me && isResearchEmail(me.email)) return next();
   if (me && identityLib.hasAccess(req.user, 'football', 'research')) return next();
-  if (!me) {
-    res.set('WWW-Authenticate', 'Basic realm="College Football App"');
-    return res.status(401).send('Login required.');
-  }
+  // JSON, and no WWW-Authenticate: see requireLogin.
+  if (!me) return res.status(401).json({ error: 'not signed in' });
   return res.status(403).json({ error: 'not_permitted' });
+}
+
+/** The same question as requireResearch, answered rather than enforced - for
+ *  /api/auth/status, so the page shows owner-only buttons to the owner only. */
+async function mayResearch(req) {
+  if (await passwordOk(req)) return true;
+  const me = currentUser(req);
+  return !!(me && (isResearchEmail(me.email) || identityLib.hasAccess(req.user, 'football', 'research')));
 }
 
 // Scheduler-or-human gate: a cron key, or a research-permitted human.
@@ -246,10 +270,18 @@ function requireLoginOrCron(req, res, next) {
   return requireResearch(req, res, next);
 }
 
-// Hitting this with credentials is what triggers the browser's login prompt,
-// so the "sync across devices" button has something to authenticate against.
-app.get('/api/login', requireLogin, (req, res) => {
-  res.json({ ok: true, weekKey: currentWeekKey() });
+// The owner's Basic-auth door. It answers JSON like every other route unless
+// asked for the prompt with ?prompt=1, which no button on the page sends: a
+// native password box is for the one person who has the password, typed on
+// purpose, never something a stranger's tap can raise.
+app.get('/api/login', async (req, res, next) => {
+  if (req.query.prompt === '1' && !signedIn(req) && !(await passwordOk(req))) {
+    res.set('WWW-Authenticate', 'Basic realm="College Football App"');
+    return res.status(401).json({ error: 'not signed in' });
+  }
+  return requireLogin(req, res, next);
+}, (req, res) => {
+  res.json({ ok: true, weekKey: boardWeekKey() });
 });
 
 // One slip document per account. Before accounts there was a single shared
@@ -273,30 +305,32 @@ function legacySlipDocId(req) {
 // route would let any visitor scribble on the slip.
 app.get('/api/slip', requireLoginSilent, async (req, res) => {
   try {
-    const week = currentWeekKey();
+    const week = boardWeekKey();
     const id = slipDocId(req);
     let doc = await db.collection('user-state').doc(id).get();
     // The owner's pre-accounts slip lived under 'slip'. Read it once as a
     // fallback so the current week survives the migration; the next save
     // writes to their own document and this stops mattering.
     const me = currentUser(req);
-    if (!doc.exists || doc.data().weekKey !== week) {
+    if (!doc.exists || slipWeekOf(doc.data()) !== week) {
       // This app's older per-account key, then the owner's pre-accounts slip.
       for (const fallback of [legacySlipDocId(req), (me && isResearchEmail(me.email)) ? 'slip' : null]) {
         if (!fallback || fallback === id) continue;
         const legacy = await db.collection('user-state').doc(fallback).get();
-        if (legacy.exists && legacy.data().weekKey === week) { doc = legacy; break; }
+        if (legacy.exists && slipWeekOf(legacy.data()) === week) { doc = legacy; break; }
       }
     }
     const data = doc.exists ? doc.data() : null;
     // Last week's slip is stale by definition - don't hand it back.
-    if (!data || data.weekKey !== week) {
+    if (!data || slipWeekOf(data) !== week) {
       return res.json({ weekKey: week, slip: {}, customPicks: {}, bankroll: '', board: boardPrefs(null) });
     }
     res.json({
       weekKey: week,
-      slip: data.slip || {},
-      customPicks: data.customPicks || {},
+      // Cleaned on the way out as well as in: a slip saved before these
+      // rules existed is still drawn by the page.
+      slip: cleanSlip(data.slip),
+      customPicks: cleanCustomPicks(data.customPicks),
       bankroll: data.bankroll || '',
       board: boardPrefs(data.board),
       updatedAt: data.updatedAt || null,
@@ -327,6 +361,15 @@ app.get('/api/slip', requireLoginSilent, async (req, res) => {
 // rather than resolving stale ids against a board that has moved on.
 const clipStr = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
 const finiteNum = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+
+/** Who a shared slip says it is from: the first word of the display name the
+ *  shared account chose, or "A reader". Never the email - a share link is
+ *  public, and "erik.strong" from erik.strong@... is half an address. */
+function sharerName(req) {
+  const name = String((req.user && req.user.displayName) || '')
+    .replace(/[^\p{L}\p{M}' -]/gu, '').trim().split(/\s+/)[0] || '';
+  return name ? name.slice(0, 30) : 'A reader';
+}
 
 // Anything stored here is served to strangers, so every field is clamped to a
 // plain string of bounded length and the page escapes all of it on render.
@@ -363,13 +406,13 @@ app.post('/api/slip/share', requireLoginSilent, async (req, res) => {
       return res.status(400).json({ error: 'Nothing on your slip to share yet.' });
     }
     const shareId = crypto.randomBytes(9).toString('base64url');
-    const me = currentUser(req);
     await db.collection('shared-slips').doc(shareId).set({
       items,
       totalRisk: items.reduce((n, i) => n + i.stake, 0),
       totalToWin: items.reduce((n, i) => n + i.toWin, 0),
-      weekKey: currentWeekKey(),
-      by: (me && me.email ? me.email.split('@')[0] : 'someone'),
+      weekKey: boardWeekKey(),
+      by: sharerName(req),
+      byKind: 'name',
       createdAt: new Date().toISOString(),
     });
     res.json({ shareId, url: `${req.protocol}://${req.get('host')}/s/${shareId}` });
@@ -392,9 +435,12 @@ app.get('/api/shared-slip/:shareId', async (req, res) => {
       totalRisk: d.totalRisk || 0,
       totalToWin: d.totalToWin || 0,
       weekKey: d.weekKey,
-      by: d.by,
+      // Links made before 2026-09-26 stored the sender's email local part.
+      // Those are public to anyone with the link, so they read as "A reader"
+      // now; only a name the account chose is ever shown.
+      by: d.byKind === 'name' && d.by ? d.by : 'A reader',
       createdAt: d.createdAt,
-      stale: d.weekKey !== currentWeekKey(),
+      stale: board.weekKeyAt(Date.parse(d.createdAt) || 0) !== boardWeekKey(),
     });
   } catch (err) {
     console.error('GET /api/shared-slip', err);
@@ -427,9 +473,10 @@ function american(value) {
 
 function boardPrefs(raw) {
   const obj = raw && typeof raw === 'object' ? raw : {};
+  // Card ids go into data-* attributes when the page draws them back, so only
+  // ids in the board's own alphabet are kept (board.ID_RE).
   const ids = (v) => (Array.isArray(v) ? v : [])
-    .filter((x) => typeof x === 'string' && x)
-    .map((x) => x.slice(0, OWN_CARD_MAX.id))
+    .filter((x) => typeof x === 'string' && board.ID_RE.test(x))
     .slice(0, 200);
   const text = (v, cap) => String(v === undefined || v === null ? '' : v)
     .replace(/[<>]/g, '').trim().slice(0, cap);
@@ -438,7 +485,7 @@ function boardPrefs(raw) {
     pinned: ids(obj.pinned),
     order: ids(obj.order),
     own: (Array.isArray(obj.own) ? obj.own : []).slice(0, 25).map((c, i) => ({
-      id: text((c && c.id) || `own-${i + 1}`, OWN_CARD_MAX.id),
+      id: board.cleanId(c && c.id, `own-${i + 1}`),
       title: text(c && c.title, OWN_CARD_MAX.short),
       matchup: text(c && c.matchup, OWN_CARD_MAX.short),
       time: text(c && c.time, OWN_CARD_MAX.short),
@@ -453,19 +500,60 @@ function boardPrefs(raw) {
       odds: american(c && c.odds),
       // The slate game this is about, so the card names the same matchup the
       // researched ones do.
-      gameId: text(c && c.gameId, OWN_CARD_MAX.id),
+      gameId: board.cleanId(c && c.gameId, ''),
       thesis: text(c && c.thesis, OWN_CARD_MAX.line),
     })).filter((c) => c.title && c.odds !== null),
   };
 }
 
+/** The slip itself: `{ <cardId>: { stake, placed } }`. User-written and read
+ *  back into the page, so the keys are card ids and the values two plain
+ *  fields - nothing else survives. */
+function cleanSlip(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+  for (const [k, v] of Object.entries(raw).slice(0, 200)) {
+    if (!board.ID_RE.test(k) || !v || typeof v !== 'object') continue;
+    const stake = Number(v.stake);
+    out[k] = { stake: Number.isFinite(stake) && stake >= 0 ? Math.min(stake, 1e7) : 0, placed: v.placed === true };
+  }
+  return out;
+}
+
+/** Games added to the slip from All Games: `{ <gameId>: card }`. The card's
+ *  text is drawn into the page, so it goes through the same rules as a
+ *  hand-written card. */
+function cleanCustomPicks(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+  const text = (v, cap) => String(v === undefined || v === null || typeof v === 'object' ? '' : v)
+    .replace(/[<>]/g, '').trim().slice(0, cap);
+  for (const [k, c] of Object.entries(raw).slice(0, 50)) {
+    if (!board.ID_RE.test(k) || !c || typeof c !== 'object') continue;
+    const title = text(c.title, OWN_CARD_MAX.short);
+    if (!title) continue;
+    out[k] = {
+      title,
+      matchup: text(c.matchup, OWN_CARD_MAX.short),
+      time: text(c.time, OWN_CARD_MAX.short),
+      market: text(c.market, OWN_CARD_MAX.short),
+      odds: american(c.odds) || -110,
+      thesis: text(c.thesis, OWN_CARD_MAX.line),
+      why: text(c.why, 2000),
+      risk: text(c.risk, OWN_CARD_MAX.line),
+      confidence: Math.min(4, Math.max(1, Math.round(Number(c.confidence)) || 3)),
+    };
+  }
+  return out;
+}
+
 app.put('/api/slip', requireLoginSilent, async (req, res) => {
   try {
     const { slip, customPicks, bankroll, board: arrangement } = req.body || {};
-    const week = currentWeekKey();
+    const week = boardWeekKey();
     await db.collection('user-state').doc(slipDocId(req)).set({
-      slip: slip && typeof slip === 'object' ? slip : {},
-      customPicks: customPicks && typeof customPicks === 'object' ? customPicks : {},
+      slip: cleanSlip(slip),
+      customPicks: cleanCustomPicks(customPicks),
       bankroll: typeof bankroll === 'string' ? bankroll.slice(0, 32) : '',
       board: boardPrefs(arrangement),
       weekKey: week,
@@ -484,19 +572,72 @@ app.put('/api/slip', requireLoginSilent, async (req, res) => {
 // independently designed API - see that file's GAMES_FALLBACK/UGA_FALLBACK
 // for the canonical shapes.
 // ---------------------------------------------------------------------------
+
+/**
+ * A 60-second in-memory copy of a read that every open page polls. The page
+ * asked for /api/games, /api/changelog and /api/status on a timer from every
+ * tab of every reader, and each ask was a Firestore read of the collection;
+ * none of them changes faster than a research pass. Concurrent askers share
+ * one read. Per instance, and filled inside the request (billed per request:
+ * no timer).
+ */
+const readCache = new Map();
+function cachedRead(key, ttlMs, load) {
+  const hit = readCache.get(key);
+  if (hit && Date.now() - hit.at < ttlMs) return hit.promise;
+  const promise = load();
+  readCache.set(key, { at: Date.now(), promise });
+  // A failure must not be served for a minute.
+  promise.catch(() => { if (readCache.get(key) && readCache.get(key).promise === promise) readCache.delete(key); });
+  return promise;
+}
+/** Anything that writes what a cached read returns calls this. */
+function dropCached(...keys) { for (const k of keys) readCache.delete(k); }
+const READ_TTL_MS = 60 * 1000;
+
+/**
+ * This week's games, from the current board, each with whatever research
+ * notes exist for it (see games.thisWeek). Legacy documents in `games` count
+ * only when they are one of the board's games, or were added this week: the
+ * Games tab used to draw the whole collection, which nothing retires, so it
+ * listed last week's finished games beside this week's.
+ */
+async function loadThisWeek() {
+  const [boardDoc, snap, sb] = await Promise.all([
+    db.collection('board').doc('current').get(),
+    db.collection('games').limit(200).get(),
+    liveFeed.get(),
+  ]);
+  // The seed when nothing is stored (or it no longer validates), as
+  // /api/board does - its weekKey is empty, so it is never "this week" and
+  // nothing on it is ever researched.
+  let current;
+  try { current = boardDoc.exists ? board.validate(boardDoc.data()) : board.seed(); } catch (e) { current = board.seed(); }
+  return gamesLib.thisWeek({
+    board: current,
+    docs: snap.docs.map((d) => ({ id: d.id, ...d.data() })),
+    scoreboard: sb && sb.available ? sb.all : [],
+    now: Date.now(),
+  });
+}
+
 app.get('/api/games', async (req, res) => {
   try {
-    const snap = await db.collection('games').get();
-    res.json(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    const week = await cachedRead('games', READ_TTL_MS, loadThisWeek);
+    res.set('Cache-Control', 'private, max-age=30');
+    res.json(week.games);
   } catch (err) {
     console.error('GET /api/games', err);
     res.status(500).json({ error: 'Failed to load games.' });
   }
 });
 
-app.get('/api/asks', async (req, res) => {
+// The owner's own custom questions, with the answers. Owner-only since
+// 2026-09-26: it was public, so anyone could read what the owner had asked.
+app.get('/api/asks', requireResearch, async (req, res) => {
   try {
     const snap = await db.collection('asks').orderBy('askedAt', 'desc').limit(50).get();
+    res.set('Cache-Control', 'private, no-store');
     res.json(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
   } catch (err) {
     console.error('GET /api/asks', err);
@@ -506,8 +647,13 @@ app.get('/api/asks', async (req, res) => {
 
 app.get('/api/changelog', async (req, res) => {
   try {
-    const snap = await db.collection('changelog').orderBy('changedAt', 'desc').limit(50).get();
-    res.json(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    const rows = await cachedRead('changelog', READ_TTL_MS, async () => {
+      const snap = await db.collection('changelog').orderBy('changedAt', 'desc').limit(50).get();
+      // The page reads which game changed and when; the note is model text
+      // and is not drawn, so it is not sent.
+      return snap.docs.map((d) => ({ id: d.id, gameId: board.cleanId(d.data().gameId, ''), changedAt: d.data().changedAt || '' }));
+    });
+    res.json(rows);
   } catch (err) {
     console.error('GET /api/changelog', err);
     res.status(500).json({ error: 'Failed to load changelog.' });
@@ -537,7 +683,9 @@ app.get('/api/uga', async (req, res) => {
  * the owner's allowlist.
  */
 
+// Static: 132 names and colours that change with a deploy, not a week.
 app.get('/api/teams', (_req, res) => {
+  res.set('Cache-Control', 'public, max-age=86400');
   res.json({ conferences: teams.list(), default: teams.DEFAULT_TEAM });
 });
 
@@ -706,10 +854,14 @@ app.post('/api/fan/:team/research', requireLoginSilent, identity.requireBudget, 
  * needed and did not have.
  */
 app.get('/api/board', async (_req, res) => {
+  // Short: the page re-asks every ten minutes and on coming back to the
+  // foreground, and a rebuilt board should reach it within a minute.
+  res.set('Cache-Control', 'public, max-age=60');
   try {
     const doc = await db.collection('board').doc('current').get();
     const current = doc.exists ? board.validate(doc.data()) : board.seed();
-    res.json({ ...current, ...(await pollTop25(current)), stale: current.weekKey !== boardWeekKey(), seeded: !doc.exists });
+    res.json({ ...current, ...(await pollTop25(current)), ...(await slateFromFeed(current)),
+               stale: current.weekKey !== boardWeekKey(), seeded: !doc.exists });
   } catch (err) {
     // A stored board that no longer validates is a bug worth shouting about,
     // but not one worth an empty front page: fall back to the seed.
@@ -718,6 +870,30 @@ app.get('/api/board', async (_req, res) => {
     res.json({ ...fallback, ...(await pollTop25(fallback)), stale: true, seeded: true, error: 'stored board was unreadable' });
   }
 });
+
+/**
+ * Each slate game as the live scoreboard sees it, keyed by board game id:
+ * kickoff, state, the feed's current line and a DraftKings link when the feed
+ * carries one. The page uses it for the "Bet on DraftKings" links and for the
+ * line-now beside each pick. Never throws; with no scoreboard it is {}.
+ */
+async function slateFromFeed(current) {
+  try {
+    const sb = await liveFeed.get();
+    if (!sb.available) return {};
+    const feed = {};
+    for (const g of current.games) {
+      const pk = gamesLib.pairKey(g);
+      if (!pk) continue;
+      const e = sb.all.find((x) => [x.away.teamId, x.home.teamId].sort().join('|') === pk);
+      if (e) feed[g.id] = { startsAt: e.startsAt, state: e.state, line: e.line, overUnder: e.overUnder, lineSource: e.lineSource, dkUrl: e.dkUrl };
+    }
+    return { feed };
+  } catch (err) {
+    console.error('board: slate from feed failed', err && err.message);
+    return {};
+  }
+}
 
 /**
  * The Top 25 from the AP poll, when the board's own is missing or older than
@@ -815,7 +991,11 @@ app.post('/api/live/slip', async (req, res) => {
     const teamId = await liveTeamFor(req);
     if (!result.available) return res.json({ ...live.publicView(result), team: teamId, slip: [] });
     const slip = live.slipStatus((req.body || {}).items, result.all);
-    res.json({ ...live.publicView(result, { teamId, slipIds: live.slipGameIds(slip) }), team: teamId, slip });
+    // `cards`: the board's cards, placed or not, for the live score and
+    // line-now on each card (2026-09-26). Kept apart from `items` so a card
+    // nobody backed does not order the ticker as if it were on their slip.
+    const cards = live.slipStatus((req.body || {}).cards, result.all);
+    res.json({ ...live.publicView(result, { teamId, slipIds: live.slipGameIds(slip) }), team: teamId, slip, cards });
   } catch (err) {
     console.error('POST /api/live/slip', err);
     res.json({ available: false, message: live.UNAVAILABLE, slip: [] });
@@ -824,8 +1004,13 @@ app.post('/api/live/slip', async (req, res) => {
 
 app.get('/api/status', async (req, res) => {
   try {
-    const doc = await db.collection('control').doc('status').get();
-    res.json(doc.exists ? doc.data() : {});
+    const data = await cachedRead('status', READ_TTL_MS, async () => {
+      const doc = await db.collection('control').doc('status').get();
+      const d = doc.exists ? doc.data() : {};
+      // Timestamps only; the page draws nothing else from here.
+      return { lastRunAt: d.lastRunAt || null, boardWeek: d.boardWeek || null };
+    });
+    res.json(data);
   } catch (err) {
     console.error('GET /api/status', err);
     res.status(500).json({ error: 'Failed to load status.' });
@@ -1010,10 +1195,16 @@ app.post('/api/research/custom', requireResearch, identity.requireBudget, async 
 // SHARED games collection, so one person paying to cover a game covers it for
 // everyone, and the budget is what bounds the spend rather than an allowlist.
 // The owner still passes, by session or by site password.
+//
+// Since 2026-09-26 the answer goes through games.validate() before it is
+// written, and the document id is derived here from the two teams (or a slug
+// of the matchup) - the model used to choose it, and an id with a "/" in it
+// made Firestore throw after the credit had already been spent. It is stamped
+// with this week, which is what keeps it off next week's Games tab.
 app.post('/api/research/add-game', requireLoginSilent, identity.requireBudget, identity.requireDailyCap,
   async (req, res) => {
   try {
-    const { query } = req.body || {};
+    const query = typeof (req.body || {}).query === 'string' ? req.body.query.trim().slice(0, 120) : '';
     if (!query) {
       return res.status(400).json({ error: 'query is required.' });
     }
@@ -1021,69 +1212,124 @@ app.post('/api/research/add-game', requireLoginSilent, identity.requireBudget, i
       systemPrompt:
         'You are a college football betting research assistant. Research the given team or matchup using ' +
         'web search for the current DraftKings-market line, injuries, and storylines. Respond with ONLY a ' +
-        'single JSON object (no prose, no markdown fences) with these exact keys: {"id": "short-kebab-id", ' +
-        '"label": "Team A at Team B", "home": "Team B", "away": "Team A", "kickoff": "Day H:MMp ET · Network", ' +
+        'single JSON object (no prose, no markdown fences) with these exact keys: ' +
+        '{"label": "Team A at Team B", "home": "Team B", "away": "Team A", "kickoff": "Day H:MMp ET · Network", ' +
         '"tag": "top25 or interesting", "ranked": "e.g. #5 Team A (or empty string)", "market": "spread/total ' +
         'summary", "pick": "e.g. Team A -3.5 (empty string if passing)", "pickConfidence": 1-4, "summary": ' +
         '"1-2 sentence summary", "why": "fuller reasoning paragraph", "injuryNote": "or empty string", ' +
-        '"pass": true or false, "passReason": "if pass, why (else empty string)"}. Never invent a score, ' +
-        'injury, or line - if you cannot verify something, omit it or say so in the text fields.',
-      prompt: `Research this team or matchup for the tracked games board: ${query}`,
+        '"pass": true or false, "passReason": "if pass, why (else empty string)"}. Plain text only in every ' +
+        'field - no HTML. Never invent a score, injury, or line - if you cannot verify something, omit it or ' +
+        'say so in the text fields.',
+      prompt: `Research this team or matchup for this week's games board: ${query}`,
       user: req.user,
     });
 
-    data.id = data.id || query.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40) || `game-${Date.now()}`;
-    data.lastChecked = new Date().toISOString();
+    let game;
+    try {
+      game = gamesLib.validate({ ...data, lastChecked: new Date().toISOString() },
+        { id: gamesLib.idFor(data || {}, query), weekKey: boardWeekKey() });
+    } catch (e) {
+      console.error('POST /api/research/add-game: unusable answer -', e.message);
+      return res.status(422).json({ error: 'The research came back without a game to add, so nothing was saved. Try naming both teams.' });
+    }
 
-    await db.collection('games').doc(data.id).set(data, { merge: true });
+    await db.collection('games').doc(game.id).set(game, { merge: true });
     await db.collection('changelog').add({
-      gameId: data.id,
+      gameId: game.id,
       changedAt: new Date().toISOString(),
-      note: `Added ${data.label || query} to tracked games`,
+      note: `Added ${game.label} to this week's games`,
     });
+    dropCached('games', 'changelog');
 
-    res.json({ id: data.id, game: data });
+    res.json({ id: game.id, game });
   } catch (err) {
     console.error('POST /api/research/add-game', err);
     res.status(500).json({ error: 'Could not research and add that game.' });
   }
 });
 
+/** What a research call is told about one game: the board's facts plus the
+ *  notes already held, nothing more. */
+function researchBrief(g) {
+  const out = { id: g.id, label: g.label, kickoff: g.kickoffISO || g.kickoff || '' };
+  for (const k of ['kicker', 'market', 'pick', 'summary', 'why', 'injuryNote', 'passReason', 'lastChecked']) {
+    if (g[k]) out[k] = g[k];
+  }
+  return out;
+}
+
+/** The games document a research update produces: the board's facts, the
+ *  model's cleaned research fields, this week's stamp. */
+function researchedDoc(g, update, now) {
+  return gamesLib.validate({
+    label: g.label, home: g.home, away: g.away, kickoff: g.kickoff, tag: g.tag,
+    ranked: g.ranked || g.kicker || '', risk: g.risk,
+    ...gamesLib.validateUpdate(update), lastChecked: now,
+  }, { id: g.docId || g.id, weekKey: g.weekKey });
+}
+
+/**
+ * The games a research job may spend on: this week's, not yet kicked off.
+ * Logged with how many were left out, because the jobs this feeds used to
+ * research every games document ever written - last week's finished games
+ * included, every run (audit, 2026-09-26).
+ */
+async function researchableGames(route, cap) {
+  const week = await loadThisWeek();
+  const games = week.upcoming.slice(0, cap);
+  console.log(`${route}: ${games.length} upcoming game(s) to research; skipped ${week.skipped} that have kicked off or finished` +
+    (week.current ? '' : ' (the stored board is not this week\'s, so all of its games are over)'));
+  const skippedWhy = week.current
+    ? 'every game on this week\'s board has kicked off'
+    : 'the board is not this week\'s yet - nothing to research until it is rebuilt';
+  return { week, games, skippedWhy };
+}
+
+// The Saturday sweep (Cloud Scheduler `cfb-saturday-live`, hourly) and the
+// Refresh research button. Researches this week's games that have not kicked
+// off - see researchableGames().
 app.post('/api/research/refresh-board', requireLoginOrCron, async (req, res) => {
   try {
-    const snap = await db.collection('games').limit(15).get();
-    const games = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const { week, games, skippedWhy } = await researchableGames('refresh-board', 15);
+    if (!games.length) {
+      return res.json({ skipped: skippedWhy, finished: week.skipped, updated: 0, summary: `Nothing to refresh: ${skippedWhy}.` });
+    }
 
     const data = await runStructuredResearch({
       systemPrompt:
-        'You are a college football betting research assistant reviewing an existing tracked-games board. ' +
+        'You are a college football betting research assistant reviewing this week\'s games board. ' +
         'For EACH game given, use web search to check current injuries, line movement, and storylines, and ' +
         'decide if anything materially changed since it was last checked. Respond with ONLY a single JSON ' +
         'object (no prose, no markdown fences): {"updates": [{"id": "<matching id>", "market": "...", ' +
         '"pick": "...", "pickConfidence": 1-4, "summary": "...", "why": "...", "injuryNote": "...", ' +
         '"pass": true or false, "passReason": "..."}], "summary": "one sentence describing what changed ' +
         'overall"}. Only include a game in "updates" if something genuinely changed - do not rewrite games ' +
-        'with nothing new. Never invent a score, injury, or line.',
-      prompt: `Current tracked games:\n${JSON.stringify(games, null, 2)}`,
+        'with nothing new. Plain text only, no HTML. Never invent a score, injury, or line.',
+      prompt: `This week's games, none kicked off yet:\n${JSON.stringify(games.map(researchBrief), null, 2)}`,
       user: req.user,
     });
 
-    const updates = Array.isArray(data.updates) ? data.updates : [];
+    // Only the games that were sent, by the id they were sent under: the
+    // model does not get to create or rename a document.
+    const byId = new Map(games.map((g) => [g.id, g]));
+    const updates = (Array.isArray(data.updates) ? data.updates : [])
+      .map((u) => ({ u, g: u && byId.get(board.cleanId(u.id)) }))
+      .filter((x) => x.g);
     const batch = db.batch();
     const now = new Date().toISOString();
-    updates.forEach((u) => {
-      if (!u || !u.id) return;
-      batch.set(db.collection('games').doc(u.id), { ...u, lastChecked: now }, { merge: true });
-      batch.set(db.collection('changelog').doc(), {
-        gameId: u.id,
-        changedAt: now,
-        note: u.summary || 'Research update',
-      });
-    });
+    for (const { u, g } of updates) {
+      const doc = researchedDoc(g, u, now);
+      batch.set(db.collection('games').doc(doc.id), doc, { merge: true });
+      batch.set(db.collection('changelog').doc(), { gameId: doc.id, changedAt: now, note: gamesLib.clean(u.summary, 400) || 'Research update' });
+    }
     batch.set(db.collection('control').doc('status'), { lastRunAt: now }, { merge: true });
     await batch.commit();
+    dropCached('games', 'changelog', 'status');
 
-    res.json({ summary: data.summary || `Reviewed ${games.length} games.`, updated: updates.length });
+    res.json({
+      summary: gamesLib.clean(data.summary, 400) || `Reviewed ${games.length} games.`,
+      updated: updates.length, researched: games.length, finished: week.skipped,
+    });
   } catch (err) {
     console.error('POST /api/research/refresh-board', err);
     res.status(500).json({ error: 'Refresh failed.' });
@@ -1123,13 +1369,28 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
       return res.json({ skipped: 'the board is already on this week', weekKey: week });
     }
 
-    const staked = [...current.picks, ...current.parlays].map((p) => ({
+    // 1. How last week finished - from ESPN's finals first (2026-09-26): a
+    // pick whose game matched a final with certainty is graded by the same
+    // arithmetic as the live slip, against the real score, for free. Only
+    // what could not be matched goes to the model, which used to grade it all.
+    const cards = [
+      ...current.picks.map((p) => ({ id: p.id, kind: 'straight', title: p.title, matchup: p.matchup, market: p.market })),
+      ...current.parlays.map((p) => ({ id: p.id, kind: 'parlay', title: p.title, legs: p.legs.map((l) => ({ game: l.game, market: l.market })) })),
+    ];
+    let fromFinals = { graded: [], rest: cards };
+    if (/^\d{4}-\d{2}-\d{2}$/.test(current.weekKey || '')) {
+      const tue = Date.parse(current.weekKey + 'T12:00:00Z');
+      const days = [2, 3, 4].map((n) => new Date(tue + n * 86400000).toISOString().slice(0, 10).replace(/-/g, ''));
+      const finals = await live.fetchFinals((...a) => globalThis.fetch(...a), days);
+      fromFinals = live.gradeFromFinals(cards, finals);
+    }
+    console.log(`weekly-board: ${fromFinals.graded.length} graded from ESPN finals, ${fromFinals.rest.length} left for the model`);
+    const staked = fromFinals.rest.map((p) => ({
       id: p.id, title: p.title, matchup: p.matchup || (p.legs || []).map((l) => l.game).join(' + '),
       market: p.market || (p.legs || []).map((l) => l.market).join(' + '),
     }));
 
-    // 1. How last week finished.
-    let results = [];
+    let results = fromFinals.graded;
     if (staked.length) {
       const graded = await runStructuredResearch({
         systemPrompt:
@@ -1145,7 +1406,12 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
         maxTokens: 16000,
         tier: 'paid',
       });
-      results = Array.isArray(graded.results) ? graded.results : [];
+      // The model's grades, for what ESPN could not settle - and never for
+      // a card ESPN already graded.
+      const done = new Set(results.map((r) => r.id));
+      const byModel = (Array.isArray(graded.results) ? graded.results : [])
+        .filter((r) => r && staked.some((s) => s.id === board.cleanId(r.id)) && !done.has(board.cleanId(r.id)));
+      results = results.concat(byModel);
     }
 
     // 2. The coming week.
@@ -1208,6 +1474,10 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
 // the Batch API at half price. Batches usually land in minutes but are
 // allowed up to 24h, so this is only used where freshness doesn't matter -
 // Saturday and the manual button both stay on the live path.
+//
+// Same list as refresh-board: this week's games that have not kicked off
+// (researchableGames). It used to be `games.limit(20)` - every document ever
+// written, so each run paid to research last week's finished games.
 // ---------------------------------------------------------------------------
 const BATCH_SYSTEM_PROMPT =
   'You are a college football betting research assistant. Use web search to check the current ' +
@@ -1216,7 +1486,8 @@ const BATCH_SYSTEM_PROMPT =
   '"pick": "... (empty string if passing)", "pickConfidence": 1-4, "summary": "1-2 sentences", ' +
   '"why": "fuller reasoning", "injuryNote": "or empty string", "pass": true or false, ' +
   '"passReason": "if pass, why (else empty string)", "changed": true or false}. Set "changed" to ' +
-  'false if nothing material has moved since the notes below. Never invent a score, injury, or line.';
+  'false if nothing material has moved since the notes below. Plain text only, no HTML. Never invent ' +
+  'a score, injury, or line.';
 
 app.post('/api/research/batch-submit', requireLoginOrCron, async (req, res) => {
   try {
@@ -1225,19 +1496,19 @@ app.post('/api/research/batch-submit', requireLoginOrCron, async (req, res) => {
       return res.json({ skipped: 'a batch is already in flight', batchId: pending.data().batchId });
     }
 
-    const snap = await db.collection('games').limit(20).get();
-    const games = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    if (!games.length) return res.json({ skipped: 'no games tracked' });
+    const { week, games, skippedWhy } = await researchableGames('batch-submit', 20);
+    if (!games.length) return res.json({ skipped: skippedWhy, finished: week.skipped });
 
     const batch = await anthropic.messages.batches.create({
       requests: games.map((g) => ({
+        // board.ID_RE ids fit the Batch API's custom_id rule as they are.
         custom_id: g.id,
         params: {
           model: 'claude-sonnet-5',
           max_tokens: 2048,
           system: BATCH_SYSTEM_PROMPT,
           tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 4 }],
-          messages: [{ role: 'user', content: `Current notes for this game:\n${JSON.stringify(g, null, 2)}` }],
+          messages: [{ role: 'user', content: `Current notes for this game:\n${JSON.stringify(researchBrief(g), null, 2)}` }],
         },
       })),
     });
@@ -1247,9 +1518,17 @@ app.post('/api/research/batch-submit', requireLoginOrCron, async (req, res) => {
       status: 'pending',
       submittedAt: new Date().toISOString(),
       gameCount: games.length,
+      skipped: week.skipped,
+      // What each custom_id stands for, so collect writes a whole document
+      // under the right id without trusting anything in the answer.
+      games: games.map((g) => ({
+        id: g.id, docId: g.docId || g.id, label: g.label, home: g.home || '', away: g.away || '',
+        kickoff: g.kickoff || '', kicker: g.kicker || '', tag: g.tag || '', ranked: g.ranked || '',
+        weekKey: g.weekKey || '',
+      })),
     });
 
-    res.json({ batchId: batch.id, submitted: games.length });
+    res.json({ batchId: batch.id, submitted: games.length, finished: week.skipped });
   } catch (err) {
     console.error('POST /api/research/batch-submit', err);
     res.status(500).json({ error: 'Batch submit failed.' });
@@ -1264,6 +1543,7 @@ app.post('/api/research/batch-collect', requireLoginOrCron, async (req, res) => 
       return res.json({ skipped: 'nothing pending' });
     }
     const batchId = doc.data().batchId;
+    const sent = new Map((Array.isArray(doc.data().games) ? doc.data().games : []).map((g) => [g.id, g]));
     const batch = await anthropic.messages.batches.retrieve(batchId);
     if (batch.processing_status !== 'ended') {
       return res.json({ batchId, status: batch.processing_status, waiting: true });
@@ -1282,8 +1562,10 @@ app.post('/api/research/batch-collect', requireLoginOrCron, async (req, res) => 
     const note = (id, why) => { failed += 1; failures.push(`${id}: ${why}`); };
 
     for await (const entry of await anthropic.messages.batches.results(batchId)) {
+      const id = String(entry.custom_id || '');
+      if (!board.ID_RE.test(id)) { note(id.slice(0, 60), 'not an id this app sends'); continue; }
       if (entry.result.type !== 'succeeded') {
-        note(entry.custom_id, entry.result.type + (entry.result.error ? ` (${entry.result.error.type || 'error'})` : ''));
+        note(id, entry.result.type + (entry.result.error ? ` (${entry.result.error.type || 'error'})` : ''));
         continue;
       }
       const text = entry.result.message.content
@@ -1292,19 +1574,23 @@ app.post('/api/research/batch-collect', requireLoginOrCron, async (req, res) => 
         .join('\n');
       const match = text.match(/\{[\s\S]*\}/);
       if (!match) {
-        note(entry.custom_id, `no JSON in ${text.length} chars (stop_reason: ${entry.result.message.stop_reason})`);
+        note(id, `no JSON in ${text.length} chars (stop_reason: ${entry.result.message.stop_reason})`);
         continue;
       }
       let parsed;
-      try { parsed = JSON.parse(match[0]); } catch (e) { note(entry.custom_id, `unparseable JSON: ${e.message}`); continue; }
-      if (parsed.changed === false) continue;
+      try { parsed = JSON.parse(match[0]); } catch (e) { note(id, `unparseable JSON: ${e.message}`); continue; }
+      if (!parsed || typeof parsed !== 'object' || parsed.changed === false) continue;
 
-      delete parsed.changed;
-      writer.set(db.collection('games').doc(entry.custom_id), { ...parsed, lastChecked: now }, { merge: true });
+      const g = sent.get(id);
+      // A batch submitted before 2026-09-26 carries no game list: merge the
+      // cleaned research fields only, onto whatever the document already has.
+      const out = g ? researchedDoc(g, parsed, now) : { ...gamesLib.validateUpdate(parsed), lastChecked: now };
+      const docId = g ? out.id : id;
+      writer.set(db.collection('games').doc(docId), out, { merge: true });
       writer.set(db.collection('changelog').doc(), {
-        gameId: entry.custom_id,
+        gameId: docId,
         changedAt: now,
-        note: parsed.summary || 'Batched research update',
+        note: gamesLib.clean(parsed.summary, 400) || 'Batched research update',
       });
       updated += 1;
     }
@@ -1312,6 +1598,7 @@ app.post('/api/research/batch-collect', requireLoginOrCron, async (req, res) => 
     writer.set(db.collection('control').doc('status'), { lastRunAt: now }, { merge: true });
     writer.set(ref, { batchId, status: 'done', collectedAt: now, updated, failed, failures }, { merge: true });
     await writer.commit();
+    dropCached('games', 'changelog', 'status');
 
     res.json({ batchId, updated, failed, failures });
   } catch (err) {
