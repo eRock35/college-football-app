@@ -111,5 +111,54 @@ if (FACTS_SCENE) {
   });
 }
 
+// SOCIAL_SCENE=1 (2026-09-26): calls, a crowd and a season record to look
+// at. This week's board is five of the fixture's games; last week's graded
+// picks sit on it; forty readers have called New Mexico at Oklahoma and
+// Louisiana Tech at FIU, and six slips carry the Oklahoma pick.
+if (process.env.SOCIAL_SCENE === '1') {
+  const board = require('../board.js');
+  const bag = h.bag(process.env.FIRESTORE_DATABASE_ID);
+  const week = board.weekKeyAt(Date.now());
+  const prev = new Date(Date.parse(week + 'T12:00:00Z') - 7 * 86400000).toISOString().slice(0, 10);
+  const older = new Date(Date.parse(week + 'T12:00:00Z') - 14 * 86400000).toISOString().slice(0, 10);
+  const games = [
+    { id: 'nm-ou', label: 'New Mexico at Oklahoma', time: 'Sat 10:30p ET · ESPN2', kicker: '' },
+    { id: 'latech-fiu', label: 'Louisiana Tech at FIU', time: 'Wed 7:30p ET · CBSSN', kicker: '' },
+    { id: 'uga-ark', label: 'Georgia at Arkansas', time: 'Sat 7p ET · ABC', kicker: '' },
+    { id: 'lsu-om', label: 'LSU at Ole Miss', time: 'Sat 7:30p ET · ESPN', kicker: '' },
+    { id: 'fsu-bama', label: 'Florida State at Alabama', time: 'Sat 3:30p ET · CBS', kicker: '' },
+  ];
+  bag.set('board/current', {
+    weekKey: week, resultsWeek: prev, generatedAt: new Date().toISOString(), games,
+    picks: [
+      { id: 'ou-spread', title: 'Oklahoma -22.5', matchup: 'New Mexico at Oklahoma', time: 'Sat 10:30p ET', market: 'Spread · Oklahoma -22.5', odds: -110, confidence: 3,
+        thesis: 'New Mexico cannot run the ball and Oklahoma will not need to throw late.', why: 'Example card for the social scene.', risk: 'Backdoor cover.' },
+      { id: 'uga-spread', title: 'Georgia -24.5', matchup: 'Georgia at Arkansas', time: 'Sat 7p ET', market: 'Spread · Georgia -24.5', odds: -110, confidence: 4,
+        thesis: 'Georgia\u2019s defensive front against a banged-up Arkansas line.', why: 'Example card.', risk: 'Garbage-time points.' },
+    ],
+    parlays: [],
+    results: [
+      { id: 'r1', title: 'Texas -7', matchup: 'Texas at Michigan', market: 'Spread', finalScore: 'Texas 31, Michigan 17', outcome: 'win', odds: -110, kind: 'straight', source: 'espn' },
+      { id: 'r2', title: 'Clemson -3.5', matchup: 'North Carolina at Clemson', market: 'Spread', finalScore: 'Clemson 31, UNC 28', outcome: 'loss', odds: -110, kind: 'straight', source: 'espn' },
+      { id: 'r3', title: 'Under 48.5', matchup: 'Iowa at Minnesota', market: 'Total', finalScore: 'Iowa 17, Minnesota 13', outcome: 'win', odds: -105, kind: 'straight', source: 'espn' },
+      { id: 'r4', title: 'Ole Miss ML', matchup: 'LSU at Ole Miss', market: 'Moneyline', finalScore: 'Ole Miss 31, LSU 28', outcome: 'win', odds: 135, kind: 'straight', source: 'espn' },
+    ],
+  });
+  bag.set('board/week-' + prev, { weekKey: prev, resultsWeek: older, generatedAt: new Date(Date.now() - 7 * 86400000).toISOString(),
+    games: [{ id: 'a-b', label: 'Texas at Michigan', time: 'Sat' }], picks: [{ id: 'x', title: 'Texas -7', matchup: 'Texas at Michigan', market: 'Spread', odds: -110 }],
+    results: [
+      { id: 'o1', title: 'Georgia -20.5', outcome: 'win', odds: -110, kind: 'straight', finalScore: 'Georgia 70, WKU 20', source: 'espn' },
+      { id: 'o2', title: 'Two favourites', outcome: 'loss', odds: 264, kind: 'parlay', finalScore: '', source: 'espn' },
+      { id: 'o3', title: 'Oregon -14', outcome: 'win', odds: -110, kind: 'straight', finalScore: 'Oregon 38, Northwestern 14', source: 'espn' },
+    ] });
+  const tally = {};
+  tally['v__nm-ou__oklahoma'] = 31; tally['v__nm-ou__new-mexico'] = 9;
+  tally['v__latech-fiu__louisiana-tech'] = 14; tally['v__latech-fiu__fiu'] = 12;
+  tally['v__uga-ark__uga'] = 22; tally['v__uga-ark__arkansas'] = 6;
+  bag.set('crowd/' + week, tally);
+  for (let i = 0; i < 6; i++) bag.set('user-state/scene-' + i, { weekKey: week, updatedAt: new Date().toISOString(),
+    slip: { 'ou-spread': { stake: 25, placed: i < 4 }, 'uga-spread': { stake: 25, placed: i % 2 === 0 } } });
+}
+
 require(path.join(__dirname, '..', 'server.js'));
 console.log(`live boot on :${process.env.PORT} with fixture "${currentFixture()}" (today ET ${todayET})`);

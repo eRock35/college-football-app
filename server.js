@@ -13,6 +13,9 @@ const teams = require('./teams');
 const fan = require('./fan');
 const live = require('./live');
 const teamfacts = require('./teamfacts');
+const crowdLib = require('./crowd');
+const record = require('./record');
+const { mountSocial } = require('./social');
 const identityLib = require('./identity');
 const identityStore = require('./identity-store');
 
@@ -551,7 +554,21 @@ app.put('/api/slip', requireLoginSilent, async (req, res) => {
   try {
     const { slip, customPicks, bankroll, board: arrangement } = req.body || {};
     const week = boardWeekKey();
-    await db.collection('user-state').doc(slipDocId(req)).set({
+    const ref = db.collection('user-state').doc(slipDocId(req));
+    // Last week's slip is about to be overwritten by this week's first save.
+    // Keep it, if anything on it was placed, so the season record can grade
+    // it (2026-09-26). One read per save; the copy happens once a week.
+    const before = await ref.get();
+    if (before.exists) {
+      const old = before.data();
+      const oldWeek = slipWeekOf(old);
+      const placed = Object.values((old && old.slip) || {}).some((v) => v && v.placed === true);
+      if (oldWeek && oldWeek !== week && placed) {
+        await db.collection('slip-history').doc(`${slipDocId(req)}__${oldWeek}`)
+          .set({ ...old, owner: slipDocId(req), weekKey: oldWeek, archivedAt: new Date().toISOString() });
+      }
+    }
+    await ref.set({
       slip: cleanSlip(slip),
       customPicks: cleanCustomPicks(customPicks),
       bankroll: typeof bankroll === 'string' ? bankroll.slice(0, 32) : '',
@@ -933,6 +950,13 @@ const liveFeed = live.createFeed({
   // Resolved on every call rather than captured, so the test suite can stand
   // a fake in front of the upstream while its own requests still go through.
   fetch: (...args) => globalThis.fetch(...args),
+});
+
+// Calls, records and brag cards (2026-09-26) - social.js. No model call in
+// any of it, so none of it is metered.
+const social = mountSocial(app, {
+  db, FieldValue: require('@google-cloud/firestore').FieldValue, liveFeed,
+  currentUser, slipDocId, boardWeekKey, sharerName, slipWeekOf,
 });
 
 // The reader's team, from prefs/<uid>. The page polls every 20 s on a game
@@ -1377,9 +1401,7 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
     // (2026-09-26). The build used to ask web search for "the current week's
     // schedule" and once got last season's; now it may only use these games,
     // and live.groundBoard drops anything else it proposes.
-    const weekTue = Date.parse(week + 'T12:00:00Z');
-    const slateDays = [0, 1, 2, 3, 4].map((n) => new Date(weekTue + n * 86400000).toISOString().slice(0, 10).replace(/-/g, ''));
-    const slate = await live.fetchDays((...a) => globalThis.fetch(...a), slateDays);
+    const slate = await social.slateForWeek(week);
     const brief = live.slateBrief(slate);
     if (brief.length < 3) {
       console.error(`weekly-board: ESPN gave ${brief.length} FBS games for ${week}; board left as is`);
@@ -1394,20 +1416,46 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
       ...current.picks.map((p) => ({ id: p.id, kind: 'straight', title: p.title, matchup: p.matchup, market: p.market })),
       ...current.parlays.map((p) => ({ id: p.id, kind: 'parlay', title: p.title, legs: p.legs.map((l) => ({ game: l.game, market: l.market })) })),
     ];
+    // The price each card was offered at, carried onto its result for the
+    // season record's units (2026-09-26).
+    const priced = new Map([
+      ...current.picks.map((p) => [p.id, { odds: p.odds, kind: 'straight' }]),
+      ...current.parlays.map((p) => [p.id, { odds: record.parlayOdds(p.legs), kind: 'parlay' }]),
+    ]);
+    const withPrice = (r) => ({ ...r, ...(priced.get(board.cleanId(r.id)) || {}) });
     let fromFinals = { graded: [], rest: sameWeek ? [] : cards };
+    let offSchedule = [];
     if (!sameWeek && /^\d{4}-\d{2}-\d{2}$/.test(current.weekKey || '')) {
-      const tue = Date.parse(current.weekKey + 'T12:00:00Z');
-      const days = [2, 3, 4].map((n) => new Date(tue + n * 86400000).toISOString().slice(0, 10).replace(/-/g, ''));
-      const finals = await live.fetchFinals((...a) => globalThis.fetch(...a), days);
-      fromFinals = live.gradeFromFinals(cards, finals);
+      // Every game of that week (stored for good at finals/<week>), not only
+      // the finals: a card whose two teams did not play each other that week
+      // is voided here rather than sent to a model, which once found last
+      // season's score for a game this season never had (2026-09-26).
+      const oldSlate = await social.slateForWeek(current.weekKey);
+      fromFinals = live.gradeFromFinals(cards, oldSlate.filter((g) => g.final));
+      if (oldSlate.length) {
+        const onSlate = (text) => {
+          const pk = gamesLib.pairKey({ label: text });
+          return !pk || !!crowdLib.findGame({ label: text }, oldSlate);
+        };
+        const keep = [];
+        for (const c of fromFinals.rest) {
+          const texts = c.kind === 'parlay' ? (c.legs || []).map((l) => l.game) : [c.matchup];
+          if (texts.every(onSlate)) keep.push(c);
+          else offSchedule.push(c);
+        }
+        fromFinals.rest = keep;
+      }
     }
-    console.log(`weekly-board: ${fromFinals.graded.length} graded from ESPN finals, ${fromFinals.rest.length} left for the model`);
+    offSchedule = offSchedule.map((c) => ({ id: c.id, title: c.title,
+      matchup: c.matchup || (c.legs || []).map((l) => l.game).join(' + '), market: c.market || '',
+      outcome: 'void', note: 'Not on that week\'s schedule, so not graded.', source: 'espn' }));
+    console.log(`weekly-board: ${fromFinals.graded.length} graded from ESPN finals, ${offSchedule.length} voided as off-schedule, ${fromFinals.rest.length} left for the model`);
     const staked = fromFinals.rest.map((p) => ({
       id: p.id, title: p.title, matchup: p.matchup || (p.legs || []).map((l) => l.game).join(' + '),
       market: p.market || (p.legs || []).map((l) => l.market).join(' + '),
     }));
 
-    let results = sameWeek ? (current.results || []) : fromFinals.graded;
+    let results = sameWeek ? (current.results || []) : fromFinals.graded.concat(offSchedule).map(withPrice);
     if (staked.length) {
       const graded = await runStructuredResearch({
         systemPrompt:
@@ -1428,7 +1476,7 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
       const done = new Set(results.map((r) => r.id));
       const byModel = (Array.isArray(graded.results) ? graded.results : [])
         .filter((r) => r && staked.some((s) => s.id === board.cleanId(r.id)) && !done.has(board.cleanId(r.id)));
-      results = results.concat(byModel);
+      results = results.concat(byModel.map(withPrice));
     }
 
     // 2. The coming week.
@@ -1482,7 +1530,8 @@ app.post('/api/research/weekly-board', requireLoginOrCron, async (req, res) => {
     if (grounded.board.games.length < 3 || grounded.board.picks.length < 2) {
       throw new Error(`the proposed board did not match this week's schedule (${grounded.board.games.length} games, ${grounded.board.picks.length} picks kept); the board was left as it is`);
     }
-    const next = board.validate({ ...grounded.board, results, weekKey: week, generatedAt: new Date().toISOString() });
+    const next = board.validate({ ...grounded.board, results, weekKey: week,
+      resultsWeek: sameWeek ? current.resultsWeek : current.weekKey, generatedAt: new Date().toISOString() });
 
     await db.collection('board').doc('current').set(next);
     // Last week's board, kept so a result can be checked against what was
@@ -1649,7 +1698,7 @@ app.get('/api/health', (req, res) => res.status(200).send('ok'));
 
 // A shared slip is a page anyone can open. Registered before the catch-all,
 // and outside the gate for the same reason the link exists at all.
-app.get('/s/:shareId', (req, res) => res.sendFile(path.join(__dirname, 'public', 'shared-slip.html')));
+// /s/:shareId is served by social.js, with the tags that give a pasted link its picture.
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));

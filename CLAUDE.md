@@ -558,13 +558,129 @@ kickoff, "closed ... ✓ beat the close" after, labelled with whose line it is.
 
 ### Last week graded from ESPN's finals (2026-09-26)
 
-`weekly-board` grades from the scoreboard first: `live.fetchFinals()` reads
-`&dates=` for Thursday, Friday and Saturday of the old board's week and
+`weekly-board` grades from the scoreboard first: `social.slateForWeek()` reads
+`&dates=` for every day of the old board's week (Sunday to Saturday, kept at
+`finals/<week>` since 2026-09-26 - see "Call it" below) and
 `live.gradeFromFinals()` runs the live slip's own matching and maths over the
 finals - win/loss/push with the real final score, `source: 'espn'`. Only
 cards it cannot settle (unmatched, not final, props, team totals) go to the
 model, and the model cannot overrule a final. Any ESPN failure just leaves
 more for the model.
+
+## Call it, track records, badges and brag cards (2026-09-26)
+
+Erik asked for features "that draw users in ... and make it fun". He picked
+three: track records and badges, crowd vs you, brag cards. **No model call
+anywhere in them**, so none is metered - they are free to everyone, signed in
+or not, and they are the reason to come back on a Saturday.
+
+**Pure modules, one route file:** `crowd.js` (the poll, the split, grading a
+call), `record.js` (the board's season, a reader's slip graded, badges),
+`cards.js` (SVG -> PNG), and `social.js`, which mounts every route and is the
+only one of them that touches Firestore or ESPN. `server.js` mounts it just
+after `liveFeed`.
+
+### Call it
+
+A "who covers?" on each game of **this week's board** (`board/current` only
+when its `weekKey` is this week). Two buttons, away first, each with its
+spread from the scoreboard (`crowd.sidesFor` via `live.lineNow`); no line
+posted makes it "who wins?". The split is revealed **after** you answer, so
+the crowd cannot steer the first tap. Closed at kickoff (scoreboard state,
+else the board's own time). Tapping your side again takes the call back.
+
+- **Graded against the spread you saw**: each vote stores `spread` at the
+  moment of the call (`crowd-votes/<week>__<hash>` -> `votes.<gameId> =
+  {side, spread, at}`), so a line that moves later does not change it.
+- **Tally** `crowd/<week>`: top-level `v__<gameId>__<teamId>` counters moved
+  with `FieldValue.increment`, because ids are `[a-z0-9-]` and `__` cannot
+  occur in one. A change of mind is -1 / +1. A per-voter in-memory lock stops
+  a double tap counting twice on one instance.
+- **Who votes**: signed in -> the account; signed out -> `cfb_v`, 18 random
+  bytes in an HttpOnly cookie, set only on the first vote (a GET never sets
+  one). The documents are keyed by `sha256(voterKey)`, never the cookie or
+  uid. On the first request seen signed in with that cookie, the signed-out
+  calls **move onto the account** (`adoptAnon`; where both called a game the
+  account's stands and the tally is corrected) and the cookie is cleared.
+- **Public side** is >= 70% of >= 10 calls. **Slip shares** ("On 34% of
+  readers' slips") come from this week's `user-state` docs and are hidden
+  below 5 slips, so a percentage can never point at one person.
+- 60 votes a minute per IP, per instance.
+
+### Records
+
+- **The board's season** (`GET /api/record`, public): every stored board
+  already carries the previous week's graded `results`, so `board/current` +
+  `board/week-*` *are* the season. `record.boardSeason` files each board's
+  results under `resultsWeek` (new, written by weekly-board; older boards:
+  weekKey - 7 days). Units are 1u per pick at the price posted: results now
+  carry `odds` and `kind`; older ones get their price from the archived
+  board (`priceBook`), else -110 for a straight. The Card tab's green chip
+  opens it.
+- **A reader's** (`GET /api/record/me`): calls from `crowd-votes` (by voter
+  hash) and, signed in, placed slips from `slip-history` + the current
+  `user-state`, each graded with the live slip's own `gradeFromFinals`
+  against **that week's** scoreboard. Signed out gets calls only, and says so.
+- **`slip-history/<owner>__<week>`**: `PUT /api/slip` now reads the doc
+  first, and when this week's first save would overwrite a previous week's
+  slip with anything placed on it, copies it there. One read per save.
+- **`finals/<week>`**: a week's full scoreboard (compacted), stored the first
+  time it is asked for after the week ends, so a past week is graded the same
+  way forever without asking ESPN again. The current week is fetched
+  (`live.weekDays`: Sunday before the key to Saturday) and held 5 minutes,
+  with today's games from the 20-second live feed.
+- **Grading guard (weekly-board)**: last week's cards are now graded against
+  that week's full slate, and a card whose two teams did not play each other
+  that week is **void** ("Not on that week's schedule") instead of going to
+  the model - which is how last season's Alabama-Georgia would otherwise
+  have been "graded" with last season's score.
+
+### Badges
+
+`record.BADGES`, all listed, locked ones greyed with their hint (the point:
+"Perfect week" greyed out is a reason to come back): On the board, First win,
+Perfect week (3-0+ in a week of calls), Contrarian (won a call < 35% of >= 5
+readers made), Called the upset (cashed a straight at +150 or longer), Parlay
+hit, Heater (5 straight), Beat the board (out-called the board's picks that
+week), Regular (calls in 3 weeks). Computed on read from the graded weeks;
+nothing stored.
+
+### Brag cards
+
+- `POST /api/brag {kind: 'week'|'season', weekKey?}` freezes the numbers in
+  `brags/<12-char id>` (no account, no email - the first word of a display
+  name, or "A reader") and returns `/b/<id>` and `/b/<id>.png`. 30 an hour
+  per IP. Nothing to brag about is a 400. A week with nothing final yet is a
+  dare ("3 calls. Locked in. Think they're wrong?"), not a 0-0.
+- `/b/<id>` is a small page with `og:image` / `summary_large_image`, so a
+  pasted link unfolds into the card, and a button into the app.
+- `/s/<shareId>` (shared slips) now injects the same tags and `/s/<id>.png`
+  draws the slip. `/og.png` is the app's own preview (the board's season and
+  this week's games), referenced from `index.html`'s `og:image`.
+- **Drawn on the server from graded data, never uploaded by the browser**: a
+  share link lives on this domain, and letting a request choose its picture
+  would make it an image host. `@resvg/resvg-js` (prebuilt binaries, no
+  system libraries) with **Inter bundled in `fonts/`** (Latin subset,
+  converted from `inter-ui`'s woff2; SIL OFL, licence beside it). System
+  fonts are not loaded. The subset has no emoji or symbols, so every mark on
+  a card is a drawn shape - do not put a ✓ in card text, it renders blank.
+  PNGs are cached in memory (200); brags are immutable.
+- The page makes the card, **shows it**, and shares on a second tap: sharing
+  straight after two round trips would lose the tap's user activation, and
+  iOS refuses a share sheet without one. With the picture pre-fetched, Share
+  sends the PNG file itself (Messages, Instagram) where `canShare` allows,
+  else the link; desktop copies the link.
+
+Privacy: `strongtechnicalconsulting.com/privacy#football` (eriks-projects
+`site/privacy.html`) describes the calls, the cookie, the slip shares and
+what a shared card shows. Change any of that and change the page.
+
+Tests: `test/social.js` (the poll, the split, grading, the cookie and its
+adoption on sign-in, slip history, records, badges, cards, OG tags),
+`test/audit.js` (the off-schedule void, prices on results), `test/render.js`
+(hostile calls, records and badges drawn escaped). `SOCIAL_SCENE=1 node
+test/boot-live.js` boots a board, a crowd and a season for a browser.
+Rendered at 390px and 1280px, light and dark.
 
 ## Commit and PR conventions
 

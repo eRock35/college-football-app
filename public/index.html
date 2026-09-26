@@ -6,6 +6,17 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CFB App">
+<meta name="description" content="Call every college football game against the spread, see where the crowd is, track your season record, and follow live scores. Free.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="College Football">
+<meta property="og:title" content="College Football: call every game">
+<meta property="og:description" content="Live scores, the crowd's split on every game, and a season record for your calls. Free.">
+<meta property="og:image" content="https://footballapp.strongtechnicalconsulting.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://footballapp.strongtechnicalconsulting.com/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://footballapp.strongtechnicalconsulting.com/og.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -453,6 +464,74 @@
   .result-title{font-size:14px; font-weight:600;}
   .result-sub{font-size:12.5px; color:var(--text-faint); line-height:1.45;}
   .board-note{font-size:13px; color:var(--text-faint); margin:8px 0 0;}
+
+  /* ---- Call it, records, badges (2026-09-26) ---- */
+  .season-chip{display:flex; align-items:center; gap:8px; width:100%; min-height:44px; margin-top:12px; padding:10px 14px;
+    border:0; border-radius:14px; background:var(--positive-soft); color:var(--text); font:inherit; font-size:14px; text-align:left; cursor:pointer;}
+  .season-chip b{font-variant-numeric:tabular-nums; font-size:15px;}
+  .season-chip .u{color:var(--positive); font-weight:700; font-variant-numeric:tabular-nums;}
+  .season-chip .chev{margin-left:auto; color:var(--text-faint); font-size:18px;}
+  .calls{margin-top:14px; background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px 14px 4px;}
+  .calls-head{display:flex; align-items:flex-start; justify-content:space-between; gap:12px;}
+  .calls-title{font-size:20px; font-weight:800; margin:0; letter-spacing:-.01em;}
+  .calls-sub{margin:2px 0 0; font-size:13.5px; color:var(--text-dim); line-height:1.4;}
+  .calls-you{flex:0 0 auto; min-height:44px; padding:0 14px; border:0; border-radius:999px; background:var(--accent-soft);
+    color:var(--tint); font:inherit; font-size:14px; font-weight:700; cursor:pointer; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .calls-list{display:grid; grid-template-columns:minmax(0,1fr); margin-top:8px;}
+  @media (min-width:700px){ .calls-list{grid-template-columns:repeat(2, minmax(0,1fr)); column-gap:20px;} }
+  .call{padding:12px 0 10px; box-shadow:inset 0 1px 0 var(--sep); min-width:0;}
+  .call-top{display:flex; align-items:baseline; gap:6px 8px; flex-wrap:wrap; margin-bottom:8px;}
+  .call-label{font-weight:700; font-size:15px;}
+  .call-meta{font-size:12.5px; color:var(--text-faint);}
+  .call-flag{font-size:11px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; padding:2px 7px; border-radius:6px;
+    background:var(--warning-soft); color:var(--warning);}
+  .call-sides{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px;}
+  .call-side{position:relative; overflow:hidden; display:flex; align-items:center; justify-content:space-between; gap:6px;
+    min-height:48px; padding:0 12px; border:1.5px solid var(--border); border-radius:12px; background:var(--surface);
+    color:var(--text); font:inherit; font-size:15px; font-weight:700; cursor:pointer; text-align:left; font-variant-numeric:tabular-nums;
+    transition:border-color .15s ease, transform .12s ease;}
+  .call-side:active:not(:disabled){transform:scale(.97);}
+  .call-side:disabled{cursor:default; color:var(--text-dim); background:var(--surface-2); border-color:transparent;}
+  .call-side.mine:disabled, .call-side.won:disabled, .call-side.lost:disabled{color:var(--text); background:var(--surface);}
+  .call-side .bar{position:absolute; left:0; top:0; bottom:0; background:var(--fill); transition:width .45s cubic-bezier(.2,.8,.2,1);}
+  .call-side .t, .call-side .pct{position:relative; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .call-side .pct{flex:0 0 auto; font-size:13px; font-weight:600; color:var(--text-dim);}
+  .call-side.mine{border-color:var(--tint); box-shadow:inset 0 0 0 1px var(--tint);}
+  .call-side.mine .bar{background:var(--accent-soft);}
+  .call-side.won{border-color:var(--positive);}
+  .call-side.won .bar{background:var(--positive-soft);}
+  .call-side.lost{border-color:var(--negative); box-shadow:inset 0 0 0 1px var(--negative);}
+  .call-foot{margin-top:7px; font-size:12.5px; color:var(--text-dim); line-height:1.4;}
+  .call-foot .w{color:var(--positive); font-weight:700;}
+  .call-foot .l{color:var(--negative); font-weight:700;}
+  .calls-empty{padding:12px 0; font-size:14px; color:var(--text-dim); box-shadow:inset 0 1px 0 var(--sep);}
+  .card-crowd{font-size:12.5px; color:var(--text-dim); margin-top:4px;}
+  .card-crowd[hidden]{display:none;}
+  .rec-hero{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; margin:8px 0 12px;}
+  .rec-tile{background:var(--fill); border-radius:14px; padding:10px 12px; min-width:0;}
+  .rec-tile .k{font-size:12px; color:var(--text-dim); font-weight:600;}
+  .rec-tile .v{font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.02em; line-height:1.2;}
+  .rec-tile .s{font-size:12.5px; color:var(--text-dim);}
+  .rec-tile .s.up{color:var(--positive); font-weight:700;}
+  .rec-tile .s.down{color:var(--negative); font-weight:700;}
+  .sheet-sec{font-size:12.5px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.05em; margin:16px 0 6px;}
+  .badge-grid{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px;}
+  .badge{background:var(--fill); border-radius:14px; padding:10px 6px; text-align:center;}
+  .badge .i{font-size:26px; line-height:1.25;}
+  .badge .n{font-size:12.5px; font-weight:700; margin-top:2px; color:var(--text);}
+  .badge .d{font-size:11.5px; color:var(--text-dim); margin-top:2px; line-height:1.3;}
+  .badge.locked .i{filter:grayscale(1); opacity:.35;}
+  .badge.earned{background:var(--warning-soft);}
+  .rec-week{padding:10px 0; box-shadow:inset 0 1px 0 var(--sep);}
+  .rec-week-head{display:flex; justify-content:space-between; gap:8px; font-weight:700; font-size:14.5px; margin-bottom:4px;}
+  .rec-week-head span{font-variant-numeric:tabular-nums; color:var(--text-dim); font-weight:600;}
+  .rec-row{display:flex; gap:8px; align-items:baseline; font-size:13.5px; padding:3px 0; color:var(--text);}
+  .rec-row .o{flex:0 0 46px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;}
+  .rec-row .x{color:var(--text-dim); font-size:12.5px; margin-left:auto; white-space:nowrap; font-variant-numeric:tabular-nums;}
+  .o.win{color:var(--positive);} .o.loss{color:var(--negative);} .o.push, .o.pending, .o.void{color:var(--text-dim);}
+  .rec-share{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; margin:4px 0 4px;}
+  .rec-share .reset-btn{width:100%;}
+  .brag-img{display:block; width:100%; height:auto; border-radius:14px; margin:6px 0 12px; background:#05070D; aspect-ratio:1200/630;}
   @media (prefers-color-scheme: dark){
     .result-badge.win{background:#3ddc8433; color:#5fe39b;}
     .result-badge.loss{background:#ff6b6b33; color:#ff8f8f;}
@@ -964,7 +1043,22 @@
     <div class="slate-strip" id="slate-strip"></div>
     <p class="board-note" id="board-note" hidden></p>
   </div>
+  <!-- The board's season, one tap from the top (2026-09-26): a new visitor
+       should be able to see how the picks have done before reading them. -->
+  <button class="season-chip" id="season-chip" type="button" hidden></button>
   <section class="results-strip" id="results-strip" hidden aria-label="How last week finished"></section>
+  <!-- Call it (2026-09-26): one tap per game, the split once you have
+       answered, graded against the final. Free, no account needed. -->
+  <section class="calls" id="calls" hidden aria-labelledby="calls-title">
+    <div class="calls-head">
+      <div class="calls-title-wrap">
+        <h2 class="calls-title" id="calls-title">Call it</h2>
+        <p class="calls-sub" id="calls-sub">Who covers? One tap a game. See where everyone else landed.</p>
+      </div>
+      <button class="calls-you" id="calls-you" type="button" aria-haspopup="dialog">Your record</button>
+    </div>
+    <div class="calls-list" id="calls-list"></div>
+  </section>
   <!-- The poll. A different question from the best bets: who is ranked and
        what are they doing on Saturday, rather than what to back. -->
   <section class="top25" id="top25" hidden aria-label="This week's Top 25">
@@ -2564,6 +2658,7 @@
             '<div class="pick-title">' + esc(p.title) + '</div>' +
             '<div class="pick-sub">' + esc(p.matchup) + '</div>' +
             '<div class="pick-time">' + esc(p.time) + ' &middot; ' + esc(p.market) + ' (' + esc(fmtAmerican(p.odds)) + ')</div>' +
+            cardCrowdHtml(p.id) +
           '</div>' +
           '<div class="confidence"><span class="lbl">Conviction</span><span class="dots">' + dotsHtml(p.confidence) + '</span></div>' +
         '</div>' +
@@ -2596,6 +2691,7 @@
             '<span class="pick-kind parlay">' + legs.length + '-leg parlay</span>' +
             '<div class="pick-title">' + esc(p.title) + '</div>' +
             '<div class="pick-sub">' + legs.length + ' selections &middot; combined ' + esc(fmtAmerican(Number(decimalToAmerican(dec)))) + '</div>' +
+            cardCrowdHtml(p.id) +
           '</div>' +
           '<div class="confidence"><span class="lbl">Conviction</span><span class="dots">' + dotsHtml(p.confidence) + '</span></div>' +
         '</div>' +
@@ -2629,6 +2725,7 @@
     var cardDrafts = captureChatDrafts();
     list.innerHTML = html;
     restoreChatDrafts(cardDrafts);
+    paintCardCrowd();
   }
 
   function searchAndAddCard(){
@@ -5140,7 +5237,337 @@
       if (syncEnabled) initSlipSync();
     }
     if (Date.now() - boardLoadedAt > 60 * 1000) loadBoard();
+    if (Date.now() - crowdLoadedAt > 60 * 1000) loadCrowd();
     if (dbCap && dbCap.kick) dbCap.kick();
+  }
+
+
+  // ---------- Call it, records and brag cards (2026-09-26) ----------
+  //
+  // One tap per game on "who covers?", the split revealed once you have
+  // answered (so the crowd cannot steer the first tap), every call graded
+  // against the final, and a record, badges and a shareable card built from
+  // them. The server grades everything; this draws it. No model call.
+  var CROWD = null;
+  var BOARD_RECORD = null;
+  var crowdLoadedAt = 0;
+  var BRAG = null;
+
+  function wlpText(r){ return r ? (r.w || 0) + '-' + (r.l || 0) + (r.p ? '-' + r.p : '') : '0-0'; }
+  function pctOf(r){ var d = (r && ((r.w || 0) + (r.l || 0))) || 0; return d ? Math.round(100 * r.w / d) : null; }
+  function moneyText(n){ n = Number(n) || 0; return (n >= 0 ? '+' : '−') + '$' + Math.abs(n).toFixed(Math.abs(n) % 1 ? 2 : 0); }
+
+  function loadCrowd(){
+    crowdLoadedAt = Date.now();
+    return fetch('/api/crowd', {headers:{'Accept':'application/json'}, credentials:'same-origin'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ CROWD = d; renderCalls(); paintCardCrowd(); })
+      .catch(function(){});
+  }
+
+  function loadBoardRecord(){
+    return fetch('/api/record', {headers:{'Accept':'application/json'}})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ BOARD_RECORD = d && d.board; paintSeasonChip(); })
+      .catch(function(){});
+  }
+
+  function renderCalls(){
+    var box = document.getElementById('calls');
+    var list = document.getElementById('calls-list');
+    if (!box || !list) return;
+    if (!CROWD || !CROWD.open || !Array.isArray(CROWD.games) || !CROWD.games.length){ box.hidden = true; list.innerHTML = ''; return; }
+    box.hidden = false;
+    var you = CROWD.you || {};
+    var btn = document.getElementById('calls-you');
+    if (btn) btn.textContent = you.called
+      ? (you.w + you.l + you.p ? 'You’re ' + wlpText(you) : you.called + ' called') + ' ›'
+      : 'Your record ›';
+    var sub = document.getElementById('calls-sub');
+    if (sub){
+      var rd = CROWD.readers;
+      var rp = rd ? pctOf(rd) : null;
+      sub.textContent = rp !== null && (rd.w + rd.l) >= 5
+        ? 'Readers are ' + rp + '% against the spread this week. One tap a game to join in.'
+        : 'Who covers? One tap a game, then see where everyone else landed.';
+    }
+    // Still open first, then under way, then finished: the ones you can do
+    // something about lead.
+    var rank = function(g){ return g.open ? 0 : g.state === 'final' ? 2 : 1; };
+    var ordered = CROWD.games.map(function(g, i){ return { g: g, i: i }; })
+      .sort(function(a, b){ return rank(a.g) - rank(b.g) || a.i - b.i; })
+      .map(function(x){ return x.g; });
+    list.innerHTML = ordered.map(callHtml).join('');
+  }
+
+  function callHtml(g){
+    var mine = g.mine;
+    var reveal = !!mine || !g.open;
+    var total = Number(g.total) || 0;
+    var sides = (g.sides || []).map(function(sd){
+      var isMine = !!(mine && mine.side === sd.teamId);
+      var cls = 'call-side' + (isMine ? ' mine' : '');
+      if (g.covered){ if (g.covered === sd.teamId) cls += ' won'; else if (isMine) cls += ' lost'; }
+      var label = isMine && mine.label ? mine.label : sd.label;
+      var pct = Math.max(0, Math.min(100, Number(sd.pct) || 0));
+      return '<button class="' + cls + '" type="button" data-call-game="' + esc(g.id) + '" data-call-side="' + esc(sd.teamId) + '"' +
+        (g.open ? '' : ' disabled') + ' aria-pressed="' + (isMine ? 'true' : 'false') + '"' +
+        ' aria-label="' + esc(label + (reveal && total ? ', ' + pct + '% of calls' : '') + (isMine ? ', your call' : '')) + '">' +
+        (reveal && total ? '<span class="bar" style="width:' + pct + '%"></span>' : '') +
+        '<span class="t">' + esc(label) + '</span>' +
+        (reveal && total ? '<span class="pct">' + pct + '%</span>' : '') +
+      '</button>';
+    }).join('');
+    var foot = '';
+    var mineSide = mine && (g.sides || []).filter(function(sd){ return sd.teamId === mine.side; })[0];
+    if (mine && mine.outcome === 'win') foot = '<span class="w">You called it.</span> ';
+    else if (mine && mine.outcome === 'loss') foot = '<span class="l">Missed this one.</span> ';
+    else if (mine && mine.outcome === 'push') foot = 'Push. ';
+    if (g.score) foot += esc(g.score) + (g.state === 'final' ? ' · Final' : ' · Live') + '. ';
+    if (mine && !mine.outcome && mineSide && total){
+      foot += (total === 1 ? 'First call on this game.' : 'You’re with ' + esc(mineSide.pct) + '% of ' + esc(total) + ' calls.') + (g.open ? ' Tap again to take it back.' : '');
+    } else if (!mine && g.open){
+      foot += total ? esc(total) + ' call' + (total === 1 ? '' : 's') + ' so far. Tap to see the split.' : 'No calls yet. Be the first.';
+    } else if (!mine && !g.open && !g.score){
+      foot += 'Calls closed at kickoff.';
+    }
+    var flag = g.publicSide
+      ? '<span class="call-flag" title="Most readers are on one side">Public side</span>' : '';
+    return '<div class="call" data-call-id="' + esc(g.id) + '">' +
+      '<div class="call-top"><span class="call-label">' + esc(g.label) + '</span>' +
+        '<span class="call-meta">' + esc([g.time, g.question].filter(Boolean).join(' · ')) + '</span>' + flag + '</div>' +
+      '<div class="call-sides">' + sides + '</div>' +
+      '<div class="call-foot">' + foot + '</div>' +
+    '</div>';
+  }
+
+  function castCall(gameId, side){
+    if (!CROWD || !CROWD.games) return;
+    var g = CROWD.games.filter(function(x){ return x.id === gameId; })[0];
+    if (!g || !g.open) return;
+    var prev = g.mine;
+    var next = prev && prev.side === side ? null : side;
+    // Drawn at once; the answer from the server replaces it.
+    g.mine = next ? { side: next, label: '', outcome: null } : null;
+    renderCalls();
+    fetch('/api/crowd/vote', {
+      method: 'POST', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ gameId: gameId, side: next })
+    }).then(function(r){
+      return r.json().then(function(d){ return { ok: r.ok, d: d }; });
+    }).then(function(x){
+      if (!x.ok || x.d.error){ g.mine = prev; renderCalls(); toast(x.d.error || 'That call did not save.'); return; }
+      CROWD = x.d;
+      renderCalls();
+      paintCardCrowd();
+      if (next && !prev && CROWD.you && CROWD.you.called === 1) toast('First call in. Your record starts now.');
+    }).catch(function(){
+      g.mine = prev; renderCalls(); toast('That call did not save. Check your connection.');
+    });
+  }
+
+  /** "On 34% of readers' slips" under a card, once enough slips exist that
+   *  a share cannot point at one person. */
+  function cardCrowdHtml(id){
+    return '<div class="card-crowd" data-crowd-for="' + esc(id) + '" hidden></div>';
+  }
+  function paintCardCrowd(){
+    var sl = CROWD && CROWD.slips;
+    var els = document.querySelectorAll('[data-crowd-for]');
+    for (var i = 0; i < els.length; i++){
+      var id = els[i].getAttribute('data-crowd-for');
+      var n = sl && sl.counts && sl.counts[id];
+      var txt = n && sl.slips ? 'On ' + Math.round(100 * n / sl.slips) + '% of readers’ slips' : '';
+      els[i].textContent = txt;
+      els[i].hidden = !txt;
+    }
+  }
+
+  function paintSeasonChip(){
+    var el = document.getElementById('season-chip');
+    if (!el) return;
+    var t = BOARD_RECORD && BOARD_RECORD.total;
+    if (!t || !(t.w + t.l)){ el.hidden = true; return; }
+    el.hidden = false;
+    el.innerHTML = '<span>Our picks this season</span> <b>' + esc(wlpText(t)) + '</b>' +
+      (t.priced ? ' <span class="u">' + esc((t.units >= 0 ? '+' : '') + t.units + 'u') + '</span>' : '') +
+      '<span class="chev" aria-hidden="true">›</span>';
+    el.setAttribute('aria-label', 'Our picks this season: ' + wlpText(t) + '. Open the record.');
+  }
+
+  function recordSheet(){ return document.getElementById('dyn-sheet'); }
+
+  function openBoardRecord(){
+    var sheet = recordSheet();
+    var r = BOARD_RECORD;
+    if (!sheet || !r) return;
+    var t = r.total || {};
+    var p = pctOf(t);
+    var html = '<div class="grabber"></div><h2 class="sheet-title">Our picks this season</h2>' +
+      '<p class="sheet-msg">Every pick on the board, graded from the final score. Units are one unit on each pick at the price it was posted at' +
+        (r.since ? ', since ' + esc(r.weeks[0] && r.weeks[0].weekLabel || r.since) : '') + '.</p>' +
+      '<div class="rec-hero">' +
+        '<div class="rec-tile"><div class="k">Record</div><div class="v">' + esc(wlpText(t)) + '</div><div class="s">' + (p === null ? '' : esc(p) + '% winners') + '</div></div>' +
+        '<div class="rec-tile"><div class="k">Units</div><div class="v">' + esc((t.units >= 0 ? '+' : '') + t.units) + '</div>' +
+          '<div class="s' + (r.streak && r.streak.count >= 2 ? (r.streak.kind === 'win' ? ' up' : ' down') : '') + '">' +
+          (r.streak && r.streak.count >= 2 ? esc(r.streak.count + ' straight ' + (r.streak.kind === 'win' ? 'wins' : 'losses')) : '') + '</div></div>' +
+      '</div>';
+    (r.weeks || []).slice().reverse().forEach(function(w){
+      html += '<div class="rec-week"><div class="rec-week-head">' + esc(w.weekLabel || w.week) + '<span>' + esc(wlpText(w)) +
+        ' · ' + esc((w.units >= 0 ? '+' : '') + w.units + 'u') + '</span></div>' +
+        (w.rows || []).map(function(x){
+          return '<div class="rec-row"><span class="o ' + esc(x.outcome) + '">' + esc(x.outcome) + '</span><span>' + esc(x.title) + '</span>' +
+            (x.finalScore ? '<span class="x">' + esc(x.finalScore) + '</span>' : '') + '</div>';
+        }).join('') + '</div>';
+    });
+    html += '<div class="sheet-actions"><button class="sheet-action sheet-cancel" type="button" data-sheet-close>Done</button></div>';
+    sheet.innerHTML = html;
+    sheet.setAttribute('aria-label', 'Our picks this season');
+    sheet.onclick = recordSheetClick;
+    openSheet(sheet);
+  }
+
+  function openMyRecord(){
+    var sheet = recordSheet();
+    if (!sheet) return;
+    sheet.innerHTML = '<div class="grabber"></div><h2 class="sheet-title">Your record</h2><p class="sheet-msg">Loading…</p>';
+    sheet.setAttribute('aria-label', 'Your record');
+    sheet.onclick = recordSheetClick;
+    openSheet(sheet);
+    fetch('/api/record/me', {headers:{'Accept':'application/json'}, credentials:'same-origin'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ if (openSheetEl === sheet) sheet.innerHTML = myRecordHtml(d); })
+      .catch(function(){ if (openSheetEl === sheet) sheet.innerHTML = '<div class="grabber"></div><h2 class="sheet-title">Your record</h2><p class="sheet-msg">Your record could not be loaded just now.</p>'; });
+  }
+
+  function myRecordHtml(d){
+    d = d || {};
+    var s = d.season || { calls: {}, slip: {} };
+    var badges = d.badges || [];
+    var earned = badges.filter(function(b){ return b.earned; });
+    var weeks = d.weeks || [];
+    var html = '<div class="grabber"></div><h2 class="sheet-title">Your record</h2>';
+    if (!d.known || !weeks.length){
+      html += '<p class="sheet-msg">Call a game on Today’s Card and your record starts here: every call graded against the spread, streaks, and badges to earn. No account needed.</p>';
+    } else if (!d.signedIn){
+      html += '<p class="sheet-msg">Your calls are kept in this browser. Sign in to keep them on every device and to grade your slip as well.</p>';
+    }
+    var cp = pctOf(s.calls);
+    html += '<div class="rec-hero">' +
+      '<div class="rec-tile"><div class="k">Calls</div><div class="v">' + esc(wlpText(s.calls)) + '</div><div class="s">' + (cp === null ? 'against the spread' : esc(cp) + '% against the spread') + '</div></div>' +
+      (d.signedIn
+        ? '<div class="rec-tile"><div class="k">Your slip</div><div class="v">' + esc(wlpText(s.slip)) + '</div><div class="s' + ((s.slip && s.slip.net) ? (s.slip.net >= 0 ? ' up' : ' down') : '') + '">' +
+            ((s.slip && (s.slip.w + s.slip.l)) ? esc(moneyText(s.slip.net)) + ' on ' + esc('$' + Math.round(s.slip.staked || 0)) + ' staked' : 'graded after each week') + '</div></div>'
+        : '<div class="rec-tile"><div class="k">Streak</div><div class="v">' + esc(s.streak && s.streak.count ? s.streak.count : 0) + '</div><div class="s">' +
+            (s.streak && s.streak.count ? esc(s.streak.kind === 'win' ? 'straight wins' : 'straight losses') : 'wins in a row') + '</div></div>') +
+    '</div>';
+    if (weeks.length){
+      html += '<div class="rec-share">' +
+        '<button class="reset-btn" type="button" data-brag="week" data-brag-week="' + esc(weeks[0].week) + '">Share ' + esc(weeks[0].weekLabel || 'this week') + '</button>' +
+        '<button class="reset-btn" type="button" data-brag="season">Share my season</button>' +
+      '</div>';
+    }
+    html += '<div class="sheet-sec">Badges · ' + earned.length + ' of ' + badges.length + '</div><div class="badge-grid">' +
+      badges.map(function(b){
+        return '<div class="badge ' + (b.earned ? 'earned' : 'locked') + '"><div class="i" aria-hidden="true">' + esc(b.icon) + '</div>' +
+          '<div class="n">' + esc(b.name) + '</div><div class="d">' + esc(b.earned ? (b.detail || '') : b.hint) + '</div></div>';
+      }).join('') + '</div>';
+    weeks.forEach(function(w){
+      var c = w.calls;
+      html += '<div class="sheet-sec">' + esc(w.weekLabel || w.week) + '</div>';
+      if (c){
+        html += '<div class="rec-week"><div class="rec-week-head">Calls<span>' + esc(wlpText(c)) + (c.pending ? ' · ' + esc(c.pending) + ' to play' : '') +
+          (w.board ? ' · board ' + esc(wlpText(w.board)) : '') + '</span></div>' +
+          (c.calls || []).map(function(x){
+            return '<div class="rec-row"><span class="o ' + esc(x.outcome) + '">' + esc(x.outcome === 'pending' ? 'TBD' : x.outcome) + '</span><span>' + esc(x.call) + '</span>' +
+              '<span class="x">' + esc(x.score || (x.share !== null && x.share !== undefined && x.answers >= 3 ? Math.round(x.share * 100) + '% agreed' : '')) + '</span></div>';
+          }).join('') + '</div>';
+      }
+      if (w.slip){
+        html += '<div class="rec-week"><div class="rec-week-head">Slip<span>' + esc(wlpText(w.slip)) + ' · ' + esc(moneyText(w.slip.net)) + '</span></div>' +
+          (w.slip.plays || []).map(function(x){
+            return '<div class="rec-row"><span class="o ' + esc(x.outcome) + '">' + esc(x.outcome === 'pending' ? 'TBD' : x.outcome) + '</span><span>' + esc(x.title) + '</span>' +
+              '<span class="x">' + esc(x.outcome === 'pending' ? '' : moneyText(x.net)) + '</span></div>';
+          }).join('') + '</div>';
+      }
+    });
+    html += '<div class="sheet-actions"><button class="sheet-action sheet-cancel" type="button" data-sheet-close>Done</button></div>';
+    return html;
+  }
+
+  function recordSheetClick(e){
+    if (e.target.closest('[data-sheet-close]')) return closeSheet(recordSheet());
+    var b = e.target.closest('[data-brag]');
+    if (b) return makeBrag(b.getAttribute('data-brag'), b.getAttribute('data-brag-week') || '', b);
+    if (e.target.closest('[data-brag-share]')) return shareBragNow();
+    if (e.target.closest('[data-brag-copy]')) return copyBragLink();
+    if (e.target.closest('[data-brag-back]')) return openMyRecord();
+  }
+
+  /** Make the card, then SHOW it with a Share button. Sharing straight after
+   *  two network round trips would lose the tap's user activation, and iOS
+   *  refuses a share sheet without one - the second tap is fresh. */
+  function makeBrag(kind, weekKey, btn){
+    var sheet = recordSheet();
+    if (btn){ btn.disabled = true; btn.textContent = 'Making your card…'; }
+    fetch('/api/brag', {
+      method: 'POST', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ kind: kind, weekKey: weekKey })
+    }).then(function(r){ return r.json().then(function(d){ return { ok: r.ok, d: d }; }); })
+      .then(function(x){
+        if (!x.ok || x.d.error){ toast(x.d.error || 'Could not make that card.'); if (btn){ btn.disabled = false; btn.textContent = 'Try again'; } return; }
+        BRAG = { d: x.d, file: null };
+        // Fetched now, so the Share tap has the picture in hand.
+        fetch(x.d.image).then(function(r){ return r.blob(); }).then(function(blob){
+          try{ BRAG.file = new File([blob], 'my-calls.png', { type: 'image/png' }); }catch(e){}
+        }).catch(function(){});
+        if (openSheetEl !== sheet) return;
+        sheet.innerHTML = '<div class="grabber"></div><h2 class="sheet-title">Your card</h2>' +
+          '<img class="brag-img" src="' + esc(x.d.image) + '" alt="' + esc(x.d.text) + '" width="1200" height="630">' +
+          '<p class="sheet-msg">' + esc(x.d.text) + ' The link opens this card with a way in for whoever taps it.</p>' +
+          '<div class="sheet-actions">' +
+            '<button class="sheet-action primary" type="button" data-brag-share>Share</button>' +
+            '<button class="sheet-action" type="button" data-brag-copy>Copy link</button>' +
+            '<button class="sheet-action sheet-cancel" type="button" data-brag-back>Back to your record</button>' +
+          '</div>';
+      }).catch(function(){ toast('Could not make that card.'); if (btn){ btn.disabled = false; btn.textContent = 'Try again'; } });
+  }
+
+  function shareBragNow(){
+    if (!BRAG) return;
+    var d = BRAG.d;
+    var withFile = BRAG.file && navigator.canShare && navigator.canShare({ files: [BRAG.file] });
+    if (navigator.share){
+      navigator.share(withFile ? { files: [BRAG.file], text: d.text + ' ' + d.url } : { title: 'My calls', text: d.text, url: d.url })
+        .then(function(){ toast('Shared'); })
+        .catch(function(err){ if (!err || err.name !== 'AbortError') copyBragLink(); });
+      return;
+    }
+    copyBragLink();
+  }
+
+  function copyBragLink(){
+    if (!BRAG) return;
+    var url = BRAG.d.url;
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(function(){ toast('Link copied'); }).catch(function(){ window.open(url, '_blank', 'noopener'); });
+    } else {
+      window.open(url, '_blank', 'noopener');
+    }
+  }
+
+  function wireSocial(){
+    var list = document.getElementById('calls-list');
+    if (list) list.addEventListener('click', function(e){
+      var b = e.target.closest('[data-call-game]');
+      if (b && !b.disabled) castCall(b.getAttribute('data-call-game'), b.getAttribute('data-call-side'));
+    });
+    var you = document.getElementById('calls-you');
+    if (you) you.addEventListener('click', openMyRecord);
+    var chip = document.getElementById('season-chip');
+    if (chip) chip.addEventListener('click', openBoardRecord);
   }
 
   function start(){
@@ -5157,6 +5584,15 @@
     initChrome();
     initCapabilities();
     loadBoard();
+    wireSocial();
+    loadCrowd();
+    loadBoardRecord();
+    // Calls are graded as games finish: ask again every 90 s while the card
+    // is on screen, and not at all while the page is hidden.
+    setInterval(function(){
+      var card = document.getElementById('panel-card');
+      if (!document.hidden && card && !card.hidden && Date.now() - crowdLoadedAt >= 85 * 1000) loadCrowd();
+    }, 30 * 1000);
   }
 
   // A seam for test/render.js, which runs this script outside a browser and
@@ -5169,6 +5605,9 @@
       gameCardHtml: gameCardHtml, researchGameCardHtml: researchGameCardHtml, slipLiveHtml: slipLiveHtml,
       escapeHtml: escapeHtml, weekKeyAt: weekKeyAt, seasonWeekLabel: seasonWeekLabel, dkLinkHtml: dkLinkHtml,
       paintOwnerControls: paintOwnerControls, expireStaleWeek: expireStaleWeek,
+      renderCalls: renderCalls, myRecordHtml: myRecordHtml, paintSeasonChip: paintSeasonChip, paintCardCrowd: paintCardCrowd,
+      openBoardRecord: openBoardRecord,
+      setCrowd: function(c){ CROWD = c; }, setBoardRecord: function(r){ BOARD_RECORD = r; },
       setSlip: function(slip, custom){ slipState = slip || {}; customPicks = custom || {}; },
       setArrangement: function(a){ arrangement = a || emptyArrangement(); },
       init: function(){ live.seen = LC.createSeen(null, 'x', 10); }

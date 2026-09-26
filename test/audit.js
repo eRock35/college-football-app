@@ -66,6 +66,7 @@ process.env.GOOGLE_CLOUD_PROJECT = 'test';
 process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
 process.env.CRON_SECRET = 'cron-secret-value-here';
 process.env.PORT = '9215';
+process.env.CFB_TEST_HOOKS = '1';
 require(path.join(__dirname, '..', 'server.js'));
 const board = require(path.join(__dirname, '..', 'board.js'));
 const games = require(path.join(__dirname, '..', 'games.js'));
@@ -336,16 +337,22 @@ const MARKUP = /[<>]|onerror|onfocus=|autofocus|"/;
     const m = /&dates=(\d{8})/.exec(u);
     if (u.match(/^https:\/\/site(\.web)?\.api\.espn\.com\//) && m) {
       let body = { events: [] };
-      if (m[1] >= ymd(thisWeek, 0)) { slateAsked.push(m[1]); if (m[1] === ymd(thisWeek, 4)) body = slateBody; }
+      if (m[1] >= ymd(thisWeek, -2)) { slateAsked.push(m[1]); if (m[1] === ymd(thisWeek, 4)) body = slateBody; }
       else { finalsAsked.push(m[1]); if (m[1] === ymd(prevWeek, 4)) body = finalsRaw; }
       return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
     }
     return before(url, opts);
   };
+  // Today's live feed is the file's Saturday night; the week's slate here is
+  // the finals fixture replayed as not yet played. Keep them apart.
+  globalThis.__cfbSocial.reset();
+  globalThis.__cfbSocial.setToday({ get: async () => ({ available: false }) });
   const lastWeek = board.seed();
   lastWeek.weekKey = prevWeek;
   // One pick ESPN cannot settle: a team total is not a full-game market.
   lastWeek.picks.push({ ...lastWeek.picks[0], id: 'team-total', title: 'Georgia team total over 40.5', market: 'Team total' });
+  // And one on a game that was not played that week - last season's.
+  lastWeek.picks.push({ ...lastWeek.picks[0], id: 'bama-uga', title: 'Georgia -3', matchup: 'Alabama at Georgia', market: 'Spread · Georgia -3' });
   bag.set('board/current', lastWeek);
   const offSlate = { id: 'bama-uga', label: 'Alabama at Georgia', time: 'Sat, Sept 27 · time TBA' };
   reply = {
@@ -364,14 +371,18 @@ const MARKUP = /[<>]|onerror|onfocus=|autofocus|"/;
   body = await r.json();
   const built = bag.get('board/current');
   const res = Object.fromEntries((built.results || []).map((x) => [x.id, x]));
-  ok('the weekly rebuild asks ESPN for Thursday, Friday and Saturday of last week', finalsAsked.join() === [2, 3, 4].map((n) => ymd(prevWeek, n)).join(), finalsAsked.join());
-  ok('...and for this week, Tuesday to Saturday, before building', slateAsked.join() === [0, 1, 2, 3, 4].map((n) => ymd(thisWeek, n)).join(), slateAsked.join());
+  ok('the weekly rebuild reads every day of last week, Sunday to Saturday', finalsAsked.join() === [-2, -1, 0, 1, 2, 3, 4].map((n) => ymd(prevWeek, n)).join(), finalsAsked.join());
+  ok('...and of this week, before building', slateAsked.join() === [-2, -1, 0, 1, 2, 3, 4].map((n) => ymd(thisWeek, n)).join(), slateAsked.join());
+  ok('...and keeps last week for good at finals/<week>', Array.isArray((bag.get('finals/' + prevWeek) || {}).games) && bag.get('finals/' + prevWeek).games.length > 5);
   ok('Georgia -24.5 in a 45-17 game: graded a win from the final, not by the model', res['georgia-spread'] && res['georgia-spread'].outcome === 'win' &&
     res['georgia-spread'].source === 'espn' && /Georgia 45, Arkansas 17/.test(res['georgia-spread'].finalScore), JSON.stringify(res['georgia-spread']));
   ok('Under 58.5 in LSU 28, Ole Miss 31: a loss', res['lsu-om-under'] && res['lsu-om-under'].outcome === 'loss');
   ok('a parlay is graded leg by leg', res['blowout-board'] && res['blowout-board'].outcome === 'win', JSON.stringify(res['blowout-board']));
   ok('only what ESPN could not settle goes to the model', res['team-total'] && res['team-total'].source === '' && res['team-total'].outcome === 'win');
   ok('...and the model cannot overrule a final', res['georgia-spread'].outcome === 'win');
+  ok('a pick on a game not on that week\'s schedule is void, not graded', res['bama-uga'] && res['bama-uga'].outcome === 'void' && /schedule/.test(res['bama-uga'].note), JSON.stringify(res['bama-uga']));
+  ok('...results carry their price for the season record', res['georgia-spread'].odds === lastWeek.picks[0].odds && res['blowout-board'].kind === 'parlay' && typeof res['blowout-board'].odds === 'number');
+  ok('...and the board says which week they grade', built.resultsWeek === prevWeek);
 
   // Grounding: last season's "Alabama at Georgia" is what the model once built a week from.
   ok('a game not on this week\'s ESPN slate is dropped', built.weekKey === thisWeek && built.games.map((g) => g.id).join() === 'nm-ou,lsu-om,fl-aub', JSON.stringify(built.games.map((g) => g.id)));
@@ -397,6 +408,7 @@ const MARKUP = /[<>]|onerror|onfocus=|autofocus|"/;
 
   // No schedule from ESPN: nothing is spent and nothing changes.
   slateBody = { events: [] };
+  globalThis.__cfbSocial.reset();
   researchCalls = 0;
   r = await fetch(B + '/api/research/weekly-board?force=1', { method: 'POST', headers: CRON });
   ok('ESPN with no schedule: a 503, no model call, the board untouched', r.status === 503 && researchCalls === 0 && JSON.stringify(bag.get('board/current')) === kept, `${r.status} ${researchCalls}`);

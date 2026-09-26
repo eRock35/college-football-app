@@ -931,6 +931,18 @@ async function fetchDays(fetchImpl, days, { url = ESPN_SCOREBOARD, timeoutMs = F
   return out;
 }
 
+/**
+ * The scoreboard days of a board week, YYYYMMDD. A week key is its Tuesday,
+ * and the week runs from 6 AM Eastern the Sunday before to 6 AM the Sunday
+ * after (board.weekKeyAt) - so its games are Sunday and Monday before the
+ * key (Labor Day, the odd Sunday game) through Saturday.
+ */
+function weekDays(weekKey) {
+  const t = Date.parse(`${weekKey}T12:00:00Z`);
+  if (!Number.isFinite(t)) return [];
+  return [-2, -1, 0, 1, 2, 3, 4].map((n) => new Date(t + n * 86400000).toISOString().slice(0, 10).replace(/-/g, ''));
+}
+
 async function fetchFinals(fetchImpl, days, opts) {
   return (await fetchDays(fetchImpl, days, opts)).filter((g) => g.final);
 }
@@ -1072,7 +1084,7 @@ module.exports = {
   teamKey, resolveTeam, resolveEspnTeam, matchupTeams,
   normalise, normaliseEvent, order, etDay,
   parseBet, matchBet, evaluate, elapsedMinutes, pace, parlayStatus, lineNow, dkUrlFromOdds,
-  fetchDays, pairKey, kickoffText, slateBrief, groundBoard,
+  fetchDays, weekDays, pairKey, kickoffText, slateBrief, groundBoard,
   cleanSlipItems, slipStatus, slipGameIds, fetchFinals, gradeFromFinals,
   createFeed, publicView, STATES,
   // The cleaning helpers, for teamfacts.js: the same upstream, the same rules.

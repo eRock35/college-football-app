@@ -434,6 +434,10 @@ function result(raw, i) {
     // 'espn' when graded from the feed's final score (live.gradeFromFinals),
     // '' when a model graded it.
     source: raw.source === 'espn' ? 'espn' : '',
+    // The price it was offered at and whether it was a parlay (2026-09-26),
+    // for the season record's units. Absent on results graded before then.
+    odds: odds(raw.odds),
+    kind: raw.kind === 'parlay' ? 'parlay' : raw.kind === 'straight' ? 'straight' : '',
   };
 }
 
@@ -471,6 +475,9 @@ function validate(raw) {
 
   return {
     weekKey: clean(raw.weekKey, MAX.id),
+    // The week `results` grade: the board before this one (2026-09-26). Older
+    // boards have none, and their results are the week before their own.
+    resultsWeek: /^\d{4}-\d{2}-\d{2}$/.test(String(raw.resultsWeek || '')) ? raw.resultsWeek : '',
     generatedAt: clean(raw.generatedAt, MAX.id) || new Date().toISOString(),
     games, picks, parlays, results, rankings,
   };

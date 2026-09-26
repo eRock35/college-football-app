@@ -135,6 +135,24 @@ api.applyLive({
   cards: [{ id: 'p1' + Q, kind: 'straight', matched: true, state: 'live', outcome: 'missing' + Q, text: 'Needs 3' + X, detail: 'A 7, B 3' + X,
     lineNow: { kind: 'spread', picked: -3.5, now: -6.5, better: true }, lineSource: 'DK' + X }],
 });
+// Calls, records and badges (2026-09-26): every string from the server is
+// drawn escaped, hostile or not.
+api.setCrowd({ open: true, you: { w: 1, l: 0, p: 0, pending: 1, called: 2 }, readers: { w: 5, l: 3, p: 0 },
+  slips: { slips: 6, counts: { [Q]: 3 } },
+  games: [{ id: 'g1' + Q, label: 'A at B' + X, time: 'Sat' + X, question: 'Who covers?' + X, open: true, total: 3, publicSide: 'a',
+    sides: [{ teamId: 'a' + Q, label: 'A -3' + X, pct: '50" onmouseover="x', votes: 1 }, { teamId: 'b', label: 'B +3', pct: 50, votes: 1 }],
+    mine: { side: 'a' + Q, label: 'A -3' + X, outcome: null }, score: 'A 7, B 3' + X, state: 'in' + Q }] });
+api.renderCalls();
+api.setBoardRecord({ total: { w: 3, l: 1, p: 0, units: 1.8, priced: 4 }, streak: { kind: 'win', count: 2 }, since: '2026-09-15',
+  weeks: [{ week: '2026-09-15', weekLabel: 'Week 3' + X, w: 3, l: 1, p: 0, units: 1.8, rows: [{ outcome: 'win' + Q, title: 'T' + X, finalScore: 'F' + X }] }] });
+api.paintSeasonChip();
+api.openBoardRecord();
+written.push({ id: 'my-record', html: api.myRecordHtml({ known: true, signedIn: true,
+  season: { calls: { w: 1, l: 1, p: 0 }, slip: { w: 1, l: 0, p: 0, net: 20, staked: 10 }, streak: { kind: 'win', count: 1 } },
+  badges: [{ id: 'x', icon: X, name: 'N' + X, hint: 'H' + Q, earned: false }, { id: 'y', icon: 'i', name: 'M', detail: 'D' + X, earned: true }],
+  weeks: [{ week: '2026-09-15' + Q, weekLabel: 'W' + X, board: { w: 1, l: 0 },
+    calls: { w: 1, l: 0, p: 0, pending: 0, calls: [{ outcome: 'win' + Q, call: 'C' + X, score: 'S' + X }] },
+    slip: { w: 1, l: 0, p: 0, net: 5, plays: [{ outcome: 'win', title: 'P' + X, net: 5 }] } }] }) });
 api.renderCards();
 api.renderSlipTab();
 api.paintOwnerControls({ canResearch: false, signedIn: false });
@@ -147,7 +165,7 @@ ok('...the image payload is drawn as text', all.includes('&lt;img src=x onerror=
 ok('...the attribute-breaking id is escaped in every attribute', !all.includes('" autofocus') && all.includes('&quot; autofocus onfocus=&quot;'));
 ok('...a javascript: link from the feed or a model never becomes an href', !/href="javascript/i.test(all));
 ok('...markdown links stay http(s) only', !/<a href="javascript/i.test(all));
-ok('the pick card, parlay, own card, added card, games, research and slip all drew', ['card-list', 'games-grid', 'research-list', 'slip-body', 'live-root', 'top25-list', 'results-strip']
+ok('the pick card, parlay, own card, added card, games, research and slip all drew', ['card-list', 'games-grid', 'research-list', 'slip-body', 'live-root', 'top25-list', 'results-strip', 'calls-list', 'season-chip', 'dyn-sheet', 'my-record']
   .every((id) => written.some((w) => w.id === id && w.html.length > 50)), [...new Set(written.map((w) => w.id))].join(','));
 ok('every DraftKings link opens in a new tab with noopener noreferrer', (all.match(/class="dk-link"[^>]*>/g) || []).every((a) => /target="_blank"/.test(a) && /rel="noopener noreferrer"/.test(a)) &&
   (all.match(/class="dk-link"/g) || []).length >= 5, String((all.match(/class="dk-link"/g) || []).length));
