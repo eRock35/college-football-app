@@ -343,12 +343,15 @@ publishes free the moment they change; a model is for the storyline.
   GENERATED (`node teamfacts.js --ids <teams.json>`) from ESPN's
   `/teams?groups=80&limit=500` through `live.js`'s `resolveEspnTeam`, and
   `test/teamfacts.js` holds it to "every team maps to exactly one ESPN id or is
-  in `UNMAPPED`". **The committed map was generated from a hand-written
-  fixture** (`test/fixtures/espn-teams.json`) because the sandbox cannot reach
-  ESPN; the ids are the long-standing ESPN ones but were not checked against
-  the live endpoint. Regenerate from the real response once
-  (`curl ... > /tmp/teams.json && node teamfacts.js --ids /tmp/teams.json > espn-ids.js`)
-  and diff. A wrong id cannot show the wrong team: a schedule whose own `team`
+  in `UNMAPPED`". The map was first generated from a hand-written fixture
+  (the sandbox cannot reach ESPN), then **checked against ESPN on 2026-09-26
+  from Cloud Build: all 132 ids correct.** Mind the endpoint if you
+  regenerate: `/teams` **ignores `groups=80`** and returns every division,
+  cut off at `limit`, so 15 FBS teams (Tennessee, South Carolina, TCU...) were
+  simply absent from the 500 it sent - absent, not wrong. Those were checked
+  one by one at `/teams/<id>`. A regenerate that loses teams to UNMAPPED is
+  that cut-off, not ESPN renumbering; check `/teams/<id>` before editing.
+  A wrong id cannot show the wrong team: a schedule whose own `team`
   does not resolve back to the id asked for is refused (logged, no facts).
 - **Cache:** 30 minutes in memory and in `teamfacts/<teamId>` (the poll in
   `polls/ap`), `fetchedAt` on each, so a cold instance reads Firestore rather

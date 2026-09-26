@@ -631,6 +631,11 @@ module.exports = {
  *
  * Every teams.js id must map to exactly one ESPN team; any that does not is
  * written into UNMAPPED, where the test suite will ask about it.
+ *
+ * CAREFUL: /teams ignores groups=80 and returns every division, truncated at
+ * `limit`. On 2026-09-26 its 500 omitted 15 FBS teams, which would land in
+ * UNMAPPED here. Every id in espn-ids.js was checked against ESPN that day
+ * (the missing 15 at /teams/<id>); do not drop one because a regenerate lost it.
  * ------------------------------------------------------------------ */
 if (require.main === module && process.argv[2] === '--ids' && process.argv[3]) {
   const raw = JSON.parse(require('fs').readFileSync(process.argv[3], 'utf8'));
