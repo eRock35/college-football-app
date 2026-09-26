@@ -223,14 +223,27 @@
    */
   var DK_FALLBACK = 'https://sportsbook.draftkings.com/leagues/football/ncaaf';
 
-  /** An https DraftKings URL reduced to origin + path, or ''. */
-  function dkUrl(href) {
-    if (typeof href !== 'string' || href.length > 500) return '';
+  /** An https DraftKings URL reduced to origin + path, or ''.
+   *  ESPN's links are DraftKings' own redirect, `/gateway?...&preurl=<the
+   *  event page, encoded>`; reduced naively that is a bare /gateway that goes
+   *  nowhere. So a gateway link is unwrapped to its `preurl` - which must
+   *  itself pass this test - and one with no usable preurl is no link. */
+  function dkUrl(href, depth) {
+    if (typeof href !== 'string' || href.length > 1000) return '';
     var m = /^https:\/\/([a-z0-9.-]+)(\/[^?#\s"'<>\\]*)?(?:[?#][^\s]*)?$/i.exec(href.trim());
     if (!m) return '';
     var host = m[1].toLowerCase();
     if (host !== 'draftkings.com' && !/^[a-z0-9-]+(\.[a-z0-9-]+)*\.draftkings\.com$/.test(host)) return '';
-    return 'https://' + host + (m[2] || '/');
+    var path = m[2] || '/';
+    if (/^\/gateway\/?$/i.test(path)) {
+      if (depth) return '';
+      var q = /[?&]preurl=([^&#\s]*)/i.exec(href);
+      if (!q) return '';
+      var inner;
+      try { inner = decodeURIComponent(q[1]); } catch (e) { return ''; }
+      return dkUrl(inner, 1);
+    }
+    return 'https://' + host + path;
   }
 
   /** Where a "Bet on DraftKings" link goes and what it says. `line` is the

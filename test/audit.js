@@ -278,6 +278,18 @@ const MARKUP = /[<>]|onerror|onfocus=|autofocus|"/;
     'https://xdraftkings.com/', 'javascript:alert(1)', 'https://sportsbook.draftkings.com/a"onclick=1', 'https://sportsbook.draftkings.com:444/', 42, null]) {
     ok(`dkUrl refuses ${JSON.stringify(bad)}`, LiveCore.dkUrl(bad) === '');
   }
+  // The 2026 feed's real shape (measured 2026-09-26): DraftKings' gateway
+  // redirect, with the event page in `preurl`, on each market's sides.
+  const GATEWAY = 'https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34674758%3Foutcomes%3D0ML86319052_1';
+  ok('a gateway link is unwrapped to the event page it redirects to', LiveCore.dkUrl(GATEWAY) === 'https://sportsbook.draftkings.com/event/34674758', LiveCore.dkUrl(GATEWAY));
+  for (const bad of ['https://sportsbook.draftkings.com/gateway?s=1', 'https://sportsbook.draftkings.com/gateway?preurl=https%3A%2F%2Fevil.com%2Fx',
+    'https://sportsbook.draftkings.com/gateway?preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fgateway%3Fpreurl%3Dx', 'https://sportsbook.draftkings.com/gateway?preurl=%E0%A4%A']) {
+    ok(`...and a gateway going nowhere good is no link: ${bad.slice(52, 110)}`, LiveCore.dkUrl(bad) === '');
+  }
+  const realOdds = [{ provider: { id: '100', name: 'Draft Kings', logos: [{ href: 'https://a.espncdn.com/i/betting/Draftkings_Light.svg' }] },
+    details: 'UGA -10.5', moneyline: { home: { close: { odds: '-395', link: { href: GATEWAY } } } } }];
+  const foundDk = require(path.join(__dirname, '..', 'live.js')).dkUrlFromOdds(realOdds);
+  ok('the link is found where the feed puts it, on a market side', foundDk === 'https://sportsbook.draftkings.com/event/34674758', foundDk);
   ok('dkLink falls back to the college football page', LiveCore.dkLink({ url: 'https://evil.example/' }).href === 'https://sportsbook.draftkings.com/leagues/football/ncaaf');
   ok('...and says the line when there is one', LiveCore.dkLink({ line: 'Georgia -24.5' }).text === 'Georgia -24.5 on DraftKings ↗');
   ok('escaped, a link cannot break its attribute', !/"/.test(LiveCore.esc(LiveCore.dkLink({ line: '"><img>' }).text)));

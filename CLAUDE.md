@@ -501,11 +501,22 @@ page: a deep link only when ESPN's odds entry carries one (`odds[].link.href`,
 subdomain** - reduced to origin + path, so no tracking or affiliate parameter
 survives - otherwise `https://sportsbook.draftkings.com/leagues/football/ncaaf`.
 Never a URL built from a guessed event id. The link text names our pick's
-line ("Georgia -24.5 on DraftKings ↗"); the feed's line is not put on it,
-because the feed's provider has been ESPN BET, not DraftKings. **Our
-fixtures carry no DraftKings link** (their odds are `provider: ESPN BET`), and
-whether the live feed does in the 2026 season is unverified from here, so
-expect the fallback until someone checks a real response. `GET /api/board`
+line ("Georgia -24.5 on DraftKings ↗"), not the feed's, which may have moved.
+
+**What the live feed actually carries (measured 2026-09-26, 71 games):**
+the odds provider is **"Draft Kings"** (it was ESPN BET in our fixtures, so
+the feed's line *is* DraftKings' line now), and games carry deep links -
+not on the entry, but on each market's sides
+(`moneyline|pointSpread|total.home|away|over|under.close|open.link.href`),
+in the form of DraftKings' own redirect:
+`sportsbook.draftkings.com/gateway?...&preurl=<the event page, encoded>`.
+Reduced to origin + path naively, that is a bare `/gateway` going nowhere, so
+`dkUrl()` **unwraps a gateway to its `preurl`**, which must itself pass the
+same test (https, DraftKings host; a gateway inside a gateway is refused).
+The result is the game's event page, `sportsbook.draftkings.com/event/<id>`.
+The `outcomes=` parameter (a pre-filled bet slip) is dropped with the query:
+it names one side of one market, which is not necessarily the bet on our
+card. `GET /api/board`
 adds `feed: {<gameId>: {startsAt, state, line, overUnder, lineSource, dkUrl}}`
 from the scoreboard; `/api/games` rows and poll Top 25 rows carry `dkUrl`.
 

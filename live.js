@@ -385,15 +385,25 @@ function normaliseEvent(raw) {
   };
 }
 
-/** The first DraftKings href in a competition's odds entries - on the entry
- *  (`link`, `links[]`) or its provider - reduced by LiveCore.dkUrl, or ''.
- *  ESPN's scoreboard shape varies by season and provider; anything that is
- *  not an https draftkings.com URL is ignored, never repaired. */
+/** The first DraftKings href in a competition's odds entries, reduced by
+ *  LiveCore.dkUrl, or ''. Looked for on the entry (`link`, `links[]`), its
+ *  provider, and - where the 2026 feed actually puts them - on each market's
+ *  sides: `moneyline|pointSpread|total` -> `home|away|over|under` ->
+ *  `close|open|current` -> `link.href` (measured 2026-09-26: provider "Draft
+ *  Kings", every link a sportsbook.draftkings.com/gateway?...&preurl=<event>).
+ *  Anything that is not an https draftkings.com URL is ignored, never repaired. */
 function dkUrlFromOdds(list) {
   for (const o of arr(list).slice(0, 6).map(obj)) {
     const p = obj(o.provider);
     const hrefs = [obj(o.link).href, ...arr(o.links).slice(0, 10).map((l) => obj(l).href),
       obj(p.link).href, ...arr(p.links).slice(0, 10).map((l) => obj(l).href)];
+    for (const market of ['moneyline', 'pointSpread', 'total']) {
+      const m = obj(o[market]);
+      for (const side of ['home', 'away', 'over', 'under']) {
+        const sd = obj(m[side]);
+        for (const when of ['close', 'current', 'open']) hrefs.push(obj(obj(sd[when]).link).href);
+      }
+    }
     for (const h of hrefs) {
       const u = LiveCore.dkUrl(h);
       if (u) return u;
