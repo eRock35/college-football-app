@@ -80,6 +80,8 @@ const THIS_BOARD = board.validate({
     { id: 'uga-ark', label: 'Georgia at Arkansas', time: 'Sat 7p ET' },
     { id: 'lsu-om', label: 'LSU at Ole Miss', time: 'Sat 7:30p ET' },
     { id: 'fsu-bama', label: 'Florida State at Alabama', time: 'Sat 3:30p ET' },
+    // Last season's game, as the Sep 21 board carried: not on the slate.
+    { id: 'bama-uga', label: 'Alabama at Georgia', time: 'Sat, Sept 27 · time TBA' },
   ],
   picks: [{ id: 'ou-spread', title: 'Oklahoma -22.5', matchup: 'New Mexico at Oklahoma', market: 'Spread', odds: -110 }],
   parlays: [],
@@ -144,7 +146,7 @@ const PREV_BOARD = board.validate({
   let r = await fetch(B + '/api/crowd');
   let body = await r.json();
   const nm = body.games && body.games.find((g) => g.id === 'nm-ou');
-  ok('the poll is open, one entry per board game', body.open === true && body.games.length === 4, JSON.stringify(body).slice(0, 200));
+  ok('the poll is open, one entry per board game ESPN has this week', body.open === true && body.games.length === 4 && !body.games.some((g) => g.id === 'bama-uga'), JSON.stringify(body).slice(0, 200));
   ok('...asking who covers, with each side\'s spread', nm && nm.question === 'Who covers?' && nm.sides.map((s) => s.label).join() === 'UNM +22.5,OU -22.5', nm && JSON.stringify(nm.sides));
   ok('...a game under way is closed', body.games.find((g) => g.id === 'uga-ark').open === false);
   ok('...and reading it sets no cookie', !cookieOf(r));
@@ -167,6 +169,7 @@ const PREV_BOARD = board.validate({
     [{ gameId: 'nm-ou', side: 'texas' }, 400, 'a team not in the game'],
     [{ gameId: 'not-a-game', side: 'uga' }, 404, 'a game not on the board'],
     [{ gameId: '"><img>', side: 'uga' }, 400, 'a hostile id'],
+    [{ gameId: 'bama-uga', side: 'uga' }, 400, 'a board game not on ESPN\'s schedule this week'],
   ]) {
     r = await fetch(B + '/api/crowd/vote', { method: 'POST', headers: A, body: JSON.stringify(bodyIn) });
     ok(`refused: ${name} (${want})`, r.status === want, String(r.status));

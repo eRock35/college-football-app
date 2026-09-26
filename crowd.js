@@ -153,6 +153,9 @@ function pollView({ board: b, slate, tally, mine = {}, weekKey, now = Date.now()
   const you = { w: 0, l: 0, p: 0, pending: 0, called: 0 };
   for (const g of (b && b.games) || []) {
     const fg = findGame(g, slate);
+    // Only a game ESPN has on this week's schedule can be called: anything
+    // else could never be graded, and the board once carried last season's.
+    if (!fg) continue;
     const sides = sidesFor(g, fg);
     if (!sides) continue;
     const t = tallyOf(tally[g.id], sides);

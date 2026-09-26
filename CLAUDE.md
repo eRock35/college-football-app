@@ -588,6 +588,8 @@ spread from the scoreboard (`crowd.sidesFor` via `live.lineNow`); no line
 posted makes it "who wins?". The split is revealed **after** you answer, so
 the crowd cannot steer the first tap. Closed at kickoff (scoreboard state,
 else the board's own time). Tapping your side again takes the call back.
+**Only a board game ESPN has on this week's schedule is offered** - anything
+else could never be graded, and the Sep 21 board was last season's games.
 
 - **Graded against the spread you saw**: each vote stores `spread` at the
   moment of the call (`crowd-votes/<week>__<hash>` -> `votes.<gameId> =

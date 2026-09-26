@@ -292,8 +292,8 @@ function mountSocial(app, deps) {
       if (!g) return res.status(404).json({ error: 'That game is not on this week’s board.' });
       const slate = await slateForWeek(week);
       const fg = crowd.findGame(g, slate);
-      const sides = crowd.sidesFor(g, fg);
-      if (!sides) return res.status(400).json({ error: 'That game cannot be called.' });
+      const sides = fg ? crowd.sidesFor(g, fg) : null;
+      if (!sides) return res.status(400).json({ error: 'That game is not on this week\u2019s schedule, so it cannot be called.' });
       if (crowd.started(g, fg, week)) return res.status(409).json({ error: 'Calls closed at kickoff.' });
       const side = body.side === null || body.side === '' || body.side === undefined ? null : String(body.side);
       if (side && !sides.some((s) => s.teamId === side)) return res.status(400).json({ error: 'Pick one of the two teams.' });
