@@ -460,6 +460,23 @@ function playedSince(facts, writtenAt) {
 }
 
 /**
+ * Fields a stored fan/<id> document may carry that no reader is ever sent.
+ * `researchedBy` was written until 2026-09-27 - the researcher's email (this
+ * app's own door) or its base64url (the shared account) - and documents
+ * written before then keep it until they are next researched, so every read
+ * strips it rather than trusting the store to be clean.
+ */
+const PRIVATE_PAGE_FIELDS = ['researchedBy'];
+
+/** A stored team page with the private fields taken out. */
+function publicPage(page) {
+  if (!page || typeof page !== 'object') return page;
+  const out = { ...page };
+  for (const k of PRIVATE_PAGE_FIELDS) delete out[k];
+  return out;
+}
+
+/**
  * The page a reader sees: the stored model page (or none) with the facts laid
  * over it. Facts win on record, conference record, rank, schedule and the
  * next game; the model keeps its storyline (dated, and flagged when a game has
@@ -470,7 +487,7 @@ function playedSince(facts, writtenAt) {
  * module's shapes or null. With no facts, the page is returned as it was.
  */
 function overlay(page, facts, poll, { teamId, meta, nowMs = Date.now() } = {}) {
-  const base = page ? { ...page } : {};
+  const base = page ? publicPage(page) : {};
   const out = { ...base, team: teamId, meta, researched: !!page };
   if (!facts) return { ...out, facts: null };
 
@@ -620,7 +637,7 @@ module.exports = {
   ESPN_BASE, TEAMS_URL, RANKINGS_URL, scheduleUrl, TTL_MS, FAIL_TTL_MS,
   ESPN_IDS, UNMAPPED, espnIdFor, seasonFor, kickoffLabel, oppTeamId,
   buildEspnMap, normaliseSchedule, normalisePoll, pollRankOf, applyPollRanks,
-  pollRows, boardNeedsPoll, gamesPhrase, playedSince, overlay, createTeamFacts,
+  pollRows, boardNeedsPoll, gamesPhrase, playedSince, overlay, publicPage, PRIVATE_PAGE_FIELDS, createTeamFacts,
 };
 
 /* ------------------------------------------------------------------ *

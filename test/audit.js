@@ -224,7 +224,7 @@ const MARKUP = /[<>]|onerror|onfocus=|autofocus|"/;
   // A slip saved under the old Tuesday week on a Sunday is still readable
   // (read by when it was saved).
   const owner = h.session(SECRET, 'owner@example.com');
-  h.bag('identity').set('users/' + uidOf('owner@example.com'), { email: 'owner@example.com', createdAt: 'x' });
+  h.bag('identity').set('users/' + uidOf('owner@example.com'), { email: 'owner@example.com', createdAt: '2026-09-01T00:00:00Z' });
   bag.set('user-state/' + uidOf('owner@example.com'), { weekKey: 'old-tuesday-scheme', slip: { 'a-pick': { stake: 5, placed: true } },
     updatedAt: new Date(NOW - 60000).toISOString() });
   body = await (await fetch(B + '/api/slip', { headers: { cookie: owner } })).json();

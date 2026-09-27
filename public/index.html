@@ -1530,7 +1530,10 @@
     fetch('/api/fan/' + encodeURIComponent(myTeam) + '/research', { method: 'POST' })
       .then(function(r){
         return r.json().catch(function(){ return {}; }).then(function(d){
-          if (r.status === 401) throw new Error('Sign in first — this spends your own AI credit.');
+          // A 401 carrying accountUrl is "signed in, but not with the shared
+          // account" - the one that holds the credit this spends.
+          if (r.status === 401) throw new Error(d.accountUrl ? d.error : 'Sign in first — this spends your own AI credit.');
+          if (r.status === 429) throw new Error(d.error || 'Too many attempts - try again later.');
           if (r.status === 402) throw new Error(d.error || 'You are out of AI credit.');
           if (!r.ok) throw new Error(d.error || 'Could not look that team up.');
           renderTeam(Object.assign({}, d, { meta: d.meta || myTeamMeta }));
@@ -3978,7 +3981,7 @@
         // Adding a game is open to any member now, so the interesting failures
         // are "no account" and "no credit" - each of which has something the
         // reader can actually do about it.
-        if (r.status === 401){ var e = new Error('Sign in to add a game \u2014 it spends your own AI credit.'); throw e; }
+        if (r.status === 401){ var e = new Error(d.accountUrl ? d.error : 'Sign in to add a game \u2014 it spends your own AI credit.'); throw e; }
         if (r.status === 402){ var e2 = new Error(d.error || 'You are out of AI credit.'); e2.outOfCredit = true; throw e2; }
         if (!r.ok) throw new Error(d.error || 'Couldn\u2019t research that \u2014 try again in a moment.');
         return d;

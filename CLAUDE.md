@@ -684,6 +684,56 @@ adoption on sign-in, slip history, records, badges, cards, OG tags),
 test/boot-live.js` boots a board, a crowd and a season for a browser.
 Rendered at 390px and 1280px, light and dark.
 
+## Security review fixes (2026-09-27)
+
+`test/security.js` holds all of these.
+
+- **Research on the shared account.** `requireResearch` trusted
+  `req.user.email` against `RESEARCH_ALLOWED_EMAILS`, and the shared account
+  does not verify email - so anyone could register an allowlisted address
+  that had no shared account yet and get chat, custom research, `/api/asks`
+  and the cron-or-owner routes. Now each door is judged on its own session
+  (`mayResearch`): the site password; a **shared** account only by its owner
+  flag (`admin: true`), the admin panel's `access.football === 'research'`,
+  or an allowlisted address on an account whose `createdAt` is before
+  `ALLOWLIST_TRUSTED_BEFORE` (`2026-09-27T21:00:00Z`) - those were made by
+  the real people, so nobody who had research loses it. A missing or
+  unreadable `createdAt` fails closed. **An allowlisted address registered on
+  the shared account after the cutoff needs a grant in the admin panel.**
+  This app's **own door** keeps the plain allowlist: claiming an allowlisted
+  address there has always needed the site password (`needsPasswordForEmail`
+  in `auth.js`).
+- **The site password** (`canChange`) takes the passkey proof and the research
+  right from the SAME session, so a post-cutoff squatter's passkey cannot
+  change it, and neither can an ordinary own-door passkey paired with the
+  owner's password-proved shared session.
+- **Metered routes need a meter.** `add-game` and `fan/:team/research` let an
+  own-door session through `requireBudget` with nobody to charge. Both now
+  sit behind `requireSharedAccount` (401 with `accountUrl`), except for the
+  owner's doors. `requireBudgetOrOwnerDoor` replaces `identity.requireBudget`
+  on all four model routes: it lets the site password and an allowlisted
+  own-door session through **on purpose** (the owner's key, as `/api/chat`
+  always was), and meters every shared account - the shared `requireBudget`
+  is being changed to refuse a request with no `req.user`, and this keeps the
+  owner's documented doors working through that. `/api/chat` and
+  `/api/research/custom` also have `requireDailyCap` now.
+- **`researchedBy`** (the researcher's email on the own door, its base64url on
+  the shared one) is no longer written, and `teamfacts.publicPage()` strips it
+  from every read - `overlay()` and `/api/uga`. Documents written before keep
+  the field until they are next researched; stripping on read covers them.
+  Nothing on the page reads `/api/uga`; it stays, public fields only.
+- **The legacy slip** (`user-state/<raw email>`) is read for a shared session
+  only when this app's own session in the same request proves that address.
+  The owner's pre-accounts `slip` only for someone who may research.
+- **`trust proxy` is `1`**, not `true`, so a client-written X-Forwarded-For
+  cannot choose `req.ip` (the vote and brag limits key on it).
+- **The cron key** is compared in constant time (`sameSecret`).
+- **Site-password guessing**: ten failures from one address in fifteen minutes
+  (Basic header, the registration form's password, a change's `current`)
+  and every password attempt from it is a **429** until the window passes,
+  a right one included. A success clears the count. Per instance, in memory.
+  Reads and session-signed requests from that address are unaffected.
+
 ## Commit and PR conventions
 
 **Never put a Claude session link in anything pushed to GitHub.** No

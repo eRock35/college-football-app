@@ -27,7 +27,8 @@ const uidOf = (e) => Buffer.from(e.toLowerCase()).toString('base64url');
   const fan = h.session(SECRET, 'fan@example.com');
   const owner = h.session(SECRET, 'owner@example.com');
   h.bag('identity').set('users/' + uidOf('fan@example.com'), { email: 'fan@example.com', createdAt: 'x' });
-  h.bag('identity').set('users/' + uidOf('owner@example.com'), { email: 'owner@example.com', createdAt: 'x' });
+  // Made before ALLOWLIST_TRUSTED_BEFORE: the real owner's account.
+  h.bag('identity').set('users/' + uidOf('owner@example.com'), { email: 'owner@example.com', createdAt: '2026-09-01T00:00:00Z' });
 
   let r = await fetch(B + '/api/slip', { headers: { cookie: fan } });
   ok('a session made on ANOTHER app opens the slip here, with no login on this app', r.status === 200, String(r.status));
@@ -48,7 +49,10 @@ const uidOf = (e) => Buffer.from(e.toLowerCase()).toString('base64url');
   const week = await (await fetch(B + '/api/slip', { headers: { cookie: owner } })).json();
   h.bag('college-football-app').set('user-state/owner@example.com', { weekKey: week.weekKey, slip: { legacy: 1 }, bankroll: '999' });
   r = await fetch(B + '/api/slip', { headers: { cookie: owner } });
-  ok('a slip saved under the OLD key is still found', JSON.stringify(await r.json()).includes('"999"'));
+  ok('a shared session ALONE does not read the old raw-email slip (2026-09-27)', !JSON.stringify(await r.json()).includes('"999"'));
+  const ownOwner = h.ownSession('cfb-secret-abcdefghijklmnopq', 'owner@example.com');
+  r = await fetch(B + '/api/slip', { headers: { cookie: owner + '; ' + ownOwner } });
+  ok('...but with this app\'s own session for that address, the OLD key is still found', JSON.stringify(await r.json()).includes('"999"'));
 
   // research tier
   r = await fetch(B + '/api/chat', { method: 'POST', headers: { ...J, cookie: fan }, body: JSON.stringify({ messages: [{ role: 'user', content: 'x' }] }) });

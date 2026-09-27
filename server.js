@@ -43,13 +43,52 @@ function isResearchEmail(email) {
   return RESEARCH_ALLOWED_EMAILS.indexOf(String(email || '').trim().toLowerCase()) !== -1;
 }
 
+/**
+ * The allowlist is trusted on a SHARED account only if that account already
+ * existed before this instant (security review, 2026-09-27).
+ *
+ * The shared account does not verify email: anyone can register any address
+ * that has no account yet. This app's own door has always demanded the site
+ * password before an allowlisted address could be claimed; the shared door
+ * never did, so a stranger could register an allowlisted address there and
+ * get the owner's research, chat, custom research and asks. Accounts made
+ * before the fix were made by the people who own those addresses, so they
+ * keep working; one made after it has to be granted research by the domain
+ * admin panel (`access.football === 'research'`) or be the owner (`admin`).
+ */
+const ALLOWLIST_TRUSTED_BEFORE = '2026-09-27T21:00:00Z';
+const ALLOWLIST_TRUSTED_BEFORE_MS = Date.parse(ALLOWLIST_TRUSTED_BEFORE);
+
+/** May this SHARED account research? The owner flag or an admin-panel grant,
+ *  or an allowlisted address on an account older than the cutoff. A missing
+ *  or unreadable createdAt fails closed. */
+function sharedMayResearch(user) {
+  if (!user) return false;
+  if (identityLib.hasAccess(user, 'football', 'research')) return true; // admin === true, or the grant
+  if (!isResearchEmail(user.email)) return false;
+  const made = Date.parse(user.createdAt || '');
+  return Number.isFinite(made) && made < ALLOWLIST_TRUSTED_BEFORE_MS;
+}
+
+/** Constant-time comparison of two secrets of any length. */
+function sameSecret(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || !a || !b) return false;
+  const h = (v) => crypto.createHash('sha256').update(v).digest();
+  return crypto.timingSafeEqual(h(a), h(b));
+}
+
 const db = new Firestore({ projectId: PROJECT_ID, databaseId: FIRESTORE_DB });
 const anthropic = new Anthropic(); // reads ANTHROPIC_API_KEY from env
 
 const app = express();
 // Cloud Run terminates TLS in front of us, so without this req.protocol is
 // "http" and every share link went out as http:// (audit, 2026-09-26).
-app.set('trust proxy', true);
+//
+// `1`, not `true` (2026-09-27): with `true` Express believes every hop in
+// X-Forwarded-For, so a client could send its own header and choose req.ip -
+// which the vote and brag limits are keyed by. Cloud Run's front end is the one
+// hop in front of us; its entry is the rightmost, and that is the one used.
+app.set('trust proxy', 1);
 // Text only: the page is ~250 KB of HTML and the board a few dozen KB of
 // JSON, both of which gzip to a fraction.
 app.use(compression());
@@ -75,15 +114,82 @@ app.use(express.static(path.join(__dirname, 'public')));
  *  environment variable; comparing to the env var would leave a retired
  *  password working here after a change. */
 async function passwordOk(req) {
+  // Once per request: several gates ask, and a wrong password must count as
+  // one failed attempt, not one per gate that looked at it.
+  if (!req[PW_CHECKED]) req[PW_CHECKED] = checkBasic(req);
+  return req[PW_CHECKED];
+}
+const PW_CHECKED = Symbol('site-password-checked');
+const PW_THROTTLED = Symbol('site-password-throttled');
+
+async function checkBasic(req) {
   if (!SITE_LOGIN_USERNAME) return false;
   const header = req.headers.authorization || '';
   const [scheme, encoded] = header.split(' ');
   if (scheme !== 'Basic' || !encoded) return false;
+  if (passwordBlocked(req)) { req[PW_THROTTLED] = true; return false; }
   const decoded = Buffer.from(encoded, 'base64').toString('utf8');
   const sep = decoded.indexOf(':');
-  if (decoded.slice(0, sep) !== SITE_LOGIN_USERNAME) return false;
-  return sitePassword.verify(decoded.slice(sep + 1));
+  const good = sep > 0 && sameSecret(decoded.slice(0, sep), SITE_LOGIN_USERNAME) &&
+    await sitePassword.verify(decoded.slice(sep + 1));
+  notePasswordAttempt(req, good);
+  return good;
 }
+
+/*
+ * Failed site-password attempts, per client address (2026-09-27). The site
+ * password opens the owner's research, so it was worth guessing, and nothing
+ * slowed a guesser down: every gate would check a Basic header as often as it
+ * was sent. Ten failures in fifteen minutes from one address and every
+ * password attempt from it is refused with a 429 until the window passes -
+ * including a right one, or the limit would only slow the guessing. A success
+ * clears the count. In memory, per instance: it bounds a guesser, it is not
+ * an audit log. Keyed by req.ip, which `trust proxy` = 1 makes the address
+ * Cloud Run saw rather than one the client wrote.
+ */
+const PASSWORD_FAIL_LIMIT = 10;
+const PASSWORD_FAIL_WINDOW_MS = 15 * 60 * 1000;
+const passwordFailures = new Map(); // ip -> { n, since }
+
+function passwordBlocked(req) {
+  const ip = req.ip || 'unknown';
+  const e = passwordFailures.get(ip);
+  if (!e) return false;
+  if (Date.now() - e.since > PASSWORD_FAIL_WINDOW_MS) { passwordFailures.delete(ip); return false; }
+  return e.n >= PASSWORD_FAIL_LIMIT;
+}
+
+function notePasswordAttempt(req, good) {
+  const ip = req.ip || 'unknown';
+  if (good) { passwordFailures.delete(ip); return; }
+  const now = Date.now();
+  let e = passwordFailures.get(ip);
+  if (!e || now - e.since > PASSWORD_FAIL_WINDOW_MS) e = { n: 0, since: now };
+  e.n++;
+  passwordFailures.set(ip, e);
+  if (passwordFailures.size > 10000) {
+    for (const [k, v] of passwordFailures) if (now - v.since > PASSWORD_FAIL_WINDOW_MS) passwordFailures.delete(k);
+    if (passwordFailures.size > 10000) passwordFailures.clear();
+  }
+}
+
+const TOO_MANY_PASSWORDS = { error: 'Too many password attempts. Try again in 15 minutes.' };
+
+/** How a gate refuses: 429 when this request's password was not even checked
+ *  because its address is over the limit, the given answer otherwise. */
+function refuse(req, res, status, body) {
+  if (req[PW_THROTTLED]) return res.status(429).json(TOO_MANY_PASSWORDS);
+  return res.status(status).json(body);
+}
+
+// The two places a password arrives in a body rather than a header. An
+// address over the limit is refused before either is looked at.
+app.post(['/api/auth/passkey/register/options', '/api/auth/password/change'], (req, res, next) => {
+  const b = req.body || {};
+  const supplied = (typeof b.password === 'string' && b.password) || (typeof b.current === 'string' && b.current);
+  if (supplied && passwordBlocked(req)) return res.status(429).json(TOO_MANY_PASSWORDS);
+  next();
+});
 
 // The registration form posts the owner password in its own field instead of
 // leaning on the browser's Basic dialog - see the note in auth.js. Scoped to
@@ -91,7 +197,10 @@ async function passwordOk(req) {
 async function passwordOkForRegistration(req) {
   if (await passwordOk(req)) return true;
   const supplied = req.body && typeof req.body.password === 'string' ? req.body.password : '';
-  return sitePassword.verify(supplied);
+  if (!supplied) return false;
+  const good = await sitePassword.verify(supplied);
+  notePasswordAttempt(req, good);
+  return good;
 }
 
 // Any registered account, or the password. Gates things every signed-in user
@@ -108,7 +217,7 @@ async function requireLogin(req, res, next) {
   }
   if (signedIn(req)) return next();
   if (await passwordOk(req)) return next();
-  return res.status(401).json({ error: 'not signed in' });
+  return refuse(req, res, 401, { error: 'not signed in' });
 }
 
 // Same credentials as requireLogin, but a 401 here deliberately omits the
@@ -122,7 +231,7 @@ async function requireLoginSilent(req, res, next) {
   }
   if (signedIn(req)) return next();
   if (await passwordOk(req)) return next();
-  return res.status(401).json({ error: 'not signed in' });
+  return refuse(req, res, 401, { error: 'not signed in' });
 }
 
 /**
@@ -221,15 +330,23 @@ const sitePassword = sitepass.create({
   envPassword: () => SITE_LOGIN_PASSWORD,
   canChange: async (req) => {
     const supplied = (req.body || {}).current;
-    if (supplied && await sitePassword.verify(supplied)) return true;
+    if (typeof supplied === 'string' && supplied) {
+      const good = await sitePassword.verify(supplied);
+      notePasswordAttempt(req, good);
+      if (good) return true;
+    }
     // A Face ID session proves identity at least as well as the password it
     // would replace - by either door - but it still has to belong to someone
     // allowed to spend, since this password is what gates that.
-    const viaPasskey = (req.user && req.user.via === 'passkey') || passkeyAuth.sessionVia(req) === 'passkey';
-    if (!viaPasskey) return false;
-    const me = currentUser(req);
-    if (!me) return false;
-    return isResearchEmail(me.email) || identityLib.hasAccess(req.user, 'football', 'research');
+    //
+    // Each door is judged on its own session (2026-09-27): the passkey proof
+    // and the research right must come from the SAME session. And a shared
+    // account qualifies only as sharedMayResearch() says - so one registered
+    // on an allowlisted address after ALLOWLIST_TRUSTED_BEFORE, which gets no
+    // research, cannot take the site password with a passkey either.
+    if (req.user && req.user.via === 'passkey' && sharedMayResearch(req.user)) return true;
+    const own = passkeyAuth.currentUser(req);
+    return !!(own && passkeyAuth.sessionVia(req) === 'passkey' && isResearchEmail(own.email));
   },
 });
 sitePassword.mount(app);
@@ -247,30 +364,72 @@ async function requireResearch(req, res, next) {
   }
   // MUST be awaited. This is the gate on everything that spends Anthropic
   // tokens, and `if (promise)` is always true.
-  if (await passwordOk(req)) return next();
-  const me = currentUser(req);
-  // Three ways to qualify: the env allowlist (how it always worked), an admin
-  // grant on the shared account, or the site password above.
-  if (me && isResearchEmail(me.email)) return next();
-  if (me && identityLib.hasAccess(req.user, 'football', 'research')) return next();
+  if (await mayResearch(req)) return next();
   // JSON, and no WWW-Authenticate: see requireLogin.
-  if (!me) return res.status(401).json({ error: 'not signed in' });
-  return res.status(403).json({ error: 'not_permitted' });
+  if (!signedIn(req)) return refuse(req, res, 401, { error: 'not signed in' });
+  return refuse(req, res, 403, { error: 'not_permitted' });
 }
 
 /** The same question as requireResearch, answered rather than enforced - for
- *  /api/auth/status, so the page shows owner-only buttons to the owner only. */
+ *  /api/auth/status, so the page shows owner-only buttons to the owner only.
+ *
+ *  Each door is asked about its own session (2026-09-27):
+ *  - the site password;
+ *  - the SHARED account: its owner flag, an admin-panel grant, or an
+ *    allowlisted address on an account made before ALLOWLIST_TRUSTED_BEFORE
+ *    (sharedMayResearch). Registering an allowlisted address there today
+ *    proves nothing, because the shared door does not verify email;
+ *  - this app's OWN door: the allowlist, as always. Claiming an allowlisted
+ *    address on this door has always needed the site password (auth.js,
+ *    needsPasswordForEmail), so an own-door session for one is the owner's. */
 async function mayResearch(req) {
   if (await passwordOk(req)) return true;
-  const me = currentUser(req);
-  return !!(me && (isResearchEmail(me.email) || identityLib.hasAccess(req.user, 'football', 'research')));
+  if (sharedMayResearch(req.user)) return true;
+  const own = passkeyAuth.currentUser(req);
+  return !!(own && isResearchEmail(own.email));
 }
 
 // Scheduler-or-human gate: a cron key, or a research-permitted human.
 function requireLoginOrCron(req, res, next) {
-  const key = req.get('X-Cron-Key');
-  if (CRON_SECRET && key && key === CRON_SECRET) return next();
+  if (CRON_SECRET && sameSecret(req.get('X-Cron-Key') || '', CRON_SECRET)) return next();
   return requireResearch(req, res, next);
+}
+
+/**
+ * requireBudget, except for the owner's own doors (2026-09-27).
+ *
+ * The site password and an allowlisted own-door session carry no shared
+ * account, so there is no ledger to charge - and the shared requireBudget is
+ * being changed to refuse any request without one. Those two doors are the
+ * owner's, spending the owner's key on purpose (that is what the site password
+ * is for), so this says so out loud rather than leaning on requireBudget to
+ * wave a user-less request through. Everyone else - every shared account,
+ * the owner's included - is metered as before.
+ */
+async function requireBudgetOrOwnerDoor(req, res, next) {
+  if (!req.user && await mayResearch(req)) return next();
+  return identity.requireBudget(req, res, next);
+}
+
+/**
+ * Metered routes need someone to meter (2026-09-27). requireBudget waved
+ * through a request with no shared session - most of this app is readable
+ * signed out and it must not 402 a passer-by - and this app's own door sets
+ * no req.user. So add-game and team research, which only asked for "signed
+ * in", were free and unmetered to anyone with an own-door account. The
+ * shared account carries the balance, so it is what these routes need.
+ *
+ * The one exception is whoever may research (the owner, by the site password
+ * or an allowlisted own-door session): /api/chat already spends on the
+ * owner's key for them, so these two routes add nothing they could not do.
+ */
+async function requireSharedAccount(req, res, next) {
+  if (req.user) return next();
+  if (await mayResearch(req)) return next();
+  return refuse(req, res, 401, {
+    error: 'Sign in with your account for all the apps to use AI here - it spends your own credit.',
+    accountUrl: 'https://acct.strongtechnicalconsulting.com',
+  });
 }
 
 // The owner's Basic-auth door. It answers JSON like every other route unless
@@ -278,7 +437,7 @@ function requireLoginOrCron(req, res, next) {
 // native password box is for the one person who has the password, typed on
 // purpose, never something a stranger's tap can raise.
 app.get('/api/login', async (req, res, next) => {
-  if (req.query.prompt === '1' && !signedIn(req) && !(await passwordOk(req))) {
+  if (req.query.prompt === '1' && !signedIn(req) && !(await passwordOk(req)) && !req[PW_THROTTLED]) {
     res.set('WWW-Authenticate', 'Basic realm="College Football App"');
     return res.status(401).json({ error: 'not signed in' });
   }
@@ -298,10 +457,17 @@ function slipDocId(req) {
 /** The same person under this app's older key. Accounts here were keyed by the
  *  raw address; the shared account uses base64url of it. Reading the old
  *  document once keeps a slip from vanishing the first time someone arrives on
- *  the shared session instead of this app's own. */
+ *  the shared session instead of this app's own.
+ *
+ *  Only when this app's OWN session in the same request proves that address
+ *  (2026-09-27). The shared account does not verify email, so an address
+ *  claimed there by someone else used to be handed the own-door user's slip.
+ *  A shared session alone proves nothing about who owns the old document. */
 function legacySlipDocId(req) {
   const me = currentUser(req);
-  return me && me.shared ? me.email : null;
+  if (!me || !me.shared) return null;
+  const own = passkeyAuth.currentUser(req);
+  return own && String(own.email || '').toLowerCase() === String(me.email || '').toLowerCase() ? own.uid : null;
 }
 
 // Cross-device slip state. Gated: this app is public, and an ungated write
@@ -317,7 +483,11 @@ app.get('/api/slip', requireLoginSilent, async (req, res) => {
     const me = currentUser(req);
     if (!doc.exists || slipWeekOf(doc.data()) !== week) {
       // This app's older per-account key, then the owner's pre-accounts slip.
-      for (const fallback of [legacySlipDocId(req), (me && isResearchEmail(me.email)) ? 'slip' : null]) {
+      // The pre-accounts 'slip' is the owner's, so only someone who may
+      // research reads it - not merely an address on the allowlist, which a
+      // shared account made after ALLOWLIST_TRUSTED_BEFORE could claim.
+      const ownerSlip = me && isResearchEmail(me.email) && await mayResearch(req) ? 'slip' : null;
+      for (const fallback of [legacySlipDocId(req), ownerSlip]) {
         if (!fallback || fallback === id) continue;
         const legacy = await db.collection('user-state').doc(fallback).get();
         if (legacy.exists && slipWeekOf(legacy.data()) === week) { doc = legacy; break; }
@@ -680,7 +850,11 @@ app.get('/api/changelog', async (req, res) => {
 app.get('/api/uga', async (req, res) => {
   try {
     const doc = await db.collection('fan').doc('uga').get();
-    res.json(doc.exists ? doc.data() : {});
+    // The public fields only (2026-09-27): the raw document carried
+    // `researchedBy`, which was the researcher's email (own door) or its
+    // base64url (shared account). Nothing on the page reads this route any
+    // more; it stays for anything bookmarked, with nothing private in it.
+    res.json(doc.exists ? teamfacts.publicPage(doc.data()) : {});
   } catch (err) {
     console.error('GET /api/uga', err);
     res.status(500).json({ error: 'Failed to load My Dawgs content.' });
@@ -784,7 +958,7 @@ app.get('/api/fan/:team', async (req, res) => {
 // spend somebody's credit to learn the same thing.
 const TEAM_FRESH_HOURS = 12;
 
-app.post('/api/fan/:team/research', requireLoginSilent, identity.requireBudget, identity.requireDailyCap,
+app.post('/api/fan/:team/research', requireLoginSilent, requireSharedAccount, requireBudgetOrOwnerDoor, identity.requireDailyCap,
   async (req, res) => {
     try {
       const id = teams.validId(req.params.team);
@@ -852,7 +1026,9 @@ app.post('/api/fan/:team/research', requireLoginSilent, identity.requireBudget, 
       // Validated BEFORE it is written, so a bad run leaves the last good
       // document serving rather than replacing it with a broken tab.
       const page = fan.validate({ ...raw, lastChecked: new Date().toISOString() }, id);
-      await ref.set({ ...page, researchedBy: (currentUser(req) || {}).uid || null });
+      // No `researchedBy` (2026-09-27). It was the researcher's email, or its
+      // base64url, on a document every reader is served, and nothing read it.
+      await ref.set(page);
       res.json(view(page, { cached: false }));
     } catch (err) {
       console.error('POST /api/fan/:team/research', err);
@@ -1143,7 +1319,7 @@ async function runStructuredResearch({ prompt, systemPrompt, user, maxTokens = 3
 // sends tells the model it has no live internet and to say so rather than
 // guess at anything that may have moved. Giving it search here would
 // contradict its own instructions.
-app.post('/api/chat', requireResearch, identity.requireBudget, async (req, res) => {
+app.post('/api/chat', requireResearch, requireBudgetOrOwnerDoor, identity.requireDailyCap, async (req, res) => {
   try {
     const { messages } = req.body || {};
     if (!Array.isArray(messages) || !messages.length) {
@@ -1179,7 +1355,7 @@ app.post('/api/chat', requireResearch, identity.requireBudget, async (req, res) 
   }
 });
 
-app.post('/api/research/custom', requireResearch, identity.requireBudget, async (req, res) => {
+app.post('/api/research/custom', requireResearch, requireBudgetOrOwnerDoor, identity.requireDailyCap, async (req, res) => {
   try {
     const { question } = req.body || {};
     if (!question) {
@@ -1225,7 +1401,7 @@ app.post('/api/research/custom', requireResearch, identity.requireBudget, async 
 // of the matchup) - the model used to choose it, and an id with a "/" in it
 // made Firestore throw after the credit had already been spent. It is stamped
 // with this week, which is what keeps it off next week's Games tab.
-app.post('/api/research/add-game', requireLoginSilent, identity.requireBudget, identity.requireDailyCap,
+app.post('/api/research/add-game', requireLoginSilent, requireSharedAccount, requireBudgetOrOwnerDoor, identity.requireDailyCap,
   async (req, res) => {
   try {
     const query = typeof (req.body || {}).query === 'string' ? req.body.query.trim().slice(0, 120) : '';

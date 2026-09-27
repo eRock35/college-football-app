@@ -33,6 +33,45 @@ function matchesEnv(password, expected) {
   return crypto.timingSafeEqual(a, b);
 }
 
+/* ---------- writes come from the site's own page (2026-09-27) ---------- */
+
+// Every app is a subdomain of one registrable domain, so a page on any of
+// them is "same-site" to the others and a SameSite=Lax cookie rides along on
+// a form it auto-submits. A Face ID session may change this password without
+// the old one, so a hidden form on a sibling could otherwise do it in that
+// browser. Refused unless the browser says the request came from this origin
+// and the body is JSON (a plain form cannot send JSON). The same rule as
+// identity's sameOriginOnly and the landing's crossSiteWrite.
+function crossSiteWrite(req) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return false;
+  const get = (h) => (req.get ? req.get(h) : req.headers[h.toLowerCase()]);
+  const site = get('sec-fetch-site');
+  if (site && site !== 'same-origin' && site !== 'none') return true;
+  const origin = get('origin');
+  if (origin) {
+    try {
+      if (new URL(origin).host !== String(get('host') || '')) return true;
+    } catch (e) { return true; }
+  }
+  const type = get('content-type');
+  if (type && !/^application\/([a-z0-9.+-]*\+)?json\s*(;|$)/i.test(String(type).trim())) return true;
+  return false;
+}
+
+/** The address Cloud Run's front end saw: the rightmost X-Forwarded-For
+ *  entry, which is the one it appended. */
+function clientIp(req) {
+  const parts = String((req.headers && req.headers['x-forwarded-for']) || '').split(',').map((x) => x.trim()).filter(Boolean);
+  if (parts.length) return parts[parts.length - 1].slice(0, 64);
+  return String(req.ip || 'unknown').slice(0, 64);
+}
+
+// The change route checks the CURRENT password with no session needed, so
+// without a count it is a password oracle beside the sign-in form. Failures
+// per address, per instance: 10 in 15 minutes.
+const FAIL_LIMIT = 10;
+const FAIL_WINDOW_MS = 15 * 60 * 1000;
+
 /**
  * @param opts.store       { get, set } over a collection
  * @param opts.collection  where to keep the record, default 'control'
@@ -80,13 +119,28 @@ function create(opts) {
       res.json({ custom: await isCustom(), minLength: MIN_LENGTH });
     });
 
+    const failures = new Map(); // ip -> [times]
+    const recent = (ip) => (failures.get(ip) || []).filter((t) => Date.now() - t < FAIL_WINDOW_MS);
+
     app.post(`${path}/change`, async (req, res) => {
       try {
+        if (crossSiteWrite(req)) {
+          return res.status(403).json({ error: 'That request has to come from this site’s own page.' });
+        }
+        const ip = clientIp(req);
+        if (recent(ip).length >= FAIL_LIMIT) {
+          res.set('Retry-After', String(FAIL_WINDOW_MS / 1000));
+          return res.status(429).json({ error: 'Too many attempts. Wait a few minutes and try again.' });
+        }
         // canChange is where the host decides what counts as proof: the
         // current password, or a session that was itself proved by Face ID.
         // A plain session must NOT be enough, or a borrowed one could take
         // the account permanently.
         if (!(await canChange(req))) {
+          const list = recent(ip);
+          list.push(Date.now());
+          failures.set(ip, list);
+          if (failures.size > 5000) failures.clear();
           await new Promise((r) => setTimeout(r, 400));
           return res.status(401).json({ error: 'That did not prove who you are.' });
         }
@@ -101,4 +155,4 @@ function create(opts) {
   return { verify, change, clear, isCustom, mount, MIN_LENGTH };
 }
 
-module.exports = { create, MIN_LENGTH, DOC };
+module.exports = { create, crossSiteWrite, clientIp, MIN_LENGTH, DOC };

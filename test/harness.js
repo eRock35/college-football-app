@@ -129,6 +129,14 @@ function session(secret, email, via = 'password') {
   return 'stc_session=' + encodeURIComponent(body + '.' + crypto.createHmac('sha256', secret).update(body).digest('base64url'));
 }
 
+/** A session on this app's OWN door (auth.js), which keys by the raw address
+ *  and names its cookie `session`. */
+function ownSession(secret, email, via = 'password') {
+  const e = String(email).toLowerCase();
+  const body = Buffer.from(JSON.stringify({ sub: e, email: e, exp: Math.floor(Date.now() / 1000) + 3600, via })).toString('base64url');
+  return 'session=' + encodeURIComponent(body + '.' + crypto.createHmac('sha256', secret).update(body).digest('base64url'));
+}
+
 // Firestore's atomic increment, which the real store uses for the spend
 // ledger. Without it a bump() silently does nothing and a budget looks
 // unspent.
@@ -147,4 +155,4 @@ function applyIncrements(existing, patch) {
   return out;
 }
 
-module.exports = { bag, install, session, DBS, FieldValue };
+module.exports = { bag, install, session, ownSession, DBS, FieldValue };
