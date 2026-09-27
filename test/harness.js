@@ -9,6 +9,7 @@ class FakeFirestore {
   constructor(opts = {}) { this.dbId = opts.databaseId || '(default)'; }
   collection(name) {
     const store = bag(this.dbId);
+    const dbId = this.dbId;
     const mk = (filters = [], order = null, lim = 0) => ({
       where(f, op, v) { return mk(filters.concat([[f, op, v]]), order, lim); },
       orderBy(f, dir) { return mk(filters, [f, dir], lim); },
@@ -52,7 +53,14 @@ class FakeFirestore {
         const key = name + '/' + (id || 'auto' + Math.random().toString(36).slice(2));
         return { id: key.slice(name.length + 1),
           async get() { const d = store.get(key); return { exists: d !== undefined, id: key.slice(name.length + 1), data: () => d }; },
-          async set(v, o) { noNestedArrays(v); store.set(key, o && o.merge ? applyIncrements(store.get(key), v) : JSON.parse(JSON.stringify(v))); },
+          async set(v, o) {
+            noNestedArrays(v);
+            store.set(key, o && o.merge ? applyIncrements(store.get(key), v) : JSON.parse(JSON.stringify(v)));
+            // See autoVerify below: a new shared account reads as confirmed.
+            if (AUTO_VERIFY.on && !o && dbId === 'identity' && name === 'users' && v && v.createdAt && !('emailVerifiedAt' in v)) {
+              store.set(key, Object.assign({}, store.get(key), { emailVerifiedAt: v.createdAt }));
+            }
+          },
           async update(v) { noNestedArrays(v); store.set(key, Object.assign({}, store.get(key) || {}, v)); },
           async delete() { store.delete(key); },
           collection: (sub) => new FakeFirestore({ databaseId: 'sub' }).collection(key + '/' + sub) };
@@ -155,4 +163,15 @@ function applyIncrements(existing, patch) {
   return out;
 }
 
-module.exports = { bag, install, session, ownSession, DBS, FieldValue };
+/**
+ * Email verification (2026-09-27). A shared account registered after the
+ * cutoff is unconfirmed until its link is clicked, and gets no free AI credit
+ * and no allowlisted research until then. The suites written before that
+ * register accounts and use them as the people they are, so by default an
+ * account register writes is stored confirmed. Suites testing the gates call
+ * autoVerify(false).
+ */
+const AUTO_VERIFY = { on: true };
+function autoVerify(on) { AUTO_VERIFY.on = Boolean(on); }
+
+module.exports = { bag, install, session, ownSession, DBS, FieldValue, autoVerify };

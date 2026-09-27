@@ -124,7 +124,8 @@ const MARKUP = /[<>]|onerror|onfocus=|autofocus|"/;
 
   // add-game: the model picks a "/" id and hands back markup.
   const member = h.session(SECRET, 'fan@example.com');
-  h.bag('identity').set('users/' + uidOf('fan@example.com'), { email: 'fan@example.com', createdAt: 'x' });
+  // Confirmed (2026-09-27): the free credit waits on a confirmed address.
+  h.bag('identity').set('users/' + uidOf('fan@example.com'), { email: 'fan@example.com', createdAt: 'x', emailVerifiedAt: '2026-09-28T00:00:00Z' });
   reply = { id: '../../etc/passwd', label: 'Kansas State at Arizona<img src=x onerror=alert(1)>', home: 'Arizona', away: 'Kansas State',
     kickoff: 'Sat 10:30p ET', tag: 'script', pick: 'K-State +3" onfocus="x', summary: 's' };
   let r = await fetch(B + '/api/research/add-game', { method: 'POST', headers: { ...J, cookie: member }, body: JSON.stringify({ query: 'kstate arizona' }) });

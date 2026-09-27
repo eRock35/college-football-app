@@ -734,6 +734,27 @@ Rendered at 390px and 1280px, light and dark.
   a right one included. A success clears the count. Per instance, in memory.
   Reads and session-signed requests from that address are unaffected.
 
+## Email verification (2026-09-27)
+
+The shared account now verifies email (see `eriks-projects/CLAUDE.md`,
+"Email verification"). Here:
+
+- **Allowlisted research on a shared account** (`sharedMayResearch`) needs
+  the address PROVED: `identity.isVerified(user, { before:
+  ALLOWLIST_TRUSTED_BEFORE })` - a confirmed link, or an account made before
+  this app's own 21:00 cutoff. Identity's general grandfathering runs to
+  23:00; keeping 21:00 here means an allowlisted address squatted in those
+  two hours still needs the link. The owner flag and the admin panel's
+  `access.football === 'research'` are unchanged.
+- **The free AI credit** (add-game, team research, and chat/custom research
+  for a shared account) answers 403 `code: 'verify-email'` for an
+  unconfirmed address; the pages already show `d.error`. The owner's own
+  doors (site password, allowlisted own-door session) are not metered and
+  not asked.
+- The page loads `verify-banner.js` with `data-mount="/api/id"`.
+- `test/security.js` ("1b") holds it. The harness stores a newly registered
+  account confirmed unless a suite calls `h.autoVerify(false)`.
+
 ## Commit and PR conventions
 
 **Never put a Claude session link in anything pushed to GitHub.** No

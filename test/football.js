@@ -26,7 +26,8 @@ const uidOf = (e) => Buffer.from(e.toLowerCase()).toString('base64url');
   // travelled here from a sibling app.
   const fan = h.session(SECRET, 'fan@example.com');
   const owner = h.session(SECRET, 'owner@example.com');
-  h.bag('identity').set('users/' + uidOf('fan@example.com'), { email: 'fan@example.com', createdAt: 'x' });
+  // Confirmed (2026-09-27): the free credit waits on a confirmed address.
+  h.bag('identity').set('users/' + uidOf('fan@example.com'), { email: 'fan@example.com', createdAt: 'x', emailVerifiedAt: '2026-09-28T00:00:00Z' });
   // Made before ALLOWLIST_TRUSTED_BEFORE: the real owner's account.
   h.bag('identity').set('users/' + uidOf('owner@example.com'), { email: 'owner@example.com', createdAt: '2026-09-01T00:00:00Z' });
 

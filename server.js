@@ -44,8 +44,9 @@ function isResearchEmail(email) {
 }
 
 /**
- * The allowlist is trusted on a SHARED account only if that account already
- * existed before this instant (security review, 2026-09-27).
+ * The allowlist is trusted on a SHARED account only if that account has
+ * confirmed its email, or already existed before this instant (security
+ * review, 2026-09-27; email verification the same evening).
  *
  * The shared account does not verify email: anyone can register any address
  * that has no account yet. This app's own door has always demanded the site
@@ -57,17 +58,20 @@ function isResearchEmail(email) {
  * admin panel (`access.football === 'research'`) or be the owner (`admin`).
  */
 const ALLOWLIST_TRUSTED_BEFORE = '2026-09-27T21:00:00Z';
-const ALLOWLIST_TRUSTED_BEFORE_MS = Date.parse(ALLOWLIST_TRUSTED_BEFORE);
 
 /** May this SHARED account research? The owner flag or an admin-panel grant,
- *  or an allowlisted address on an account older than the cutoff. A missing
- *  or unreadable createdAt fails closed. */
+ *  or an allowlisted address the account has PROVED it owns (2026-09-27):
+ *  identity.isVerified - a confirmed email link, or an account made before
+ *  ALLOWLIST_TRUSTED_BEFORE. That cutoff stays this app's own, two hours
+ *  earlier than identity's general one: it is when this hole was closed
+ *  here, and identity's later cutoff would re-open research to an
+ *  allowlisted address registered in between. A missing or unreadable
+ *  createdAt fails closed. */
 function sharedMayResearch(user) {
   if (!user) return false;
   if (identityLib.hasAccess(user, 'football', 'research')) return true; // admin === true, or the grant
   if (!isResearchEmail(user.email)) return false;
-  const made = Date.parse(user.createdAt || '');
-  return Number.isFinite(made) && made < ALLOWLIST_TRUSTED_BEFORE_MS;
+  return identityLib.isVerified(user, { before: ALLOWLIST_TRUSTED_BEFORE });
 }
 
 /** Constant-time comparison of two secrets of any length. */

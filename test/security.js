@@ -102,7 +102,7 @@ function account(email, extra = {}) {
   j = await (await send('GET', '/api/auth/status', { cookie: owner })).json();
   ok('...and the page shows it the owner buttons', j.canResearch === true);
 
-  const granted = account('friend@example.com', { createdAt: '2026-10-01T00:00:00Z', access: { football: 'research' } });
+  const granted = account('friend@example.com', { createdAt: '2026-10-01T00:00:00Z', emailVerifiedAt: '2026-10-01T00:05:00Z', access: { football: 'research' } });
   r = await send('POST', '/api/chat', { cookie: granted, body: CHAT });
   ok('a new account with the admin panel\'s football research grant may research', r.status === 200, String(r.status));
   const otherGrant = account('friend2@example.com', { createdAt: '2026-10-01T00:00:00Z', access: { football: 'member', dataviz: 'research' } });
@@ -139,6 +139,37 @@ function account(email, extra = {}) {
   r = await send('POST', '/api/chat', { auth: basic('site-password-here-1'), body: CHAT });
   ok('...and the site password is unchanged', r.status === 200, String(r.status));
 
+  /* ---------- 1b. email verification (2026-09-27) ---------- */
+  console.log('-- 1b. a confirmed address');
+  // The allowlist now trusts a shared account that has CONFIRMED its email -
+  // not only one that predates the 21:00 cutoff.
+  const confirmed = account('second@example.com', { createdAt: '2026-09-28T09:00:00Z', emailVerifiedAt: '2026-09-28T09:05:00Z' });
+  r = await send('POST', '/api/chat', { cookie: confirmed, body: CHAT });
+  ok('an allowlisted address registered after the cutoff and CONFIRMED may research', r.status === 200, String(r.status));
+  j = await (await send('GET', '/api/auth/status', { cookie: confirmed })).json();
+  ok('...and the page shows it the owner buttons', j.canResearch === true, JSON.stringify(j));
+  // identity grandfathers everything before 23:00; this app keeps its own,
+  // earlier 21:00 - the moment the hole was closed here.
+  const between = account('second@example.com', { createdAt: '2026-09-27T22:00:00Z' });
+  r = await send('POST', '/api/chat', { cookie: between, body: CHAT });
+  ok('...one made between 21:00 and identity\'s 23:00 cutoff, unconfirmed, may not', r.status === 403, String(r.status));
+  // A grant still needs the address confirmed to spend the FREE credit.
+  const grantedNew = account('friend3@example.com', { createdAt: '2026-10-01T00:00:00Z', access: { football: 'research' } });
+  r = await send('POST', '/api/chat', { cookie: grantedNew, body: CHAT });
+  j = await r.json();
+  ok('a research grant on an unconfirmed address is told to confirm it before the free credit', r.status === 403 && j.code === 'verify-email', `${r.status} ${JSON.stringify(j)}`);
+  const unconfirmed = account('newfan@example.com', { createdAt: '2026-10-01T00:00:00Z' });
+  r = await send('POST', '/api/research/add-game', { cookie: unconfirmed, body: {} });
+  j = await r.json();
+  ok('an unconfirmed shared account cannot spend the free credit on add-game', r.status === 403 && j.code === 'verify-email', `${r.status} ${JSON.stringify(j)}`);
+  ok('...and is pointed at /api/id/verify/send', j.resend === '/api/id/verify/send', j.resend);
+  j = await (await send('GET', '/api/id/me', { cookie: unconfirmed })).json();
+  ok('/api/id/me reports emailVerified: false', j.emailVerified === false, JSON.stringify(j.emailVerified));
+  j = await (await send('GET', '/api/id/me', { cookie: confirmed })).json();
+  ok('...and true once confirmed', j.emailVerified === true);
+  const page = await (await send('GET', '/')).text();
+  ok('the page loads the shared banner at /api/id', page.includes('<script src="/verify-banner.js" data-mount="/api/id" defer></script>'));
+
   /* ---------- 2. metered routes need the shared account ---------- */
   console.log('-- 2. metered routes');
   modelCalls = 0;
@@ -148,7 +179,7 @@ function account(email, extra = {}) {
   r = await send('POST', '/api/fan/uga/research', { cookie: ownFan });
   ok('...nor research a team', r.status === 401, String(r.status));
   ok('...and no model was called for either', modelCalls === 0, String(modelCalls));
-  const fan = account('fan@example.com', { createdAt: '2026-10-01T00:00:00Z' });
+  const fan = account('fan@example.com', { createdAt: '2026-10-01T00:00:00Z', emailVerifiedAt: '2026-10-01T00:05:00Z' });
   r = await send('POST', '/api/research/add-game', { cookie: fan, body: {} });
   ok('a shared account gets past the gate (to the 400 for an empty query)', r.status === 400, String(r.status));
   r = await send('POST', '/api/fan/not-a-team/research', { cookie: fan });
