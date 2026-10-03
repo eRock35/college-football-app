@@ -755,6 +755,31 @@ The shared account now verifies email (see `eriks-projects/CLAUDE.md`,
 - `test/security.js` ("1b") holds it. The harness stores a newly registered
   account confirmed unless a suite calls `h.autoVerify(false)`.
 
+## iPhone app (2026-10-03)
+
+Erik asked for this app on the iPhone too, the same day the other four
+shipped. It is a Capacitor shell around the live site, built in
+`eRock35/eriks-projects`'s `mobile/football/` (its README is the guide), named
+"Football" on the home screen, bundle `com.strongtechnicalconsulting.football`.
+This repo's part:
+
+- `/.well-known/apple-app-site-association` in `server.js`, ahead of the
+  static files: applinks for everything but `/api/*` (a shared slip or brag
+  card opens the app), webcredentials for the app, from `APPLE_TEAM_ID` read
+  per request (404 when unset; the Team ID is never written here). The
+  shared account's passkeys belong to the apex, whose own file lists this
+  app too.
+- `GET /ios-app.json`: the TestFlight public link from `TESTFLIGHT_URL` for
+  the "Get the iPhone app" bar (`public/get-app.js`, synced from
+  `eriks-projects/shared/`), or null, which hides the bar. Unset until Apple
+  approves a build for external testing.
+- No camera or photo library permission: nothing here takes a picture. The
+  app keeps "save to photos", which the share sheet's Save Image needs.
+
+`test/aasa.js` holds both routes. App Store review will look hard at the
+DraftKings links (guideline 5.3); TestFlight's beta review is lighter, and the
+reviewer notes in `mobile/testflight.json` say the app takes no bets.
+
 ## Commit and PR conventions
 
 **Never put a Claude session link in anything pushed to GitHub.** No

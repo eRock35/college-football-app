@@ -108,6 +108,47 @@ app.use((req, res, next) => {
 // Analytics. Serves an inert file unless GA_MEASUREMENT_ID is set.
 analytics.mount(app, 'football');
 
+// The iPhone app's association file (eriks-projects/mobile/README.md). It is
+// what lets a link to this site - a shared slip, a brag card - open the app
+// (applinks), and lets the app's web view use the passwords saved for this
+// site (webcredentials). Apple fetches it with no cookie and follows no
+// redirect, so it answers here, ahead of everything else. Everything but
+// /api/* opens in the app.
+//
+// The Team ID is read from APPLE_TEAM_ID on each request and is never written
+// in this public repo. Unset or malformed, the file does not exist (404), so
+// nothing wrong is ever published.
+app.get('/.well-known/apple-app-site-association', (req, res) => {
+  const team = String(process.env.APPLE_TEAM_ID || '').trim();
+  if (!/^[A-Z0-9]{10}$/.test(team)) return res.status(404).json({ error: 'Not found.' });
+  const appID = `${team}.com.strongtechnicalconsulting.football`;
+  res.set('Cache-Control', 'public, max-age=3600');
+  res.json({
+    applinks: {
+      details: [{
+        appIDs: [appID],
+        components: [
+          { '/': '/api/*', exclude: true, comment: 'The API is never a page.' },
+          { '/': '*' },
+        ],
+      }],
+    },
+    webcredentials: { apps: [appID] },
+  });
+});
+
+// "Get the iPhone app" (eriks-projects/shared/get-app.js): the bar on an
+// iPhone asks this for the TestFlight public link. It comes from the
+// TESTFLIGHT_URL setting, unset until Apple approves a build for external
+// testing; anything that is not exactly such a link answers null and the bar
+// stays hidden.
+const TESTFLIGHT_LINK = /^https:\/\/testflight\.apple\.com\/join\/[A-Za-z0-9]{4,20}$/;
+app.get('/ios-app.json', (req, res) => {
+  const url = String(process.env.TESTFLIGHT_URL || '').trim();
+  res.set('Cache-Control', 'public, max-age=300');
+  res.json({ name: 'Football', url: TESTFLIGHT_LINK.test(url) ? url : null });
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ---------------------------------------------------------------------------
