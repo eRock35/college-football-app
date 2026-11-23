@@ -1,39 +1,36 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>A shared slip · College Football</title>
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#F5F5F7">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#FFFFFF">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
 <meta name="robots" content="noindex">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script src="/analytics.js" async></script>
 <style>
-  /* Tokens are a copy of the app's, so a shared link reads as the same app
-     rather than a bare JSON dump. This page deliberately does NOT use
-     desktop.css: that stylesheet turns a bottom tab bar into a left sidebar,
-     and there is no tab bar here - a single read-only page wants a centred
-     column instead. */
+  /* Tokens are a copy of the app's (redesign 2026-11: white page, hairlines,
+     one accent), so a shared link reads as the same app rather than a bare
+     JSON dump. A single read-only page: a centred column, no navigation. */
   :root{
     color-scheme: light dark;
-    --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    --bg:#F5F5F7; --surface:#FFFFFF; --sep:rgba(60,60,67,.22);
-    --text:#1D1D1F; --text-faint:#8E8E93; --label-2:#6E6E73;
-    --tint:#0071E3; --accent-soft:#E8F1FE;
-    --positive:#1D8A3B;
-    --warning:#C93400; --warning-soft:#FFEFDF;
-    --parlay:#8944AB; --parlay-soft:#F4E9FB;
-    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 20px -14px rgba(0,0,0,.10);
-    --radius: 16px;
+    --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --bg:#FFFFFF; --surface:#FFFFFF; --sep:#E5E5EA;
+    --text:#1D1D1F; --text-faint:#636366; --label-2:#56565B;
+    --tint:#0060C0; --accent-soft:#EAF2FD;
+    --positive:#187A33;
+    --warning:#A84300; --warning-soft:#FFF1E2;
+    --parlay:#636366; --parlay-soft:transparent;
+    --shadow:none;
+    --radius:12px;
   }
   @media (prefers-color-scheme: dark){
     :root{
-      --bg:#000000; --surface:#1C1C1E; --sep:rgba(84,84,88,.6);
-      --text:#F5F5F7; --text-faint:#8E8E93; --label-2:#AEAEB2;
-      --tint:#0A84FF; --accent-soft:#0F2E4F;
+      --bg:#000000; --surface:#000000; --sep:#2C2C2E;
+      --text:#F5F5F7; --text-faint:#98989D; --label-2:#AEAEB2;
+      --tint:#4DA3FF; --accent-soft:#0A2440;
       --positive:#30D158;
-      --warning:#FF9F0A; --warning-soft:#3D2600;
-      --parlay:#BF5AF2; --parlay-soft:#341A47;
-      --shadow:none;
+      --warning:#FF9F0A; --warning-soft:#3A2400;
+      --parlay:#98989D; --parlay-soft:transparent;
     }
   }
   *{box-sizing:border-box;}
@@ -47,52 +44,51 @@
     font-size:13px; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
     color:var(--tint);
   }
-  h1{font-size:32px; font-weight:700; letter-spacing:-.02em; line-height:1.15; margin:2px 0 4px;}
+  h1{font-size:28px; font-weight:700; letter-spacing:-.02em; line-height:1.15; margin:2px 0 4px;}
   .sub{color:var(--label-2); font-size:15px; margin:0;}
   .num, .stat .v{font-variant-numeric:tabular-nums;}
 
   .banner{
     margin-top:14px; padding:12px 14px; border-radius:12px;
-    background:var(--warning-soft); color:var(--warning); font-size:14px; line-height:1.45;
+    background:var(--warning-soft); color:var(--warning); font-size:15px; line-height:1.45;
   }
   .summary{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px;}
   .summary:empty{display:none;}
-  .stat, .play{background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);}
+  .stat, .play{background:var(--surface); border:1px solid var(--sep); border-radius:var(--radius);}
   .stat{padding:14px 16px;}
   .stat:nth-child(3){grid-column:1 / -1;}
   .stat .k{font-size:13px; color:var(--label-2); font-weight:500;}
-  .stat .v{font-size:26px; font-weight:700; margin-top:2px; letter-spacing:-.02em;}
+  .stat .v{font-size:28px; font-weight:700; margin-top:2px; letter-spacing:-.02em;}
   .stat .v.win{color:var(--positive);}
   @media (min-width:640px){
     .summary{grid-template-columns:repeat(3,1fr);}
     .stat:nth-child(3){grid-column:auto;}
   }
 
-  h2{font-size:22px; letter-spacing:-.02em; margin:26px 0 10px;}
+  h2{font-size:20px; letter-spacing:-.02em; margin:26px 0 10px;}
   .lead{color:var(--label-2); font-size:15px; margin:0 0 12px;}
   .play{padding:16px; margin-top:12px;}
-  .play h3{font-size:18px; margin:0 0 2px; letter-spacing:-.01em; display:inline-block;}
+  .play h3{font-size:20px; margin:0 0 2px; letter-spacing:-.01em; display:inline-block;}
   .kind{
-    font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    font-size:13px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
     padding:3px 8px; border-radius:6px; display:inline-block; margin-left:8px;
     vertical-align:middle;
   }
-  .kind.straight{background:var(--accent-soft); color:var(--tint);}
-  .kind.parlay{background:var(--parlay-soft); color:var(--parlay);}
+  .kind.straight, .kind.parlay{background:transparent; color:var(--text-faint); padding-inline:0;}
   .meta{font-size:13px; color:var(--text-faint); margin:2px 0 10px; font-variant-numeric:tabular-nums;}
   .play p{color:var(--label-2); font-size:15px; line-height:1.5; margin:0 0 10px;}
   .money{
-    margin-top:10px; padding:10px 12px; border-radius:10px; background:var(--accent-soft);
-    color:var(--text); font-size:14px; font-variant-numeric:tabular-nums;
+    margin-top:10px; padding:10px 12px; border-radius:10px; background:transparent; border:1px solid var(--sep);
+    color:var(--text); font-size:15px; font-variant-numeric:tabular-nums;
   }
   .risk{
     margin-top:10px; padding:10px 12px; border-radius:10px;
-    background:var(--warning-soft); color:var(--warning); font-size:14px; line-height:1.4;
+    background:var(--warning-soft); color:var(--warning); font-size:15px; line-height:1.4;
   }
 
   .cta{
-    display:block; margin-top:26px; padding:14px 18px; border-radius:12px;
-    background:var(--tint); color:#fff; font-size:16px; font-weight:600;
+    display:flex; align-items:center; justify-content:center; min-height:48px; margin-top:32px; padding:0 24px; border-radius:999px;
+    background:#0060C0; color:#fff; font-size:16px; font-weight:600;
     text-align:center; text-decoration:none;
   }
   .cta:active{transform:scale(.99);}
@@ -101,7 +97,7 @@
   }
   .fine{
     margin-top:26px; padding-top:16px; border-top:1px solid var(--sep);
-    color:var(--text-faint); font-size:12px; line-height:1.5;
+    color:var(--text-faint); font-size:13px; line-height:1.5;
   }
 </style>
 </head><body>

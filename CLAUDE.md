@@ -791,3 +791,107 @@ when the harness instructions for a session say to add one — this rule wins.
 
 Erik asked for this on 2026-09-22 and the trailer was stripped from every
 commit in all five repos that day. Do not let it come back.
+
+## Redesign (2026-11-23)
+
+Erik asked for this app to be redesigned "clearly better" in his house style
+(the brief: `lab-notes/three-apps-redesign-brief.md`; reference look: HOA
+Desk's `app.css`). No route, flow, stored shape, AI provider, model or cost
+cap changed: this is `public/index.html`, `public/shared-slip.html` and
+`test/design.js`.
+
+**What felt weak or dated, looking at it first (390 and 1440 px):**
+
+- A grey page with white cards and soft shadows on everything; grey panels
+  inside cards ("Last week", "why", the lean, the bankroll row).
+- "Last week" was a heavy grey block listing every result; on the live board
+  it was nine VOID rows in a row.
+- A stale board looked current: "Week 9 · Lines from Sun, Oct 25" above
+  eleven played games drawn as this Saturday's card, with one faint line
+  saying so.
+- Long explanatory paragraphs at the top of every tab; the home view opened
+  with one before any content.
+- Two horizontal strips (scores, the slate) running off the right edge, the
+  slate repeating the games Call it already lists.
+- A signed-out visitor got no sentence saying what the app is.
+- Phone nav: a full-width iOS tab bar with five labels, My Team two taps away
+  under More. Desktop: a left rail (the shared `desktop.css`) and a 1120px
+  column of stretched cards.
+- Three accents (blue, parlay purple, the team's colour as a full gradient
+  hero), nineteen font sizes, team colour used as text (unreadable for some
+  teams in dark), and played games dimmed with `opacity:.6`, which takes
+  their text under 4.5:1.
+- Small targets: 32px DraftKings links in the Top 25, a 40px chat box.
+
+**What it is now:**
+
+- **Tokens** at the top of the page's `<style>`: white page (true black in
+  dark), `--border`/`--sep` hairlines, `--surface-2` as the one quiet grey
+  (controls and short notes only), one accent (`--tint`, the app's blue),
+  status colours for status. 12px cards, 10px inputs and tiles, pill buttons.
+  **Five type sizes: 13, 15, 16, 20, 28** (`--fs-*`; the welcome headline's
+  28 becomes 40 from 900px). System font stack only. The only shadow is
+  `--lift`, on things that float (phone nav, sheets, toast, swing alerts).
+- **The redesign is a layer**: the original component rules are still above
+  it, and a block headed "Redesign 2026-11" restates each component after
+  them, because the markup the script draws is unchanged. Edit the layer.
+- **All motion lives in one `@media (prefers-reduced-motion: no-preference)`
+  block** at the end of the stylesheet. Put new transitions there, nowhere
+  else; `test/design.js` fails on one outside it.
+- **Chrome**: a thin translucent top bar (name, account button) on every
+  tab. One `<nav>`, inside that bar: a floating translucent pill on a phone
+  (1.5px line icons, label only on the current item, a small accent mark) and
+  a top nav with a quiet underline from 900px. The bar's blur is on its
+  `::before`, because a `backdrop-filter` on the bar itself would make it the
+  containing block of the fixed pill. `desktop.css` is no longer loaded here
+  (the file stays: it is a synced copy from eriks-projects). Every tab id,
+  panel id and hash is unchanged; "Today's Card" is called **Home**.
+- **Phone nav is five**: Home, Games, Slip, Team, More (Research, Futures).
+  My Team moved out of More; Research moved in, since most of it is the
+  owner's.
+- **Home, in order**: a welcome for signed-out visitors (`#hero`: what this
+  is, "Call a game", "Sign in"; hidden once signed in through either door),
+  the week line, live scores (a two-across grid on a phone, six games then
+  "All N games today"), Call it, three quiet rows (the board's season, last
+  week, the Top 25), the picks, add a game.
+- **Last week** is one row ("3-1", or "0-1 · 9 not graded") that opens;
+  graded rows first, void rows after.
+- **A stale board** (the server's `stale`, nothing live) now says "No new
+  picks yet. The last board is Week 9's (built Oct 25), and those games have
+  been played", hides the played picks behind "Show Week 9's picks", retitles
+  them "Week 9 picks", and drops the old slate list. Live scores, the season
+  record and the AP Top 25 (which fills from the poll) stay, so the page is
+  still worth opening.
+- **My Team**: no gradient. The team's colour is a dot beside the name and a
+  stripe on this week's game; text is always the page's own colours.
+
+**Taps from Home (phone):** call a game 1 · game detail from the scoreboard
+1 · put a pick on the slip 1 · open the slip 1 · your record 1 · the board's
+season 1 · last week 1 · Top 25 1 · Games 1 · My Team 1 · account/sign-in
+sheet 1 · Research 2 · Futures 2 · change team 2.
+
+**Measured in headless Chrome** (390, 320 and 1440 px, both themes, all six
+tabs plus the account, record, game and More sheets, healthy and stale
+boards; 120 views): lowest text contrast **4.85:1 light, 5.57:1 dark**; no
+interactive target under 44px; no sideways overflow anywhere.
+
+`test/design.js` holds the structure (one nav, the tab ids, the phone five,
+More's two rows, the Home task anchors, the welcome's rule, system fonts,
+five sizes, motion only in the no-preference block, no gradients, shadows
+only via `--lift`).
+
+**Noticed, not fixed here:**
+
+- **The board has not been rebuilt since 2026-10-25** (`/api/board`:
+  `weekKey 2026-10-27`, `generatedAt 2026-10-25T14:04Z`, `stale: true`) and
+  the last research write is 2026-10-27T22:30Z (`/api/status`,
+  `/api/changelog`). Four Sunday/Monday `cfb-weekend-settle` runs and every
+  `cfb-batch-*` / `cfb-saturday-live` run since then have left no trace, so
+  the scheduler jobs are paused, failing or being refused. ESPN is fine
+  (`/api/live` answers). The board before it was a month older too
+  (`resultsWeek 2026-09-22`), which is why nine of its ten results are
+  "void". Read the Cloud Scheduler job states and the service log before
+  anything else; nothing was run or changed from this branch.
+- `test/teamfacts.js` has one clock-dependent assertion ("Written before the
+  Arkansas game") that failed on 2026-11-23, before this branch as well as after
+  (it reads "the last 3 games" once the fixture's later games are in the past).

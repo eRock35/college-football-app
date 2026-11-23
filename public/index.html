@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>College Football App</title>
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#F5F5F7">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#FFFFFF">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -24,114 +24,121 @@
   <!-- Analytics. Serves an inert file unless GA_MEASUREMENT_ID is set on
        the service, so local runs and browser tests send nothing. -->
   <script src="/analytics.js" async></script>
-<link rel="stylesheet" href="/desktop.css">
-</head><body class="dk">
+</head><body>
 <style>
   /* =========================================================================
-     Tokens. The app's brand hue (Apple-style blue) stays the tint; the
-     existing names (--accent, --surface, --text-dim...) are kept because the
-     script emits markup that uses them, and iOS-style aliases (--tint,
-     --fill, --sep, --label-2) sit alongside for the new chrome.
+     Tokens (redesign 2026-11). A white page (true black in dark), hairlines
+     instead of boxes, one accent: the app's own blue. Status colours are for
+     status only. The old names (--accent, --surface, --text-dim...) are kept
+     because the script emits markup that uses them.
+     Type is five sizes: 13, 15, 16, 20, 28 (--fs-*). Corners: 12px cards,
+     10px inputs and tiles, pills for buttons and chips.
      ========================================================================= */
   :root{
     color-scheme: light dark;
-    --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    --bg:#F5F5F7;
+    --fs-cap:13px; --fs-sm:15px; --fs-body:16px; --fs-h2:20px; --fs-h1:28px;
+    --bg:#FFFFFF;
     --surface:#FFFFFF;
-    --surface-2:#F2F2F7;
-    --border:#E3E3E8;
-    --fill:rgba(120,120,128,.12);
+    /* The one quiet grey: controls and short notes only, never a panel. */
+    --surface-2:#F5F5F7;
+    --sheet:#FFFFFF;
+    --border:#E5E5EA;
+    --fill:rgba(120,120,128,.10);
     --fill-2:rgba(120,120,128,.20);
-    --sep:rgba(60,60,67,.22);
-    --bar-bg:rgba(249,249,249,.82);
+    --sep:#E5E5EA;
+    --bar-bg:rgba(255,255,255,.80);
+    --pill-bg:rgba(255,255,255,.82);
     --text:#1D1D1F;
-    /* Contrast (2026-09-26 audit): every text colour here clears 4.5:1 on
-       --bg, --surface and the grey --fill panels it sits on. The old
-       #8E8E93 faint grey was 3:1 and the #0071E3 blue 3.8-4.3:1 on grey. */
+    /* Every text colour clears 4.5:1 on --bg and on --surface-2 (measured in
+       the browser, both themes; see CLAUDE.md "Redesign"). */
     --text-dim:#56565B;
     --text-faint:#636366;
     --label-2:#56565B;
     --accent:#0060C0;
     --tint:#0060C0;
     /* Solid buttons with white text. Its own token because dark mode's
-       --tint (#0A84FF) reads well as text on black but white on it is 3.6:1. */
+       --tint reads well as text on black but white on it would not. */
     --tint-fill:#0060C0;
-    --accent-soft:#E8F1FE;
+    --accent-soft:#EAF2FD;
     --positive:#187A33;
-    --positive-soft:#E5F7EA;
-    --negative:#D70015;
-    --negative-soft:#FDEAEA;
-    --warning:#C93400;
-    --warning-soft:#FFEFDF;
-    --parlay:#8944AB;
-    --parlay-soft:#F4E9FB;
+    --positive-soft:#E7F6EB;
+    --negative:#C8101E;
+    --negative-soft:#FDECEC;
+    --warning:#A84300;
+    --warning-soft:#FFF1E2;
     --team:#BA0C2F;
     --team-soft:#FBE4E8;
-    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 20px -14px rgba(0,0,0,.10);
-    --radius: 16px;
-    --tabbar-h: 49px;
-    --header-h: 44px;
+    --shadow:none;
+    /* The only shadow: things that float (the phone nav, sheets, alerts). */
+    --lift:0 6px 24px rgba(0,0,0,.10);
+    --radius:12px;
+    --r-ctl:10px;
+    --tabbar-h:54px;
+    --header-h:48px;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       --bg:#000000;
-      --surface:#1C1C1E;
-      --surface-2:#2C2C2E;
-      --border:#38383A;
+      --surface:#000000;
+      --surface-2:#1C1C1E;
+      --sheet:#1C1C1E;
+      --border:#2C2C2E;
       --fill:rgba(120,120,128,.24);
       --fill-2:rgba(120,120,128,.36);
-      --sep:rgba(84,84,88,.6);
-      --bar-bg:rgba(20,20,22,.78);
+      --sep:#2C2C2E;
+      --bar-bg:rgba(0,0,0,.72);
+      --pill-bg:rgba(28,28,30,.78);
       --text:#F5F5F7;
       --text-dim:#AEAEB2;
-      --text-faint:#8E8E93;
+      --text-faint:#98989D;
       --label-2:#AEAEB2;
-      --accent:#0A84FF;
-      --tint:#0A84FF;
+      --accent:#4DA3FF;
+      --tint:#4DA3FF;
       --tint-fill:#0066CC;
-      --accent-soft:#081D33;
+      --accent-soft:#0A2440;
       --positive:#30D158;
-      --positive-soft:#103A1E;
-      --negative:#FF453A;
+      --positive-soft:#0F3219;
+      --negative:#FF6961;
       --negative-soft:#3D1210;
       --warning:#FF9F0A;
-      --warning-soft:#3D2600;
-      --parlay:#BF5AF2;
-      --parlay-soft:#2A1439;
+      --warning-soft:#3A2400;
       --team:#FF4B5C;
       --team-soft:#3A1319;
-      --shadow: none;
+      --shadow:none;
+      --lift:0 8px 28px rgba(0,0,0,.5);
     }
   }
   :root[data-theme="dark"]{
-    --bg:#000000;
-    --surface:#1C1C1E;
-    --surface-2:#2C2C2E;
-    --border:#38383A;
-    --fill:rgba(120,120,128,.24);
-    --fill-2:rgba(120,120,128,.36);
-    --sep:rgba(84,84,88,.6);
-    --bar-bg:rgba(20,20,22,.78);
-    --text:#F5F5F7;
-    --text-dim:#AEAEB2;
-    --text-faint:#8E8E93;
-    --label-2:#AEAEB2;
-    --accent:#0A84FF;
-    --tint:#0A84FF;
-    --tint-fill:#0066CC;
-    --accent-soft:#081D33;
-    --positive:#30D158;
-    --positive-soft:#103A1E;
-    --negative:#FF453A;
-    --negative-soft:#3D1210;
-    --warning:#FF9F0A;
-    --warning-soft:#3D2600;
-    --parlay:#BF5AF2;
-    --parlay-soft:#2A1439;
-    --team:#FF4B5C;
-    --team-soft:#3A1319;
-    --shadow: none;
+      --bg:#000000;
+      --surface:#000000;
+      --surface-2:#1C1C1E;
+      --sheet:#1C1C1E;
+      --border:#2C2C2E;
+      --fill:rgba(120,120,128,.24);
+      --fill-2:rgba(120,120,128,.36);
+      --sep:#2C2C2E;
+      --bar-bg:rgba(0,0,0,.72);
+      --pill-bg:rgba(28,28,30,.78);
+      --text:#F5F5F7;
+      --text-dim:#AEAEB2;
+      --text-faint:#98989D;
+      --label-2:#AEAEB2;
+      --accent:#4DA3FF;
+      --tint:#4DA3FF;
+      --tint-fill:#0066CC;
+      --accent-soft:#0A2440;
+      --positive:#30D158;
+      --positive-soft:#0F3219;
+      --negative:#FF6961;
+      --negative-soft:#3D1210;
+      --warning:#FF9F0A;
+      --warning-soft:#3A2400;
+      --team:#FF4B5C;
+      --team-soft:#3A1319;
+      --shadow:none;
+      --lift:0 8px 28px rgba(0,0,0,.5);
   }
 
   /* ---- Base ---- */
@@ -154,123 +161,103 @@
   h1,h2,h3{font-weight:700; letter-spacing:-.01em; margin:0; text-wrap:balance;}
   a{color:var(--tint);}
   button{font-family:inherit; font-size:inherit; color:inherit; touch-action:manipulation;}
-  button, .tabbar, .compact-header, .sheet .grabber{-webkit-user-select:none; user-select:none;}
+  button, .tabbar, .sheet .grabber{-webkit-user-select:none; user-select:none;}
   img{max-width:100%;}
   .mono{font-family:var(--font-mono); font-variant-numeric:tabular-nums;}
   .num, .payout, .stat-tile .v, .team-countdown, .team-stat .v, .futures-table td.odds, .leg .m, .game-market{font-variant-numeric:tabular-nums;}
   :focus-visible{outline:2px solid var(--tint); outline-offset:2px;}
   section[role="tabpanel"][hidden]{display:none!important;}
-  section[role="tabpanel"]{animation:panel-in .22s ease-out;}
-  @keyframes panel-in{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
+  
+  
 
-  /* ---- Large title header ---- */
-  .app-header{
-    padding-top:calc(env(safe-area-inset-top,0px) + 10px);
-    padding-bottom:6px;
-  }
-  .header-row{display:flex; align-items:flex-start; justify-content:space-between; gap:12px;}
-  .eyebrow{
-    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
-    font-size:13px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--tint);
-    min-height:18px;
-  }
-  .asof-line{color:var(--label-2); font-size:13px; font-weight:500; margin-top:1px;}
-  .large-title{font-size:32px; font-weight:700; letter-spacing:-.02em; line-height:1.15; margin-top:2px; color:var(--text);}
+  /* ---- Top bar: brand, desktop nav, account. Thin and translucent. The blur
+     sits on a pseudo-element so the bar is never the containing block of
+     anything fixed. ---- */
+  .topbar{position:sticky; top:0; z-index:30; padding-top:env(safe-area-inset-top,0px);}
+  .topbar::before{content:""; position:absolute; inset:0; z-index:-1; background:var(--bar-bg);
+    -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:1px solid var(--sep);}
+  .topbar-in{max-width:1120px; margin-inline:auto; padding-inline:16px; min-height:var(--header-h);
+    display:flex; align-items:center; gap:8px;}
+  .brand{font-size:var(--fs-body); font-weight:650; letter-spacing:-.015em; color:var(--text); margin:0; white-space:nowrap;}
   .auth-chip{
-    flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; gap:6px;
-    min-width:44px; min-height:44px; height:44px; padding:0; border:none; border-radius:22px;
-    background:var(--fill); color:var(--tint); cursor:pointer; margin-top:2px;
-    transition:transform .12s ease, background .15s ease;
+    margin-left:auto; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    min-width:44px; min-height:44px; padding:0; border:none; border-radius:999px;
+    background:transparent; color:var(--tint); cursor:pointer;
   }
-  .auth-chip svg{width:24px; height:24px; display:block;}
-  .auth-chip .auth-chip-label{display:none; font-size:15px; font-weight:600; padding-right:14px;}
+  .auth-chip svg{width:22px; height:22px; display:block;}
+  .auth-chip .auth-chip-label{display:none; font-size:var(--fs-sm); font-weight:600;}
   .auth-chip[data-state="in"]{color:var(--label-2);}
   .auth-chip[data-state="armed"]{background:var(--tint-fill); color:#fff;}
   .auth-chip:active{transform:scale(.94);}
+  /* Which week, and when its lines are from: one quiet line under the bar. */
+  .week-line{display:flex; flex-wrap:wrap; gap:0 8px; align-items:baseline; padding:16px 0 0; font-size:var(--fs-cap); color:var(--text-faint); font-variant-numeric:tabular-nums;}
+  .week-line #week-label{color:var(--text); font-weight:600;}
+  .week-line #asof-line::before{content:"\00b7"; margin-right:8px;}
 
-  .compact-header{
-    position:fixed; top:0; left:0; right:0; z-index:30;
-    height:calc(var(--header-h) + env(safe-area-inset-top,0px));
-    padding-top:env(safe-area-inset-top,0px);
-    display:flex; align-items:center; justify-content:center;
-    background:var(--bar-bg);
-    -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%);
-    border-bottom:1px solid var(--sep);
-    opacity:0; pointer-events:none; transition:opacity .2s ease-out;
-  }
-  .compact-header.on{opacity:1; pointer-events:auto;}
-  .compact-title{font-size:17px; font-weight:600; color:var(--text); letter-spacing:-.01em;}
-
-  /* ---- Tab bar (phone: fixed bottom; desktop: segmented control) ---- */
+  /* ---- Navigation. Phone: a slim floating pill - line icons, the label only
+     on the current item, a small accent mark under it. Desktop: the same
+     buttons sit in the top bar with a quiet underline. ---- */
   .tabbar{
-    position:fixed; left:0; right:0; bottom:0; z-index:40;
-    display:flex; align-items:stretch; justify-content:space-around;
-    padding:4px 8px calc(8px + env(safe-area-inset-bottom,0px));
-    background:var(--bar-bg);
-    -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%);
-    border-top:1px solid var(--sep);
+    position:fixed; z-index:40; left:50%; transform:translateX(-50%);
+    bottom:calc(12px + env(safe-area-inset-bottom,0px));
+    width:min(calc(100% - 24px), 420px);
+    display:flex; align-items:stretch; justify-content:space-between; gap:0; padding:4px;
+    border-radius:999px; border:1px solid var(--sep); background:var(--pill-bg);
+    -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px);
+    box-shadow:var(--lift);
   }
   .tab{
-    flex:1 1 0; min-height:49px; min-width:44px;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    position:relative; flex:1 1 0; min-width:44px; min-height:46px;
+    display:flex; align-items:center; justify-content:center; gap:6px;
     border:none; background:transparent; color:var(--label-2); cursor:pointer;
-    font-size:10.5px; font-weight:500; letter-spacing:.01em; padding:4px 0 2px; border-radius:10px;
-    transition:color .15s ease;
+    font-size:var(--fs-cap); font-weight:600; letter-spacing:-.01em; padding:0 6px; border-radius:999px;
   }
-  .tab svg{width:24px; height:24px; display:block;}
-  .tab[aria-selected="true"], .tab.more-active{color:var(--tint);}
+  .tab svg{width:22px; height:22px; display:block; flex:0 0 auto;}
+  .tab .tab-label{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap;}
+  .tab[aria-selected="true"], .tab.more-active{flex:1.9 1 0; color:var(--tint);}
+  .tab[aria-selected="true"] .tab-label, .tab.more-active .tab-label{position:static; width:auto; height:auto; clip-path:none; overflow:hidden; text-overflow:ellipsis; max-width:9ch;}
+  .tab[aria-selected="true"]::after, .tab.more-active::after{content:""; position:absolute; bottom:5px; left:50%; width:14px; height:2px; margin-left:-7px; border-radius:2px; background:var(--tint);}
   .tab .l-full{display:none;}
   .tab .l-short{display:inline;}
-  @media (max-width:767px){
-    #tab-futures, #tab-uga{display:none;}
+  @media (max-width:899px){
+    /* Five on a phone: Research and Futures live under More. */
+    #tab-research, #tab-futures{display:none;}
   }
-  @media (min-width:768px){
-    body{padding-bottom:40px;}
-    .app-header{padding-top:24px;}
-    .large-title{font-size:34px;}
-    .auth-chip{padding-left:10px; border-radius:22px;}
+  @media (min-width:900px){
+    body{padding-bottom:48px;}
+    .topbar-in{gap:24px; padding-inline:32px;}
+    .auth-chip{padding:0 14px 0 10px;}
     .auth-chip .auth-chip-label{display:inline;}
-    .compact-header{display:none;}
+    /* The same <nav>, now in the bar's own flow. */
     .tabbar{
-      position:static; display:flex; gap:2px; padding:3px; margin:12px 0 4px;
-      background:var(--fill); border-radius:12px; border:none;
+      position:static; transform:none; width:auto; height:var(--header-h); padding:0; gap:4px;
+      border:0; border-radius:0; background:transparent; box-shadow:none;
       -webkit-backdrop-filter:none; backdrop-filter:none;
     }
-    .tab{flex-direction:row; gap:7px; min-height:40px; font-size:14px; font-weight:600; border-radius:10px; padding:0 10px; white-space:nowrap;}
-    .tab svg{width:18px; height:18px;}
-    .tab[aria-selected="true"]{background:var(--surface); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.12);}
+    .tab{flex:0 0 auto; min-height:var(--header-h); padding:0 12px; border-radius:0; font-size:var(--fs-sm); font-weight:500; color:var(--label-2);}
+    .tab:hover{color:var(--text);}
+    .tab svg{display:none;}
+    .tab .tab-label, .tab[aria-selected="true"] .tab-label{position:static; width:auto; height:auto; clip-path:none; overflow:visible; max-width:none;}
+    .tab[aria-selected="true"], .tab.more-active{flex:0 0 auto; color:var(--text); font-weight:600;}
+    .tab[aria-selected="true"]::after{bottom:0; left:12px; right:12px; width:auto; margin-left:0;}
     .tab .l-full{display:inline;}
     .tab .l-short{display:none;}
     #tab-more{display:none;}
   }
 
   /* ---- Sheets (bottom sheet on phone, centred card on desktop) ---- */
-  .sheet-backdrop{
-    position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.4);
-    opacity:0; transition:opacity .25s ease-out;
-  }
+  .sheet-backdrop{position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.4); opacity:0;}
   .sheet-backdrop.on{opacity:1;}
-  .sheet{
-    position:fixed; left:0; right:0; bottom:0; z-index:51;
-    background:var(--surface); color:var(--text);
-    border-radius:20px 20px 0 0;
-    padding:8px 16px calc(16px + env(safe-area-inset-bottom,0px));
-    max-height:calc(100dvh - 48px); overflow-y:auto; -webkit-overflow-scrolling:touch;
-    box-shadow:0 -8px 40px rgba(0,0,0,.18);
-    transform:translateY(100%); transition:transform .3s cubic-bezier(.2,.8,.2,1);
-    margin-inline:auto; max-width:840px;
-  }
+  .sheet{position:fixed; left:0; right:0; bottom:0; z-index:51; background:var(--surface); color:var(--text); border-radius:20px 20px 0 0; padding:8px 16px calc(16px + env(safe-area-inset-bottom,0px)); max-height:calc(100dvh - 48px); overflow-y:auto; -webkit-overflow-scrolling:touch; box-shadow:var(--lift); transform:translateY(100%); margin-inline:auto; max-width:840px;}
   .sheet.on{transform:translateY(0);}
-  .sheet.dragging{transition:none;}
+  
   .grabber{width:36px; height:5px; border-radius:3px; background:var(--fill-2); margin:0 auto 14px; touch-action:none;}
   .sheet-title{font-size:20px; font-weight:700; letter-spacing:-.02em; margin:0 0 6px;}
   .sheet-msg{font-size:15px; color:var(--label-2); line-height:1.45; margin:0 0 14px;}
   .sheet p{font-size:15px; color:var(--label-2); line-height:1.45; margin:0 0 12px;}
   .sheet-actions{display:flex; flex-direction:column; gap:8px; margin-top:6px;}
-  .sheet-action{
-    width:100%; min-height:50px; border:none; border-radius:14px; background:var(--fill);
-    color:var(--tint); font-size:17px; font-weight:600; cursor:pointer; transition:transform .12s ease;
-  }
+  .sheet-action{width:100%; min-height:50px; border:none; border-radius:14px; background:var(--fill); color:var(--tint); font-size:16px; font-weight:600; cursor:pointer;}
   .sheet-action.primary{background:var(--tint-fill); color:#fff;}
   .sheet-action.destructive{color:var(--negative);}
   .sheet-action:active{transform:scale(.97);}
@@ -280,39 +267,25 @@
   .auth-or{font-size:13px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.06em; font-weight:600; text-align:center; margin:14px 0 10px;}
   body.sheet-open{overflow:hidden;}
   @media (min-width:768px){
-    .sheet{
-      left:50%; right:auto; bottom:auto; top:50%;
-      width:min(460px, calc(100% - 32px)); border-radius:20px;
-      padding:20px 20px 20px; max-height:calc(100dvh - 64px);
-      transform:translate(-50%,-50%) scale(.96); opacity:0;
-      transition:transform .22s ease-out, opacity .22s ease-out;
-      box-shadow:0 20px 60px rgba(0,0,0,.28);
-    }
+    .sheet{left:50%; right:auto; bottom:auto; top:50%; width:min(460px, calc(100% - 32px)); border-radius:20px; padding:20px 20px 20px; max-height:calc(100dvh - 64px); transform:translate(-50%,-50%) scale(.96); opacity:0; box-shadow:var(--lift);}
     .sheet.on{transform:translate(-50%,-50%) scale(1); opacity:1;}
     .grabber{display:none;}
   }
 
   /* ---- Toast ---- */
-  .toast{
-    position:fixed; left:50%; top:calc(env(safe-area-inset-top,0px) + 12px); z-index:70;
-    transform:translate(-50%,-12px); opacity:0; pointer-events:none;
-    background:var(--text); color:var(--bg); font-size:14px; font-weight:600;
-    padding:10px 18px; border-radius:999px; box-shadow:0 6px 20px rgba(0,0,0,.2);
-    max-width:calc(100% - 32px); text-align:center;
-    transition:opacity .2s ease-out, transform .2s ease-out;
-  }
+  .toast{position:fixed; left:50%; top:calc(env(safe-area-inset-top,0px) + 12px); z-index:70; transform:translate(-50%,-12px); opacity:0; pointer-events:none; background:var(--text); color:var(--bg); font-size:15px; font-weight:600; padding:10px 18px; border-radius:999px; box-shadow:var(--lift); max-width:calc(100% - 32px); text-align:center;}
   .toast.on{opacity:1; transform:translate(-50%,0);}
 
   /* ---- Lists (inset grouped) ---- */
   .list-group{background:var(--surface-2); border-radius:14px; overflow:hidden; margin-top:8px;}
   .list-row{
     display:flex; align-items:center; gap:12px; width:100%; min-height:50px; padding:0 16px;
-    border:none; background:transparent; color:var(--text); font-size:17px; text-align:left; cursor:pointer;
+    border:none; background:transparent; color:var(--text); font-size:16px; text-align:left; cursor:pointer;
   }
   .list-row + .list-row{box-shadow:inset 0 1px 0 var(--sep); background-clip:padding-box;}
   .list-row:active{background:var(--fill);}
   .list-row svg{width:24px; height:24px; color:var(--tint); flex:0 0 auto;}
-  .list-row .chev{margin-left:auto; color:var(--text-faint); font-size:22px; line-height:1;}
+  .list-row .chev{margin-left:auto; color:var(--text-faint); font-size:20px; line-height:1;}
 
   /* ---- Forms ---- */
   :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea){
@@ -339,19 +312,13 @@
   .form-group input, .form-group textarea{background:var(--surface);}
   .sheet .form-group{background:var(--fill);}
   .sheet .form-group input{background:var(--surface);}
-  :root[data-theme="dark"] .form-group input, :root[data-theme="dark"] .sheet .form-group input{background:var(--surface-2);}
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]) .form-group input, :root:not([data-theme="light"]) .sheet .form-group input{background:var(--surface-2);}
-  }
 
   /* ---- Buttons ---- */
-  .auth-go, .refresh-btn, .reset-btn, .text-toggle-btn, .add-slip-btn, .remove-card-btn, .chat-send, .sheet-action{
-    transition:transform .12s ease, opacity .15s ease, background .15s ease;
-  }
+  
   .auth-go:active, .refresh-btn:active, .reset-btn:active, .text-toggle-btn:active, .add-slip-btn:active, .remove-card-btn:active, .chat-send:active{transform:scale(.97);}
   .auth-go{
     display:block; width:100%; min-height:50px; border:none; border-radius:14px;
-    background:var(--tint-fill); color:#fff; font-size:17px; font-weight:600; cursor:pointer; margin-top:10px;
+    background:var(--tint-fill); color:#fff; font-size:16px; font-weight:600; cursor:pointer; margin-top:10px;
   }
   .refresh-btn{
     flex:0 0 auto; min-height:44px; min-width:44px; padding:0 16px; border:none; border-radius:12px;
@@ -376,15 +343,15 @@
   .top25{background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; margin-top:12px;}
   .top25-head{display:flex; align-items:center; justify-content:space-between; width:100%; min-height:48px;
     padding:0 16px; border:0; background:transparent; color:var(--text); font:inherit; cursor:pointer;}
-  .top25-head .chev{color:var(--text-faint); transition:transform .18s ease;}
+  .top25-head .chev{color:var(--text-faint);}
   .top25-head[aria-expanded="true"] .chev{transform:rotate(90deg);}
   .top25-row{display:flex; align-items:center; gap:10px; padding:9px 16px; box-shadow:inset 0 1px 0 var(--sep);}
   .top25-row .rk{width:26px; flex:0 0 auto; font-variant-numeric:tabular-nums; font-weight:700; color:var(--text-faint); font-size:13px;}
   .top25-row .tm{font-weight:600; font-size:15px; min-width:0;}
-  .top25-row .rec{font-size:12.5px; color:var(--text-faint);}
+  .top25-row .rec{font-size:13px; color:var(--text-faint);}
   .top25-row .gm{flex:1; display:flex; flex-direction:column; align-items:flex-end; gap:1px;
-    text-align:right; font-size:13.5px; color:var(--label-2); min-width:0;}
-  .top25-row .gm .ln{font-size:12px; color:var(--text-faint);}
+    text-align:right; font-size:13px; color:var(--label-2); min-width:0;}
+  .top25-row .gm .ln{font-size:13px; color:var(--text-faint);}
   .card-tools{display:flex; gap:6px; flex-wrap:wrap; padding:10px 16px 12px; box-shadow:inset 0 1px 0 var(--sep);}
   .card-tool{min-height:44px; min-width:44px; padding:0 12px; border:0; border-radius:10px; background:var(--fill);
     color:var(--label-2); font:inherit; font-size:13px; font-weight:600; cursor:pointer;}
@@ -396,7 +363,7 @@
     color:var(--text-faint); padding:2px 2px 10px;}
   .top25-row.bye .gm{font-style:italic; color:var(--text-faint);}
   .top25-row .gm .ln{color:var(--text-faint);}
-  .credit-options .reset-btn{padding:0 6px; font-size:14px; width:100%;}
+  .credit-options .reset-btn{padding:0 6px; font-size:15px; width:100%;}
   .text-toggle-btn{
     min-height:44px; padding:0 6px; border:none; background:transparent;
     color:var(--tint); font-size:15px; font-weight:600; cursor:pointer;
@@ -454,46 +421,43 @@
   .results-record{font-size:13px; color:var(--text-faint); font-variant-numeric:tabular-nums;}
   .result-row{display:flex; gap:10px; align-items:baseline; padding:7px 0; border-top:1px solid var(--sep);}
   .result-row:first-of-type{border-top:0;}
-  .result-badge{flex:0 0 auto; min-width:50px; text-align:center; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+  .result-badge{flex:0 0 auto; min-width:50px; text-align:center; font-size:13px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
     padding:2px 7px; border-radius:6px; background:var(--fill); color:var(--text-faint);}
   .result-badge.win{background:#1c7c3f22; color:#1c7c3f;}
   .result-badge.loss{background:#c2323222; color:#c23232;}
   .result-badge.push{background:#8884; color:var(--text-dim);}
   .result-badge.void{color:var(--text-dim);}
   .result-text{min-width:0; display:flex; flex-direction:column; gap:2px;}
-  .result-title{font-size:14px; font-weight:600;}
-  .result-sub{font-size:12.5px; color:var(--text-faint); line-height:1.45;}
+  .result-title{font-size:15px; font-weight:600;}
+  .result-sub{font-size:13px; color:var(--text-faint); line-height:1.45;}
   .board-note{font-size:13px; color:var(--text-faint); margin:8px 0 0;}
 
   /* ---- Call it, records, badges (2026-09-26) ---- */
   .season-chip{display:flex; align-items:center; gap:8px; width:100%; min-height:44px; margin-top:12px; padding:10px 14px;
-    border:0; border-radius:14px; background:var(--positive-soft); color:var(--text); font:inherit; font-size:14px; text-align:left; cursor:pointer;}
+    border:0; border-radius:14px; background:var(--positive-soft); color:var(--text); font:inherit; font-size:15px; text-align:left; cursor:pointer;}
   .season-chip b{font-variant-numeric:tabular-nums; font-size:15px;}
   .season-chip .u{color:var(--positive); font-weight:700; font-variant-numeric:tabular-nums;}
-  .season-chip .chev{margin-left:auto; color:var(--text-faint); font-size:18px;}
+  .season-chip .chev{margin-left:auto; color:var(--text-faint); font-size:20px;}
   .calls{margin-top:14px; background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px 14px 4px;}
   .calls-head{display:flex; align-items:flex-start; justify-content:space-between; gap:12px;}
   .calls-title{font-size:20px; font-weight:800; margin:0; letter-spacing:-.01em;}
-  .calls-sub{margin:2px 0 0; font-size:13.5px; color:var(--text-dim); line-height:1.4;}
+  .calls-sub{margin:2px 0 0; font-size:13px; color:var(--text-dim); line-height:1.4;}
   .calls-you{flex:0 0 auto; min-height:44px; padding:0 14px; border:0; border-radius:999px; background:var(--accent-soft);
-    color:var(--tint); font:inherit; font-size:14px; font-weight:700; cursor:pointer; font-variant-numeric:tabular-nums; white-space:nowrap;}
+    color:var(--tint); font:inherit; font-size:15px; font-weight:700; cursor:pointer; font-variant-numeric:tabular-nums; white-space:nowrap;}
   .calls-list{display:grid; grid-template-columns:minmax(0,1fr); margin-top:8px;}
   @media (min-width:700px){ .calls-list{grid-template-columns:repeat(2, minmax(0,1fr)); column-gap:20px;} }
   .call{padding:12px 0 10px; box-shadow:inset 0 1px 0 var(--sep); min-width:0;}
   .call-top{display:flex; align-items:baseline; gap:6px 8px; flex-wrap:wrap; margin-bottom:8px;}
   .call-label{font-weight:700; font-size:15px;}
-  .call-meta{font-size:12.5px; color:var(--text-faint);}
-  .call-flag{font-size:11px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; padding:2px 7px; border-radius:6px;
+  .call-meta{font-size:13px; color:var(--text-faint);}
+  .call-flag{font-size:13px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; padding:2px 7px; border-radius:6px;
     background:var(--warning-soft); color:var(--warning);}
   .call-sides{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px;}
-  .call-side{position:relative; overflow:hidden; display:flex; align-items:center; justify-content:space-between; gap:6px;
-    min-height:48px; padding:0 12px; border:1.5px solid var(--border); border-radius:12px; background:var(--surface);
-    color:var(--text); font:inherit; font-size:15px; font-weight:700; cursor:pointer; text-align:left; font-variant-numeric:tabular-nums;
-    transition:border-color .15s ease, transform .12s ease;}
+  .call-side{position:relative; overflow:hidden; display:flex; align-items:center; justify-content:space-between; gap:6px; min-height:48px; padding:0 12px; border:1.5px solid var(--border); border-radius:12px; background:var(--surface); color:var(--text); font:inherit; font-size:15px; font-weight:700; cursor:pointer; text-align:left; font-variant-numeric:tabular-nums;}
   .call-side:active:not(:disabled){transform:scale(.97);}
   .call-side:disabled{cursor:default; color:var(--text-dim); background:var(--surface-2); border-color:transparent;}
   .call-side.mine:disabled, .call-side.won:disabled, .call-side.lost:disabled{color:var(--text); background:var(--surface);}
-  .call-side .bar{position:absolute; left:0; top:0; bottom:0; background:var(--fill); transition:width .45s cubic-bezier(.2,.8,.2,1);}
+  .call-side .bar{position:absolute; left:0; top:0; bottom:0; background:var(--fill);}
   .call-side .t, .call-side .pct{position:relative; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .call-side .pct{flex:0 0 auto; font-size:13px; font-weight:600; color:var(--text-dim);}
   .call-side.mine{border-color:var(--tint); box-shadow:inset 0 0 0 1px var(--tint);}
@@ -501,41 +465,37 @@
   .call-side.won{border-color:var(--positive);}
   .call-side.won .bar{background:var(--positive-soft);}
   .call-side.lost{border-color:var(--negative); box-shadow:inset 0 0 0 1px var(--negative);}
-  .call-foot{margin-top:7px; font-size:12.5px; color:var(--text-dim); line-height:1.4;}
+  .call-foot{margin-top:7px; font-size:13px; color:var(--text-dim); line-height:1.4;}
   .call-foot .w{color:var(--positive); font-weight:700;}
   .call-foot .l{color:var(--negative); font-weight:700;}
-  .calls-empty{padding:12px 0; font-size:14px; color:var(--text-dim); box-shadow:inset 0 1px 0 var(--sep);}
-  .card-crowd{font-size:12.5px; color:var(--text-dim); margin-top:4px;}
+  .calls-empty{padding:12px 0; font-size:15px; color:var(--text-dim); box-shadow:inset 0 1px 0 var(--sep);}
+  .card-crowd{font-size:13px; color:var(--text-dim); margin-top:4px;}
   .card-crowd[hidden]{display:none;}
   .rec-hero{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; margin:8px 0 12px;}
   .rec-tile{background:var(--fill); border-radius:14px; padding:10px 12px; min-width:0;}
-  .rec-tile .k{font-size:12px; color:var(--text-dim); font-weight:600;}
-  .rec-tile .v{font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.02em; line-height:1.2;}
-  .rec-tile .s{font-size:12.5px; color:var(--text-dim);}
+  .rec-tile .k{font-size:13px; color:var(--text-dim); font-weight:600;}
+  .rec-tile .v{font-size:28px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.02em; line-height:1.2;}
+  .rec-tile .s{font-size:13px; color:var(--text-dim);}
   .rec-tile .s.up{color:var(--positive); font-weight:700;}
   .rec-tile .s.down{color:var(--negative); font-weight:700;}
-  .sheet-sec{font-size:12.5px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.05em; margin:16px 0 6px;}
+  .sheet-sec{font-size:13px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.05em; margin:16px 0 6px;}
   .badge-grid{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px;}
   .badge{background:var(--fill); border-radius:14px; padding:10px 6px; text-align:center;}
-  .badge .i{font-size:26px; line-height:1.25;}
-  .badge .n{font-size:12.5px; font-weight:700; margin-top:2px; color:var(--text);}
-  .badge .d{font-size:11.5px; color:var(--text-dim); margin-top:2px; line-height:1.3;}
+  .badge .i{font-size:28px; line-height:1.25;}
+  .badge .n{font-size:13px; font-weight:700; margin-top:2px; color:var(--text);}
+  .badge .d{font-size:13px; color:var(--text-dim); margin-top:2px; line-height:1.3;}
   .badge.locked .i{filter:grayscale(1); opacity:.35;}
   .badge.earned{background:var(--warning-soft);}
   .rec-week{padding:10px 0; box-shadow:inset 0 1px 0 var(--sep);}
-  .rec-week-head{display:flex; justify-content:space-between; gap:8px; font-weight:700; font-size:14.5px; margin-bottom:4px;}
+  .rec-week-head{display:flex; justify-content:space-between; gap:8px; font-weight:700; font-size:15px; margin-bottom:4px;}
   .rec-week-head span{font-variant-numeric:tabular-nums; color:var(--text-dim); font-weight:600;}
-  .rec-row{display:flex; gap:8px; align-items:baseline; font-size:13.5px; padding:3px 0; color:var(--text);}
-  .rec-row .o{flex:0 0 46px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;}
-  .rec-row .x{color:var(--text-dim); font-size:12.5px; margin-left:auto; white-space:nowrap; font-variant-numeric:tabular-nums;}
+  .rec-row{display:flex; gap:8px; align-items:baseline; font-size:13px; padding:3px 0; color:var(--text);}
+  .rec-row .o{flex:0 0 46px; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;}
+  .rec-row .x{color:var(--text-dim); font-size:13px; margin-left:auto; white-space:nowrap; font-variant-numeric:tabular-nums;}
   .o.win{color:var(--positive);} .o.loss{color:var(--negative);} .o.push, .o.pending, .o.void{color:var(--text-dim);}
   .rec-share{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; margin:4px 0 4px;}
   .rec-share .reset-btn{width:100%;}
   .brag-img{display:block; width:100%; height:auto; border-radius:14px; margin:6px 0 12px; background:#05070D; aspect-ratio:1200/630;}
-  @media (prefers-color-scheme: dark){
-    .result-badge.win{background:#3ddc8433; color:#5fe39b;}
-    .result-badge.loss{background:#ff6b6b33; color:#ff8f8f;}
-  }
   /* Desktop: the page's own 840px measure is right for prose, but it left the
      rail stranded a third of a screen from the board it belongs to. The shell
      is rail + --dk-max, so declaring the real measure here is what pins them
@@ -551,17 +511,17 @@
   .pick, .game-card{overflow:hidden;}
   .pick-head{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:16px 16px 8px;}
   .pick-kind{
-    font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    font-size:13px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
     padding:3px 8px; border-radius:6px; display:inline-block; margin-bottom:6px;
   }
   .pick-kind.straight{background:var(--accent-soft); color:var(--tint);}
-  .pick-kind.parlay{background:var(--parlay-soft); color:var(--parlay);}
+  .pick-kind.parlay{background:var(--surface-2); color:var(--text-dim);}
   .pick-title{font-size:20px; font-weight:700; letter-spacing:-.01em; color:var(--text); line-height:1.2;}
   .pick-sub{font-size:15px; color:var(--label-2); margin-top:3px;}
   .pick-time{font-size:13px; color:var(--text-faint); margin-top:3px; font-variant-numeric:tabular-nums;}
 
   .confidence{display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex:0 0 auto;}
-  .confidence .lbl{font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.06em; font-weight:600;}
+  .confidence .lbl{font-size:13px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.06em; font-weight:600;}
   .dots{display:flex; gap:4px;}
   .dots i{width:8px; height:8px; border-radius:50%; background:var(--fill-2); display:block;}
   .dots i.on{background:var(--tint);}
@@ -578,14 +538,14 @@
     color:var(--tint); cursor:pointer; display:flex; justify-content:space-between; align-items:center;
   }
   .why-toggle:active{background:var(--fill);}
-  .why-toggle .arrow{transition:transform .2s ease; font-size:13px; color:var(--text-faint);}
+  .why-toggle .arrow{font-size:13px; color:var(--text-faint);}
   .why-toggle[aria-expanded="true"] .arrow{transform:rotate(180deg);}
   .why-body{padding:12px 16px 12px; color:var(--label-2); font-size:15px; line-height:1.5; background:var(--surface-2);}
   .why-body p{margin:0 0 10px;}
   .why-body p:last-child{margin-bottom:0;}
-  .risk-line{margin-top:10px; padding:10px 12px; border-radius:10px; background:var(--warning-soft); color:var(--warning); font-size:14px; line-height:1.4;}
-  .slip-live{margin-top:10px; padding:10px 12px; border-radius:10px; background:var(--accent-soft); font-size:14px; line-height:1.45;}
-  .slip-live-label{font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--tint); margin-bottom:3px;}
+  .risk-line{margin-top:10px; padding:10px 12px; border-radius:10px; background:var(--warning-soft); color:var(--warning); font-size:15px; line-height:1.4;}
+  .slip-live{margin-top:10px; padding:10px 12px; border-radius:10px; background:var(--accent-soft); font-size:15px; line-height:1.45;}
+  .slip-live-label{font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--tint); margin-bottom:3px;}
   .slip-live-row{color:var(--text); margin-bottom:3px;}
   .slip-live-row:last-child{margin-bottom:0;}
   .slip-live-time{color:var(--text-faint); font-size:13px;}
@@ -593,19 +553,12 @@
   /* Slip row: a 44px switch row, then stake + payout beneath it. */
   .slip-row{border-top:1px solid var(--sep); padding:4px 16px 12px; background:var(--surface);}
   .switch-row{display:flex; align-items:center; justify-content:space-between; min-height:44px; cursor:pointer; gap:12px;}
-  .switch-row .switch-label{font-size:17px; color:var(--text);}
+  .switch-row .switch-label{font-size:16px; color:var(--text);}
   .switch{position:relative; display:inline-block; width:51px; height:31px; flex:0 0 auto;}
   /* The input is the tap target, so it reaches past the 51x31 track to 44px. */
   .switch input{position:absolute; top:-7px; bottom:-7px; left:-4px; right:-4px; width:auto; height:auto; margin:0; opacity:0; cursor:pointer; z-index:1;}
-  .switch .track{
-    position:absolute; inset:0; border-radius:16px; background:var(--fill-2);
-    transition:background .2s ease;
-  }
-  .switch .track::after{
-    content:""; position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%;
-    background:#fff; box-shadow:0 3px 8px rgba(0,0,0,.18), 0 1px 1px rgba(0,0,0,.08);
-    transition:transform .2s cubic-bezier(.2,.8,.2,1);
-  }
+  .switch .track{position:absolute; inset:0; border-radius:16px; background:var(--fill-2);}
+  .switch .track::after{content:""; position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%; background:#fff; box-shadow:0 0 0 1px rgba(0,0,0,.06);}
   .switch input:checked + .track{background:var(--positive);}
   .switch input:checked + .track::after{transform:translateX(20px);}
   .switch input:focus-visible + .track{box-shadow:0 0 0 2px var(--bg), 0 0 0 4px var(--tint);}
@@ -619,11 +572,11 @@
   /* ---- Research tab ---- */
   .research-game{padding:16px; margin-top:12px;}
   .research-game.has-update{box-shadow:0 0 0 1.5px var(--warning);}
-  .research-game h3{font-size:18px; color:var(--text); margin-bottom:2px; letter-spacing:-.01em;}
+  .research-game h3{font-size:20px; color:var(--text); margin-bottom:2px; letter-spacing:-.01em;}
   .research-meta{font-size:13px; color:var(--text-faint); margin-bottom:10px; font-variant-numeric:tabular-nums;}
   .research-game p{color:var(--label-2); font-size:15px; line-height:1.5; margin:0 0 10px;}
   .research-game p:last-child{margin-bottom:0;}
-  .flag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:3px 8px; border-radius:6px; margin-right:6px; margin-bottom:8px;}
+  .flag{display:inline-block; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:3px 8px; border-radius:6px; margin-right:6px; margin-bottom:8px;}
   .flag.injury{background:var(--warning-soft); color:var(--warning);}
 
   /* ---- Futures tab ---- */
@@ -632,7 +585,7 @@
   .futures-note{font-size:13px; color:var(--text-faint); margin-bottom:8px;}
   .futures-table{width:100%; border-collapse:collapse; font-size:16px;}
   .futures-table th{
-    text-align:left; font-weight:600; text-transform:uppercase; font-size:11px; letter-spacing:.05em;
+    text-align:left; font-weight:600; text-transform:uppercase; font-size:13px; letter-spacing:.05em;
     color:var(--text-faint); border-bottom:1px solid var(--sep); padding:8px 0;
   }
   .futures-table td{padding:11px 0; border-bottom:1px solid var(--sep); color:var(--label-2);}
@@ -640,7 +593,7 @@
   .futures-table td:first-child{color:var(--text); font-weight:500;}
   .futures-table td.odds{color:var(--text); text-align:right; font-weight:600; font-variant-numeric:tabular-nums;}
   .futures-table tr.value td:first-child{color:var(--tint); font-weight:600;}
-  .value-tag{font-size:11px; font-weight:700; color:var(--tint); background:var(--accent-soft); border-radius:5px; padding:2px 6px; margin-left:6px; vertical-align:middle;}
+  .value-tag{font-size:13px; font-weight:700; color:var(--tint); background:var(--accent-soft); border-radius:5px; padding:2px 6px; margin-left:6px; vertical-align:middle;}
   .futures-why{font-size:15px; color:var(--label-2); line-height:1.5; margin-top:12px; padding:12px 14px; background:var(--surface-2); border-radius:12px;}
 
   /* ---- Slip tab ---- */
@@ -649,7 +602,7 @@
   .stat-tile{padding:14px 16px;}
   .stat-tile:nth-child(3){grid-column:1 / -1;}
   .stat-tile .k{font-size:13px; color:var(--label-2); font-weight:500;}
-  .stat-tile .v{font-size:26px; font-weight:700; margin-top:2px; letter-spacing:-.02em; font-variant-numeric:tabular-nums;}
+  .stat-tile .v{font-size:28px; font-weight:700; margin-top:2px; letter-spacing:-.02em; font-variant-numeric:tabular-nums;}
   .stat-tile .v.win{color:var(--positive);}
   @media (min-width:768px){ .slip-summary{grid-template-columns:repeat(3,1fr);} .stat-tile:nth-child(3){grid-column:auto;} }
   .empty-slip, .games-empty, .state{
@@ -657,7 +610,7 @@
     background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); line-height:1.45;
   }
   .state-glyph{width:40px; height:40px; color:var(--text-faint); margin:0 auto 10px; display:block;}
-  .state-title{font-size:17px; font-weight:600; color:var(--text); margin-bottom:4px;}
+  .state-title{font-size:16px; font-weight:600; color:var(--text); margin-bottom:4px;}
   .games-empty p{margin:0 0 10px;}
   .slip-footer{margin-top:14px; display:flex; flex-direction:column; gap:2px;}
   .slip-footer .text-toggle-btn{text-align:left; padding:0 4px;}
@@ -675,19 +628,19 @@
   .bankroll-input-wrap:focus-within{box-shadow:0 0 0 2px var(--tint);}
   .bankroll-input-wrap input:focus{box-shadow:none;}
 
-  .review-heading{font-size:22px; letter-spacing:-.02em; margin-top:24px; margin-bottom:10px; color:var(--text);}
+  .review-heading{font-size:20px; letter-spacing:-.02em; margin-top:24px; margin-bottom:10px; color:var(--text);}
   .review-grid{display:grid; grid-template-columns:1fr; gap:10px;}
   @media (min-width:768px){ .review-grid{grid-template-columns:repeat(3,1fr);} }
   .review-col{padding:14px 16px; border-top:3px solid var(--border);}
-  .review-col h3{font-size:12px; letter-spacing:.07em; margin-bottom:8px; font-weight:700; text-transform:uppercase;}
+  .review-col h3{font-size:13px; letter-spacing:.07em; margin-bottom:8px; font-weight:700; text-transform:uppercase;}
   .review-col ul{margin:0; padding-left:18px; display:flex; flex-direction:column; gap:8px;}
   .review-col li{font-size:15px; color:var(--label-2); line-height:1.45;}
   .review-col.good{border-top-color:var(--positive);}
   .review-col.good h3{color:var(--positive);}
   .review-col.bad{border-top-color:var(--negative);}
   .review-col.bad h3{color:var(--negative);}
-  .review-col.diff{border-top-color:var(--parlay);}
-  .review-col.diff h3{color:var(--parlay);}
+  .review-col.diff{border-top-color:var(--text-dim);}
+  .review-col.diff h3{color:var(--text-dim);}
 
   /* ---- Full summary ---- */
   .summary-lead{color:var(--label-2); font-size:15px; line-height:1.5; margin:0 0 12px;}
@@ -703,32 +656,32 @@
   .ask-item{padding:14px 16px;}
   .ask-item-head{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
   .ask-q{font-size:15px; color:var(--text); font-style:italic; flex:1;}
-  .ask-badge{flex:0 0 auto; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.04em; padding:3px 8px; border-radius:6px; white-space:nowrap;}
+  .ask-badge{flex:0 0 auto; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.04em; padding:3px 8px; border-radius:6px; white-space:nowrap;}
   .ask-badge.pending{background:var(--warning-soft); color:var(--warning);}
   .ask-badge.answered{background:var(--positive-soft); color:var(--positive);}
   .ask-time{font-size:13px; color:var(--text-faint); margin-top:3px;}
   .ask-answer{font-size:15px; color:var(--text); margin-top:8px; line-height:1.45;}
-  .ask-waiting{font-size:14px; color:var(--text-faint); margin-top:6px;}
+  .ask-waiting{font-size:15px; color:var(--text-faint); margin-top:6px;}
   .ask-item .game-lean{margin:10px 0 8px;}
   .ask-item .add-slip-row{margin:0;}
   .games-grid{display:flex; flex-direction:column; gap:10px; margin-top:10px;}
   .game-card.has-update{box-shadow:0 0 0 1.5px var(--warning);}
   .updated-badge{
-    display:inline-block; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.04em;
+    display:inline-block; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.04em;
     background:var(--warning); color:#fff; padding:3px 8px; border-radius:6px; margin-left:6px; vertical-align:middle;
   }
   .game-card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:16px 16px 8px;}
-  .game-tag{font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:6px; display:inline-block; margin-bottom:6px;}
+  .game-tag{font-size:13px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:6px; display:inline-block; margin-bottom:6px;}
   .game-tag.top25{background:var(--accent-soft); color:var(--tint);}
-  .game-tag.interesting{background:var(--parlay-soft); color:var(--parlay);}
-  .game-title{font-size:18px; font-weight:700; color:var(--text); letter-spacing:-.01em; line-height:1.2;}
-  .game-meta{font-size:14px; color:var(--label-2); margin-top:3px;}
-  .game-market{font-size:14px; color:var(--text); margin-top:4px; font-weight:500;}
-  .game-updated{font-size:12px; color:var(--text-faint); white-space:nowrap; text-align:right; font-variant-numeric:tabular-nums;}
+  .game-tag.interesting{background:var(--surface-2); color:var(--text-dim);}
+  .game-title{font-size:20px; font-weight:700; color:var(--text); letter-spacing:-.01em; line-height:1.2;}
+  .game-meta{font-size:15px; color:var(--label-2); margin-top:3px;}
+  .game-market{font-size:15px; color:var(--text); margin-top:4px; font-weight:500;}
+  .game-updated{font-size:13px; color:var(--text-faint); white-space:nowrap; text-align:right; font-variant-numeric:tabular-nums;}
   .game-lean{display:flex; align-items:center; gap:10px; margin:4px 16px 10px; padding:10px 12px; background:var(--accent-soft); border-radius:12px; flex-wrap:wrap;}
-  .lean-label{font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--tint); flex:0 0 auto;}
+  .lean-label{font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--tint); flex:0 0 auto;}
   .lean-pick{font-weight:600; font-size:15px; color:var(--text); flex:1; min-width:0;}
-  .game-pass{margin:4px 16px 12px; padding:10px 12px; background:var(--surface-2); border-radius:12px; font-size:14px; color:var(--text-faint); font-style:italic;}
+  .game-pass{margin:4px 16px 12px; padding:10px 12px; background:var(--surface-2); border-radius:12px; font-size:15px; color:var(--text-faint); font-style:italic;}
   .add-slip-row{margin:0 16px 12px;}
   .game-detail{border-top:1px solid var(--sep); padding:12px 16px 14px; background:var(--surface-2); display:flex; flex-direction:column; gap:10px;}
   .game-detail p{margin:0; color:var(--label-2); font-size:15px; line-height:1.5;}
@@ -736,27 +689,23 @@
   /* ---- Chat (lives inside each card) ---- */
   .chat-block{border-top:1px solid var(--sep); padding-top:12px; margin-top:4px;}
   .chat-log{display:flex; flex-direction:column; gap:6px; max-height:300px; overflow-y:auto; margin-bottom:10px; -webkit-overflow-scrolling:touch;}
-  .chat-empty{font-size:14px; color:var(--text-faint); text-align:center; padding:8px 0;}
+  .chat-empty{font-size:15px; color:var(--text-faint); text-align:center; padding:8px 0;}
   .chat-msg{font-size:15px; line-height:1.4; padding:8px 13px; border-radius:17px; max-width:84%; -webkit-user-select:text; user-select:text; overflow-wrap:anywhere;}
   .chat-msg.me{align-self:flex-end; background:var(--tint); color:#fff; border-bottom-right-radius:5px;}
   .chat-msg.me a{color:#fff;}
   .chat-msg.ai{align-self:flex-start; background:var(--fill); color:var(--text); border-bottom-left-radius:5px;}
   .chat-msg.ai.pending{font-style:normal;}
   .typing{display:inline-flex; gap:4px; align-items:center; height:14px;}
-  .typing i{width:7px; height:7px; border-radius:50%; background:var(--text-faint); display:block; animation:typing 1.2s infinite ease-in-out;}
-  .typing i:nth-child(2){animation-delay:.15s;}
-  .typing i:nth-child(3){animation-delay:.3s;}
-  @keyframes typing{0%,60%,100%{opacity:.35; transform:translateY(0);} 30%{opacity:1; transform:translateY(-3px);}}
+  .typing i{width:7px; height:7px; border-radius:50%; background:var(--text-faint); display:block;}
+  
+  
+  
   .chat-composer{display:flex; gap:8px; align-items:flex-end;}
   .chat-input{
     flex:1; min-width:0; min-height:40px; max-height:124px; resize:none; line-height:20px; padding:10px 14px;
     border-radius:20px; background:var(--surface); overflow-y:auto;
   }
   .game-detail .chat-input, .why-body .chat-input{background:var(--surface);}
-  :root[data-theme="dark"] .game-detail .chat-input, :root[data-theme="dark"] .why-body .chat-input{background:var(--fill);}
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]) .game-detail .chat-input, :root:not([data-theme="light"]) .why-body .chat-input{background:var(--fill);}
-  }
   .chat-send{
     flex:0 0 auto; width:34px; height:34px; margin-bottom:3px; border:none; border-radius:50%;
     background:var(--tint); color:#fff; display:inline-flex; align-items:center; justify-content:center;
@@ -768,16 +717,16 @@
   .chat-hint{font-size:13px; color:var(--warning); margin-top:6px; min-height:1.2em;}
 
   /* ---- My Dawgs (UGA) ---- */
-  .team-hero{background:linear-gradient(135deg, var(--team), #7A0A1F); color:#fff; border-radius:20px; padding:22px 20px; margin-top:14px; box-shadow:var(--shadow);}
-  .team-hero .eyebrow{color:rgba(255,255,255,.85); font-size:12px;}
-  .team-hero h2{font-size:26px; font-weight:800; letter-spacing:-.02em; margin:4px 0 14px; color:#fff;}
+  .team-hero{color:var(--text); border-radius:20px; padding:22px 20px; margin-top:14px; box-shadow:var(--shadow);}
+  .team-hero .eyebrow{color:rgba(255,255,255,.85); font-size:13px;}
+  .team-hero h2{font-size:28px; font-weight:800; letter-spacing:-.02em; margin:4px 0 14px; color:#fff;}
   .team-stats{display:flex; gap:24px; flex-wrap:wrap;}
-  .team-stat .v{font-size:24px; font-weight:700; font-variant-numeric:tabular-nums;}
-  .team-stat .k{font-size:11px; opacity:.85; text-transform:uppercase; letter-spacing:.05em; margin-top:2px;}
+  .team-stat .v{font-size:28px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .team-stat .k{font-size:13px; opacity:.85; text-transform:uppercase; letter-spacing:.05em; margin-top:2px;}
   .team-next{padding:16px; margin-top:12px;}
-  .team-next h3{font-size:18px; margin-bottom:2px; letter-spacing:-.01em;}
+  .team-next h3{font-size:20px; margin-bottom:2px; letter-spacing:-.01em;}
   .team-next .meta{font-size:13px; color:var(--text-faint); margin-bottom:8px;}
-  .team-countdown{font-size:26px; font-weight:700; letter-spacing:-.02em; color:var(--team); margin:4px 0; font-variant-numeric:tabular-nums;}
+  .team-countdown{font-size:28px; font-weight:700; letter-spacing:-.02em; color:var(--team); margin:4px 0; font-variant-numeric:tabular-nums;}
   .team-line{font-size:15px; color:var(--label-2);}
   .team-schedule{margin-top:12px; background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;}
   .team-game{display:flex; align-items:center; gap:10px; min-height:48px; padding:8px 16px; background:var(--surface);}
@@ -786,16 +735,16 @@
   .team-game.current{background:var(--team-soft);}
   .team-game .wk{font-size:13px; color:var(--text-faint); width:56px; flex:0 0 auto; font-variant-numeric:tabular-nums;}
   .team-game .opp{flex:1; font-size:16px; color:var(--text); font-weight:500; min-width:0;}
-  .team-game .badge{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:3px 8px; border-radius:6px; flex:0 0 auto;}
+  .team-game .badge{font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:3px 8px; border-radius:6px; flex:0 0 auto;}
   .team-game .badge.rivalry{background:var(--team-soft); color:var(--team);}
   .team-game .badge.ranked{background:var(--accent-soft); color:var(--tint);}
-  .team-game .result{font-size:14px; color:var(--positive); font-weight:600; flex:0 0 auto; font-variant-numeric:tabular-nums;}
+  .team-game .result{font-size:15px; color:var(--positive); font-weight:600; flex:0 0 auto; font-variant-numeric:tabular-nums;}
   .team-story{margin-top:12px; padding:16px;}
-  .team-story h3{font-size:18px; margin-bottom:8px; letter-spacing:-.01em;}
+  .team-story h3{font-size:20px; margin-bottom:8px; letter-spacing:-.01em;}
   .team-story p{color:var(--label-2); font-size:15px; line-height:1.5; margin:0 0 10px;}
   .team-story p:last-child{margin-bottom:0;}
   /* Facts from ESPN, prose from the model (2026-09-26). */
-  .team-source{font-size:12px; color:rgba(255,255,255,.85); margin-top:12px;}
+  .team-source{font-size:13px; color:rgba(255,255,255,.85); margin-top:12px;}
   .team-game .result.loss{color:var(--negative);}
   .team-game .result.tie{color:var(--text-faint);}
   .team-game .result.live-now{color:var(--negative);}
@@ -804,14 +753,14 @@
   .team-next .opp-rank{font-size:13px; font-weight:600; color:var(--text-faint);}
   .team-story-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:8px;}
   .team-story-head h3{margin-bottom:0;}
-  .team-story-date{font-size:12.5px; color:var(--text-faint); flex:0 0 auto;}
+  .team-story-date{font-size:13px; color:var(--text-faint); flex:0 0 auto;}
   .team-story-stale{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
-    background:var(--warning-soft); color:var(--label-2); border-radius:10px; padding:8px 12px; margin:0 0 12px; font-size:13.5px;}
+    background:var(--warning-soft); color:var(--label-2); border-radius:10px; padding:8px 12px; margin:0 0 12px; font-size:13px;}
   .team-story-stale span{flex:1 1 200px; min-width:0;}
   .team-story-stale .text-toggle-btn{flex:0 0 auto; padding:0 4px;}
-  .top25-foot{padding:10px 16px 12px; font-size:12px; color:var(--text-faint); box-shadow:inset 0 1px 0 var(--sep);}
+  .top25-foot{padding:10px 16px 12px; font-size:13px; color:var(--text-faint); box-shadow:inset 0 1px 0 var(--sep);}
   .team-research{margin-top:12px; padding:16px; box-shadow:0 0 0 1.5px var(--team);}
-  .team-research h3{font-size:18px; margin-bottom:10px; letter-spacing:-.01em;}
+  .team-research h3{font-size:20px; margin-bottom:10px; letter-spacing:-.01em;}
   .team-research p{color:var(--label-2); font-size:15px; line-height:1.5; margin:0 0 10px;}
   .team-research p:last-child{margin-bottom:0;}
   .team-research .game-lean, .team-research .game-pass{margin:0 0 10px;}
@@ -820,7 +769,7 @@
   footer{margin-top:32px; padding-top:16px; border-top:1px solid var(--sep);}
   .disclaimer{font-size:13px; color:var(--text-faint); line-height:1.5; max-width:66ch;}
   .disclaimer strong{color:var(--label-2);}
-  .sources{font-size:12px; color:var(--text-faint); margin-top:10px; line-height:1.55;}
+  .sources{font-size:13px; color:var(--text-faint); margin-top:10px; line-height:1.55;}
   .muted{font-size:13px; color:var(--text-faint);}
 
   /* ---- rendered markdown ---- */
@@ -839,32 +788,22 @@
   .live-root{margin-top:4px;}
   .live-root:empty{display:none;}
   .live-head{display:flex; align-items:center; gap:8px; margin:6px 0 8px; min-height:22px;}
-  .live-head b{font-size:17px; letter-spacing:-.01em;}
+  .live-head b{font-size:16px; letter-spacing:-.01em;}
   .live-head .sub{font-size:13px; color:var(--text-faint); margin-left:auto; font-variant-numeric:tabular-nums; text-align:right;}
   .live-head .sub.stale{color:var(--warning);}
-  .live-dot{width:8px; height:8px; border-radius:50%; background:var(--negative); flex:0 0 auto; animation:live-pulse 1.6s ease-in-out infinite;}
-  @keyframes live-pulse{0%,100%{opacity:1;} 50%{opacity:.35;}}
+  .live-dot{width:8px; height:8px; border-radius:50%; background:var(--negative); flex:0 0 auto;}
+  
   .live-off{font-size:13px; color:var(--text-faint); padding:6px 0 8px;}
   .live-strip{display:flex; gap:8px; overflow-x:auto; padding:2px 16px 8px; margin:0 -16px; scrollbar-width:none; -webkit-overflow-scrolling:touch; scroll-snap-type:x proximity;}
   .live-strip::-webkit-scrollbar{display:none;}
-  .live-chip{
-    flex:0 0 auto; width:168px; text-align:left; border:none; background:var(--surface); border-radius:12px;
-    box-shadow:var(--shadow); padding:9px 11px 10px; cursor:pointer; color:var(--text); font-variant-numeric:tabular-nums;
-    scroll-snap-align:start; transition:transform .12s ease;
-  }
+  .live-chip{flex:0 0 auto; width:168px; text-align:left; border:none; background:var(--surface); border-radius:12px; box-shadow:var(--shadow); padding:9px 11px 10px; cursor:pointer; color:var(--text); font-variant-numeric:tabular-nums; scroll-snap-align:start;}
   .live-chip:active{transform:scale(.97);}
   .live-chip.team{box-shadow:inset 3px 0 0 var(--team), var(--shadow);}
-  :root[data-theme="dark"] .live-chip, :root[data-theme="dark"] .sweat{box-shadow:inset 0 0 0 1px var(--border);}
-  :root[data-theme="dark"] .live-chip.team{box-shadow:inset 3px 0 0 var(--team), inset 0 0 0 1px var(--border);}
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]) .live-chip, :root:not([data-theme="light"]) .sweat{box-shadow:inset 0 0 0 1px var(--border);}
-    :root:not([data-theme="light"]) .live-chip.team{box-shadow:inset 3px 0 0 var(--team), inset 0 0 0 1px var(--border);}
-  }
-  .live-chip .st{display:flex; justify-content:space-between; gap:6px; font-size:11.5px; font-weight:600; color:var(--text-faint); text-transform:uppercase; letter-spacing:.03em; margin-bottom:5px; white-space:nowrap;}
+  .live-chip .st{display:flex; justify-content:space-between; gap:6px; font-size:13px; font-weight:600; color:var(--text-faint); text-transform:uppercase; letter-spacing:.03em; margin-bottom:5px; white-space:nowrap;}
   .live-chip .st .tv{overflow:hidden; text-overflow:ellipsis;}
   .live-chip .st.on{color:var(--negative);}
   .live-chip .row{display:flex; align-items:center; gap:6px; font-size:15px; line-height:1.4;}
-  .live-chip .rk{font-size:11px; color:var(--text-faint); min-width:13px; text-align:right;}
+  .live-chip .rk{font-size:13px; color:var(--text-faint); min-width:13px; text-align:right;}
   .live-chip .nm{flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500;}
   .live-chip .sc{font-weight:600; min-width:22px; text-align:right;}
   .live-chip .row.lead .nm, .live-chip .row.lead .sc{font-weight:700;}
@@ -873,15 +812,15 @@
   .ball.none{background:transparent;}
   .live-tags{display:flex; gap:4px; margin-top:6px; flex-wrap:wrap; min-height:0;}
   .live-tags:empty{display:none;}
-  .ltag{font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:2px 6px; border-radius:5px; background:var(--fill); color:var(--label-2);}
+  .ltag{font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:2px 6px; border-radius:5px; background:var(--fill); color:var(--label-2);}
   .ltag.rz{background:var(--negative-soft); color:var(--negative);}
   /* Not the team's own colour: a dark brand red on a dark surface is
      unreadable, and the chip already carries a stripe in that colour. */
   .ltag.team{background:var(--fill-2); color:var(--text);}
   .ltag.slip{background:var(--accent-soft); color:var(--tint);}
-  .live-all{padding:0 2px; margin:-2px 0 6px; font-size:14px; min-height:44px;}
-  .sweat-all{padding:0; min-height:44px; font-size:14px; border-top:1px solid var(--sep); width:100%; text-align:left; border-radius:0;}
-  .live-more{flex:0 0 auto; align-self:stretch; border:none; border-radius:12px; background:var(--fill); color:var(--tint); font-weight:600; font-size:14px; padding:0 14px; cursor:pointer;}
+  .live-all{padding:0 2px; margin:-2px 0 6px; font-size:15px; min-height:44px;}
+  .sweat-all{padding:0; min-height:44px; font-size:15px; border-top:1px solid var(--sep); width:100%; text-align:left; border-radius:0;}
+  .live-more{flex:0 0 auto; align-self:stretch; border:none; border-radius:12px; background:var(--fill); color:var(--tint); font-weight:600; font-size:15px; padding:0 14px; cursor:pointer;}
   /* Game day: the scoreboard leads the home view, and the static intro that
      describes the card steps aside for it. */
   body.gameday #panel-card .intro > p:first-child{display:none;}
@@ -898,155 +837,443 @@
   .sweat-row{display:flex; gap:10px; align-items:flex-start; width:100%; padding:10px 0; border:none; border-top:1px solid var(--sep); background:none; color:var(--text); text-align:left; cursor:pointer; font:inherit;}
   .sweat-row .t{min-width:0; flex:1;}
   .sweat-row .t b{display:block; font-size:15px; font-weight:600;}
-  .sweat-row .d{display:block; font-size:13.5px; color:var(--label-2); line-height:1.4; margin-top:1px;}
-  .sweat-row .s{display:block; font-size:12.5px; color:var(--text-faint); font-variant-numeric:tabular-nums; margin-top:1px;}
+  .sweat-row .d{display:block; font-size:13px; color:var(--label-2); line-height:1.4; margin-top:1px;}
+  .sweat-row .s{display:block; font-size:13px; color:var(--text-faint); font-variant-numeric:tabular-nums; margin-top:1px;}
   .sweat-legs{list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:4px;}
   .sweat-legs li{display:flex; gap:8px; align-items:baseline; font-size:13px; color:var(--label-2);}
-  .sweat-legs li .pill{font-size:9.5px; padding:2px 5px;}
-  .pill{flex:0 0 auto; display:inline-block; min-width:62px; text-align:center; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:3px 7px; border-radius:6px; background:var(--fill); color:var(--label-2); margin-top:2px;}
+  .sweat-legs li .pill{font-size:13px; padding:2px 5px;}
+  .pill{flex:0 0 auto; display:inline-block; min-width:62px; text-align:center; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:3px 7px; border-radius:6px; background:var(--fill); color:var(--label-2); margin-top:2px;}
   .pill.hitting, .pill.won{background:var(--positive-soft); color:var(--positive);}
   .pill.missing, .pill.lost{background:var(--negative-soft); color:var(--negative);}
-  .live-status{margin-top:10px; padding:10px 12px; border-radius:10px; background:var(--surface-2); display:flex; gap:10px; align-items:flex-start; font-size:14px; line-height:1.4;}
+  .live-status{margin-top:10px; padding:10px 12px; border-radius:10px; background:var(--surface-2); display:flex; gap:10px; align-items:flex-start; font-size:15px; line-height:1.4;}
   .live-status:empty{display:none;}
   .live-status .t{min-width:0;}
-  .live-status .s{display:block; font-size:12.5px; color:var(--text-faint); font-variant-numeric:tabular-nums;}
+  .live-status .s{display:block; font-size:13px; color:var(--text-faint); font-variant-numeric:tabular-nums;}
 
   /* The game sheet */
-  .gs-status{font-size:12px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-faint); margin:0 0 4px; font-variant-numeric:tabular-nums;}
+  .gs-status{font-size:13px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-faint); margin:0 0 4px; font-variant-numeric:tabular-nums;}
   .gs-status.on{color:var(--negative);}
   .gs-score{background:var(--surface-2); border-radius:14px; padding:4px 14px; margin:10px 0 12px;}
   .gs-team{display:flex; align-items:center; gap:8px; min-height:48px; font-variant-numeric:tabular-nums;}
   .gs-team + .gs-team{border-top:1px solid var(--sep);}
   .gs-team .dot{width:10px; height:10px; border-radius:50%; flex:0 0 auto;}
-  .gs-team .rk{font-size:12px; color:var(--text-faint);}
-  .gs-team .nm{font-size:17px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .gs-team .rec{font-size:12.5px; color:var(--text-faint);}
+  .gs-team .rk{font-size:13px; color:var(--text-faint);}
+  .gs-team .nm{font-size:16px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .gs-team .rec{font-size:13px; color:var(--text-faint);}
   .gs-team .big{margin-left:auto; font-size:28px; font-weight:700; letter-spacing:-.02em;}
   .gs-team.trail .big{color:var(--label-2);}
-  .gs-lines{width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums; margin-bottom:12px;}
-  .gs-lines th{font-size:11px; font-weight:600; color:var(--text-faint); text-transform:uppercase; padding:4px 0; text-align:center;}
+  .gs-lines{width:100%; border-collapse:collapse; font-size:15px; font-variant-numeric:tabular-nums; margin-bottom:12px;}
+  .gs-lines th{font-size:13px; font-weight:600; color:var(--text-faint); text-transform:uppercase; padding:4px 0; text-align:center;}
   .gs-lines td{padding:6px 0; text-align:center; border-top:1px solid var(--sep); color:var(--label-2);}
   .gs-lines th:first-child, .gs-lines td:first-child{text-align:left;}
   .gs-lines td:last-child{font-weight:700; color:var(--text);}
   /* Feed text can be one unbroken run of characters; it must wrap, not push
      the sheet sideways. */
   .gs-block, .gs-foot, .sweat-row .t, .live-status .t, .live-alert .body{overflow-wrap:anywhere;}
-  .gs-block{background:var(--surface-2); border-radius:12px; padding:10px 12px; margin-bottom:10px; font-size:14.5px; line-height:1.45;}
-  .gs-block .k{font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-faint); margin-bottom:3px;}
+  .gs-block{background:var(--surface-2); border-radius:12px; padding:10px 12px; margin-bottom:10px; font-size:15px; line-height:1.45;}
+  .gs-block .k{font-size:13px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-faint); margin-bottom:3px;}
   .gs-lead{display:flex; gap:8px; align-items:baseline; padding:3px 0;}
-  .gs-lead .c{font-size:12px; color:var(--text-faint); width:74px; flex:0 0 auto;}
-  .gs-lead .v{color:var(--label-2); font-size:13.5px;}
-  .gs-foot{font-size:12.5px; color:var(--text-faint); margin:6px 0 12px; line-height:1.5;}
+  .gs-lead .c{font-size:13px; color:var(--text-faint); width:74px; flex:0 0 auto;}
+  .gs-lead .v{color:var(--label-2); font-size:13px;}
+  .gs-foot{font-size:13px; color:var(--text-faint); margin:6px 0 12px; line-height:1.5;}
 
   /* Swing alerts: in-app only - there is no push and no mail sender here. */
   .live-alerts{position:fixed; left:50%; top:calc(env(safe-area-inset-top,0px) + 10px); transform:translateX(-50%); z-index:66;
     width:min(440px, calc(100% - 24px)); display:flex; flex-direction:column; gap:8px; pointer-events:none;}
-  .live-alert{pointer-events:auto; display:flex; gap:6px; align-items:flex-start; background:var(--surface); color:var(--text);
-    border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.22), inset 4px 0 0 var(--tint); padding:10px 4px 10px 16px; animation:alert-in .28s cubic-bezier(.2,.8,.2,1);}
-  :root[data-theme="dark"] .live-alert{background:var(--surface-2);}
-  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .live-alert{background:var(--surface-2);} }
-  .live-alert.lead{box-shadow:0 10px 30px rgba(0,0,0,.22), inset 4px 0 0 var(--warning);}
-  .live-alert.hitting{box-shadow:0 10px 30px rgba(0,0,0,.22), inset 4px 0 0 var(--positive);}
-  .live-alert.missing{box-shadow:0 10px 30px rgba(0,0,0,.22), inset 4px 0 0 var(--negative);}
+  .live-alert{pointer-events:auto; display:flex; gap:6px; align-items:flex-start; background:var(--surface); color:var(--text); border-radius:14px; box-shadow:var(--lift), inset 3px 0 0 var(--tint); padding:10px 4px 10px 16px;}
+  .live-alert.lead{box-shadow:var(--lift), inset 3px 0 0 var(--warning);}
+  .live-alert.hitting{box-shadow:var(--lift), inset 3px 0 0 var(--positive);}
+  .live-alert.missing{box-shadow:var(--lift), inset 3px 0 0 var(--negative);}
   .live-alert .body{flex:1; min-width:0; border:none; background:none; color:inherit; font:inherit; text-align:left; padding:0; cursor:pointer;}
   .live-alert .body b{display:block; font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--label-2);}
   .live-alert .body span{display:block; font-size:15px; line-height:1.35; margin-top:1px;}
-  .live-alert .x{flex:0 0 auto; width:40px; height:40px; margin-top:-6px; border:none; background:none; color:var(--text-faint); font-size:22px; line-height:1; cursor:pointer; border-radius:20px;}
+  .live-alert .x{flex:0 0 auto; width:40px; height:40px; margin-top:-6px; border:none; background:none; color:var(--text-faint); font-size:20px; line-height:1; cursor:pointer; border-radius:20px;}
   .live-alert .x:active{background:var(--fill);}
-  @keyframes alert-in{from{opacity:0; transform:translateY(-10px);} to{opacity:1; transform:none;}}
+  
 
   /* DraftKings links (2026-09-26): small, tappable, never louder than the pick. */
-  .dk-link{display:inline-flex; align-items:center; min-height:44px; font-size:14px; font-weight:600;
+  .dk-link{display:inline-flex; align-items:center; min-height:44px; font-size:15px; font-weight:600;
     color:var(--tint); text-decoration:none;}
   .dk-link:hover{text-decoration:underline;}
-  .dk-note{font-size:12.5px; color:var(--text-faint); margin:14px 0 0; line-height:1.4;}
+  .dk-note{font-size:13px; color:var(--text-faint); margin:14px 0 0; line-height:1.4;}
   .dk-note + .card-list{margin-top:8px;}
-  .top25-row .gm .dk-link{min-height:32px; font-size:12.5px;}
+  .top25-row .gm .dk-link{min-height:32px; font-size:13px;}
   .gs-dk{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 8px;}
-  .gs-dk span{font-size:12.5px; color:var(--text-faint);}
+  .gs-dk span{font-size:13px; color:var(--text-faint);}
   /* The live score and line-now on a card. */
   .card-live:empty{display:none;}
   .card-live{display:flex; flex-direction:column; gap:6px; margin:2px 16px 10px;}
   .pick > .dk-link{margin:-6px 16px 4px;}
   .game-card > .dk-link{margin:0 16px;}
   .game-state.live{background:var(--negative-soft); color:var(--negative);}
-  .cl-score{display:flex; align-items:center; gap:8px; font-size:14px; font-variant-numeric:tabular-nums;}
-  .cl-line{display:flex; flex-direction:column; gap:1px; font-size:13.5px; color:var(--label-2); font-variant-numeric:tabular-nums;}
-  .cl-line .k{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint);}
+  .cl-score{display:flex; align-items:center; gap:8px; font-size:15px; font-variant-numeric:tabular-nums;}
+  .cl-line{display:flex; flex-direction:column; gap:1px; font-size:13px; color:var(--label-2); font-variant-numeric:tabular-nums;}
+  .cl-line .k{font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint);}
   .cl-line b.good{color:var(--positive);}
   .cl-line b.bad{color:var(--negative); font-weight:600;}
-  .cl-line .src{color:var(--text-faint); font-size:12px;}
-  .game-state{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+  .cl-line .src{color:var(--text-faint); font-size:13px;}
+  .game-state{display:inline-block; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
     padding:2px 7px; border-radius:6px; background:var(--fill); color:var(--label-2); margin-left:6px; vertical-align:middle;}
 
-  @media (prefers-reduced-motion: reduce){
-    *{transition:none!important; animation:none!important;}
+
+
+  /* =========================================================================
+     Redesign 2026-11. White page, hairlines over boxes, one accent, pills.
+     These rules sit after the originals on purpose: the markup the script
+     draws is unchanged, so each component is restated here in the new look.
+     ========================================================================= */
+  body{line-height:1.45; letter-spacing:-.008em;
+    padding-bottom:calc(var(--tabbar-h) + 12px + env(safe-area-inset-bottom,0px) + 32px);}
+  .page{max-width:720px; padding-inline:16px;}
+  h1,h2,h3{letter-spacing:-.02em;}
+  .sec-title{font-size:var(--fs-h2); font-weight:700; letter-spacing:-.02em; margin:0 0 4px;}
+  main > section[role="tabpanel"]{padding-top:8px;}
+  .intro{padding:24px 0 0;}
+  .intro p{font-size:var(--fs-sm); color:var(--text-dim); margin:0; max-width:60ch;}
+  .muted{font-size:var(--fs-cap); color:var(--text-faint);}
+
+  /* Welcome: centred, one line, two pills. */
+  .hero{text-align:center; padding:40px 4px 16px;}
+  .hero-title{font-size:var(--fs-h1); font-weight:700; letter-spacing:-.03em; line-height:1.1; margin:0;}
+  .hero-sub{font-size:var(--fs-body); color:var(--text-dim); max-width:42ch; margin:12px auto 20px;}
+  .hero-actions{display:flex; gap:8px; justify-content:center; flex-wrap:wrap;}
+
+  /* Buttons: pills. 48px for the primary action, 44px at least for the rest. */
+  .btn-primary, .auth-go{
+    display:inline-flex; align-items:center; justify-content:center; min-height:48px; padding:0 24px;
+    border:0; border-radius:999px; background:var(--tint-fill); color:#fff;
+    font-size:var(--fs-body); font-weight:600; cursor:pointer;
+  }
+  .auth-go{display:flex; width:100%; margin-top:12px;}
+  .btn-quiet, .reset-btn, .calls-you{
+    display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:0 18px;
+    border:1px solid var(--border); border-radius:999px; background:transparent; color:var(--tint);
+    font-size:var(--fs-sm); font-weight:600; cursor:pointer; white-space:nowrap;
+  }
+  .hero .btn-quiet{min-height:48px; padding:0 24px; font-size:var(--fs-body);}
+  .refresh-btn{min-height:44px; padding:0 18px; border-radius:999px; background:var(--tint-fill); color:#fff;}
+  .games-actions .refresh-btn{background:transparent; border:1px solid var(--border); color:var(--tint);}
+  .reset-btn.destructive, #reset-slip{color:var(--negative);}
+  .add-slip-btn{border-radius:999px; background:transparent; border:1px solid var(--border);}
+  .add-slip-btn.on-slip{border-color:transparent;}
+  .sheet-action{min-height:48px; border-radius:999px; background:transparent; border:1px solid var(--border); font-size:var(--fs-body);}
+  .sheet-action.primary{border-color:transparent;}
+  .btn-primary:active, .btn-quiet:active, .calls-you:active{transform:scale(.97);}
+
+  /* Inputs: 10px, the one quiet fill. */
+  :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea){background:var(--surface-2); border-radius:var(--r-ctl); min-height:48px;}
+  .form-group{background:transparent; border-radius:0; padding:0; margin-top:8px;}
+  .form-group label{margin-top:12px;}
+  .form-group label:first-child{margin-top:0;}
+  .form-group input, .form-group textarea, .sheet .form-group input, .summary-text, .chat-input,
+  .game-detail .chat-input, .why-body .chat-input{background:var(--surface-2);}
+  .sticky-search input{background:var(--surface-2); box-shadow:none;}
+  .bankroll-input-wrap{background:var(--surface-2); border-radius:var(--r-ctl);}
+  .bankroll-input-wrap input{min-height:46px;}
+  .stake-field input{min-height:44px;}
+
+  /* Sheets float; nothing else has a shadow. */
+  .sheet{background:var(--sheet); border-radius:16px 16px 0 0; box-shadow:var(--lift);}
+  .sheet-title{font-size:var(--fs-h2);}
+  .sheet-sec, .auth-or{font-size:var(--fs-cap); font-weight:600; text-transform:none; letter-spacing:0; color:var(--text-faint); text-align:left; margin:24px 0 8px;}
+  .list-group{background:transparent; border-radius:0; border-top:1px solid var(--sep); border-bottom:1px solid var(--sep);}
+  .list-row{padding:0 4px; min-height:52px; font-size:var(--fs-body);}
+  .list-row + .list-row{box-shadow:none; border-top:1px solid var(--sep);}
+  .list-row svg{width:22px; height:22px;}
+  .toast{box-shadow:var(--lift);}
+  @media (min-width:768px){ .sheet{border-radius:16px; box-shadow:var(--lift);} }
+
+  /* ---- Home ---- */
+  .live-root{margin-top:16px;}
+  .live-head{margin:0 0 8px;}
+  .live-head b{font-size:var(--fs-h2); letter-spacing:-.02em;}
+  .live-off{padding:0; font-size:var(--fs-sm); color:var(--text-dim);}
+  /* Two across on a phone, never a strip running off the edge. */
+  .live-strip{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; overflow:visible; margin:0; padding:0;}
+  .live-chip{width:auto; min-width:0; min-height:44px; border:1px solid var(--border); border-radius:var(--r-ctl); box-shadow:none; background:var(--surface); padding:10px 12px;}
+  .live-chip.team{box-shadow:inset 3px 0 0 var(--team);}
+  .live-chip .st, .ltag, .pill, .result-badge, .game-state, .call-flag{letter-spacing:.02em;}
+  .live-all{margin:4px 0 0; padding:0;}
+  @media (min-width:700px){ .live-strip, .live-root.gameday .live-strip{grid-template-columns:repeat(auto-fill, minmax(176px, 1fr)); padding:0;} }
+  .sweat{background:transparent; border-radius:0; box-shadow:none; padding:0; margin:24px 0 0;}
+  .sweat-head b{font-size:var(--fs-h2); letter-spacing:-.02em;}
+  .sweat-row{min-height:44px;}
+  .sweat-all{border-top:1px solid var(--sep);}
+
+  .board-note{display:flex; flex-direction:column; align-items:flex-start; gap:4px; margin:24px 0 0; padding:16px;
+    border-radius:var(--radius); background:var(--surface-2); color:var(--text-dim); font-size:var(--fs-sm); line-height:1.45;}
+  .board-note b{color:var(--text); font-size:var(--fs-body);}
+  .board-note .btn-quiet{margin-top:8px; background:var(--surface);}
+
+  .calls{background:transparent; border-radius:0; box-shadow:none; padding:0; margin-top:32px;}
+  .calls-title{font-size:var(--fs-h2); font-weight:700; letter-spacing:-.02em;}
+  .calls-sub{font-size:var(--fs-sm); margin-top:4px;}
+  .calls-you{flex:0 0 auto; padding:0 16px;}
+  .calls-list{margin-top:12px;}
+  .call{box-shadow:none; border-top:1px solid var(--sep); padding:16px 0;}
+  .call-label{font-size:var(--fs-body); font-weight:600;}
+  .call-flag{background:transparent; padding:0; color:var(--warning);}
+  .call-side{border:1px solid var(--border); border-radius:var(--r-ctl); font-weight:600;}
+  .call-side:disabled{background:var(--surface-2);}
+  .call-side.mine{border-color:var(--tint); box-shadow:inset 0 0 0 1px var(--tint);}
+  .calls-empty{box-shadow:none; border-top:1px solid var(--sep);}
+
+  .slate-strip{display:block; overflow:visible; margin:32px 0 0; padding:0;}
+  .slate-strip:empty, body.has-calls .slate-strip, body.board-stale .slate-strip{display:none;}
+  .slate-chip{display:flex; justify-content:space-between; align-items:baseline; gap:12px; background:transparent; border-radius:0; box-shadow:none;
+    padding:12px 0; border-top:1px solid var(--sep); font-size:var(--fs-sm); color:var(--text); white-space:normal;}
+  .slate-strip .sec-title{margin-bottom:12px;}
+  .slate-chip b{flex:0 0 auto; font-weight:400; color:var(--text-faint);}
+
+  /* Season, last week, the poll: three rows between two hairlines. */
+  .rows{margin-top:32px;}
+  .rows:not(:has(> :not([hidden]))){display:none;}
+  .season-chip, .results-head, .top25-head{
+    display:flex; align-items:center; gap:8px; width:100%; min-height:52px; margin:0; padding:0;
+    border:0; border-top:1px solid var(--sep); border-radius:0; background:transparent; color:var(--text);
+    font:inherit; font-size:var(--fs-body); text-align:left; cursor:pointer;
+  }
+  .season-chip b, .results-record{font-size:var(--fs-body); font-variant-numeric:tabular-nums;}
+  .season-chip > span:first-child, .results-head b, .top25-head b{font-weight:600;}
+  .season-chip b{font-weight:400; color:var(--text-dim);}
+  .results-record{color:var(--text-dim);}
+  .season-chip .chev, .results-head .chev, .top25-head .chev{margin-left:auto; color:var(--text-faint); font-size:var(--fs-h2); line-height:1;}
+  .results-head[aria-expanded="true"] .chev, .top25-head[aria-expanded="true"] .chev{transform:rotate(90deg);}
+  .results-strip, .top25{margin:0; padding:0; border-radius:0; background:transparent; box-shadow:none; overflow:visible;}
+  .results-rows{padding-bottom:8px;}
+  .result-row{border-top:0; padding:8px 0;}
+  .result-badge{min-width:48px; border-radius:6px; background:var(--surface-2); color:var(--text-dim);}
+  .result-badge.win{background:var(--positive-soft); color:var(--positive);}
+  .result-badge.loss{background:var(--negative-soft); color:var(--negative);}
+  .result-badge.push, .result-badge.void{background:var(--surface-2); color:var(--text-dim);}
+  .result-title{font-size:var(--fs-sm);}
+  .top25-row{padding:10px 0; box-shadow:none; border-top:1px solid var(--sep);}
+  .top25-row .gm .dk-link{min-height:44px;}
+  .top25-foot{padding:12px 0; box-shadow:none; border-top:1px solid var(--sep);}
+
+  .picks-block{margin-top:8px;}
+  .dk-note{margin:8px 0 0;}
+  .card-list{gap:16px; margin-top:16px;}
+  .pick, .game-card, .research-game, .ask-item, .stat-tile, .review-col, .team-research{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:none;}
+  .stat-tile{border-radius:var(--r-ctl);}
+  .game-card.has-update, .research-game.has-update{box-shadow:none; border-color:var(--warning);}
+  .pick.own{border-left:1px solid var(--tint);}
+  /* Kind labels are words, not coloured chips: colour is kept for status. */
+  .pick-kind, .pick-kind.straight, .pick-kind.parlay, .pick-kind.own, .game-tag, .game-tag.top25, .game-tag.interesting{
+    background:transparent; color:var(--text-faint); padding:0; letter-spacing:.04em;}
+  .pick-title{font-size:var(--fs-h2); letter-spacing:-.02em;}
+  .confidence .lbl{letter-spacing:.04em;}
+  .why-body, .game-detail{background:transparent;}
+  .game-detail{border-top:1px solid var(--sep);}
+  .why-body{border-top:1px solid var(--sep);}
+  .slip-row{background:transparent;}
+  .switch-row .switch-label{font-size:var(--fs-body);}
+  .risk-line{border-radius:var(--r-ctl);}
+  .slip-live, .live-status{background:var(--surface-2); border-radius:var(--r-ctl);}
+  .slip-live-label{color:var(--text-faint);}
+  .game-lean{background:transparent; border-radius:0; margin:0 16px 12px; padding:12px 0 0; border-top:1px solid var(--sep);}
+  .ask-item .game-lean, .team-research .game-lean{margin:12px 0;}
+  .game-pass{background:transparent; padding:0; font-style:normal;}
+  .card-tools{box-shadow:none; border-top:1px solid var(--sep); gap:0; padding:4px 8px;}
+  .card-tool{background:transparent; color:var(--text-faint); font-weight:500; border-radius:999px;}
+  .card-tool:hover{background:var(--surface-2);}
+  .card-tool[aria-pressed="true"]{background:transparent; color:var(--tint); font-weight:600;}
+  .hidden-note{padding:0;}
+  .add-card-block{margin-top:40px; padding-top:24px; border-top:1px solid var(--sep);}
+  .add-card-label{font-size:var(--fs-body); font-weight:600; color:var(--text); margin-bottom:12px;}
+  .updated-badge{background:var(--warning-soft); color:var(--warning);}
+  .flag.injury, .ask-badge, .value-tag, .ltag, .pill, .game-state{border-radius:6px;}
+  .value-tag, .ltag.slip, .team-game .badge.ranked{background:transparent; color:var(--tint); padding-inline:0;}
+  .team-game .badge.rivalry{background:transparent; color:var(--text-faint); padding-inline:0;}
+
+  /* ---- Games, research, futures ---- */
+  .sticky-search{top:calc(var(--header-h) + env(safe-area-inset-top,0px)); padding:12px 0 8px; margin-top:8px;}
+  .games-grid{gap:16px; margin-top:12px;}
+  .research-game{margin-top:16px;}
+  .empty-slip, .games-empty, .state{background:transparent; border-radius:0; box-shadow:none; padding:40px 16px; margin-top:16px;}
+  .state-title{font-size:var(--fs-h2); letter-spacing:-.02em;}
+  .futures-block{background:transparent; border-radius:0; box-shadow:none; padding:24px 0 0; margin-top:24px; border-top:1px solid var(--sep);}
+  .futures-table{font-size:var(--fs-sm);}
+  .futures-why{background:var(--surface-2); border-radius:var(--r-ctl);}
+  .futures-table th{letter-spacing:.03em;}
+  .chat-msg.me, .chat-send{background:var(--tint-fill);}
+  .chat-input{min-height:44px; padding:12px 14px; border-radius:22px;}
+  .chat-send{width:44px; height:44px; margin-bottom:0;}
+  .md-code{font-size:13px;} .md-h{font-size:1em;} .md-pre code{font-size:13px;}
+
+  /* ---- Slip ---- */
+  .bankroll-row{background:transparent; border-radius:0; box-shadow:none; padding:24px 0 0; margin-top:24px; border-top:1px solid var(--sep);}
+  .bankroll-row label{font-size:var(--fs-body);}
+  .slip-summary{margin-top:24px;}
+  .review-heading{font-size:var(--fs-h2); margin-top:40px;}
+  .review-col, .review-col.good, .review-col.bad, .review-col.diff{border-top:1px solid var(--border);}
+  .review-col h3{letter-spacing:.03em;}
+  .review-col.diff h3{color:var(--tint);}
+  .slip-footer{margin-top:32px; gap:8px; align-items:flex-start;}
+
+  /* ---- My team: the colour is a dot and a stripe, never the page ---- */
+  .team-hero{background:transparent; color:var(--text); border-radius:0; box-shadow:none; padding:24px 0 8px; margin-top:0;}
+  .team-hero .eyebrow{display:flex; align-items:center; gap:8px; color:var(--text-dim); font-size:var(--fs-cap); font-weight:600; text-transform:none; letter-spacing:0;}
+  .team-hero .eyebrow::before{content:""; width:10px; height:10px; border-radius:50%; background:var(--team); flex:0 0 auto;}
+  .team-hero h2{color:var(--text); font-size:var(--fs-h1); font-weight:700; letter-spacing:-.03em; line-height:1.1; margin:8px 0 20px;}
+  .team-stats{gap:32px;}
+  .team-stat .v{font-size:var(--fs-h2);}
+  .team-stat .k{opacity:1; color:var(--text-faint); font-size:var(--fs-cap); text-transform:none; letter-spacing:0;}
+  .team-source{color:var(--text-faint); font-size:var(--fs-cap); margin-top:16px;}
+  .team-next, .team-story{background:transparent; border-radius:0; box-shadow:none; padding:24px 0 0; margin-top:24px; border-top:1px solid var(--sep);}
+  .team-next h3, .team-story h3, .team-research h3{font-size:var(--fs-h2); letter-spacing:-.02em;}
+  .team-countdown{color:var(--text); font-size:var(--fs-h1); letter-spacing:-.03em;}
+  .team-schedule{background:transparent; border-radius:0; box-shadow:none; overflow:visible; margin-top:24px; border-top:1px solid var(--sep); border-bottom:1px solid var(--sep);}
+  .team-game{background:transparent; padding:8px 0;}
+  .team-game + .team-game{box-shadow:none; border-top:1px solid var(--sep);}
+  .team-game.played{opacity:1;}
+  .team-game.played .opp{color:var(--text-dim); font-weight:400;}
+  .team-game.current{background:transparent; box-shadow:inset 3px 0 0 var(--team); padding-left:12px;}
+  .team-game.current .opp{font-weight:600;}
+  .team-game .opp{font-size:var(--fs-body);}
+  .team-research{box-shadow:none; margin-top:24px;}
+  .team-story-stale{border-radius:var(--r-ctl);}
+  .team-footer{margin-top:24px;}
+  .team-option{border-radius:var(--r-ctl);}
+  .team-option[aria-current="true"]{background:var(--surface-2);}
+
+  /* ---- Records, badges, the game sheet ---- */
+  .rec-tile, .badge-grid .badge{background:transparent; border:1px solid var(--border); border-radius:var(--r-ctl);}
+  .badge-grid .badge.earned{background:transparent; border-color:var(--tint);}
+  .season-chip .u.down{color:var(--negative);}
+  .rec-week{box-shadow:none; border-top:1px solid var(--sep);}
+  .brag-img{border-radius:var(--radius);}
+  .gs-score{background:transparent; border:1px solid var(--border); border-radius:var(--radius);}
+  .gs-block{background:transparent; border-radius:0; padding:12px 0 0; border-top:1px solid var(--sep);}
+  .live-alert{border-radius:var(--radius); background:var(--sheet); box-shadow:var(--lift), inset 3px 0 0 var(--tint);}
+  .live-alert.lead{box-shadow:var(--lift), inset 3px 0 0 var(--warning);}
+  .live-alert.hitting{box-shadow:var(--lift), inset 3px 0 0 var(--positive);}
+  .live-alert.missing{box-shadow:var(--lift), inset 3px 0 0 var(--negative);}
+  .live-alert .x{width:44px; height:44px;}
+  .credit-options .reset-btn{padding:0 6px;}
+
+  footer{margin-top:48px; padding-top:24px;}
+
+  /* ---- Desktop: the width is used for grids; prose keeps its measure ---- */
+  @media (min-width:900px){
+    :root{--fs-h1:40px;}
+    .page{max-width:1120px; padding-inline:32px;}
+    .hero{padding:72px 0 32px;}
+    .hero-sub{font-size:var(--fs-h2); max-width:36ch;}
+    .week-line{padding-top:24px;}
+    .dk-grid{display:grid; gap:16px; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); align-items:start;}
+    #panel-slip, #panel-uga, #panel-research, #panel-futures{max-width:760px; margin-inline:auto;}
+    #panel-research .dk-grid, #panel-slip .dk-grid{display:flex;}
+    .add-card-block{max-width:760px;}
+    .team-hero h2{font-size:28px;}
+    #team-root .auth-go{display:inline-flex; width:auto; min-width:200px;}
+    .team-countdown{font-size:28px;}
+  }
+  /* 320px: the nav keeps five 44px targets; long labels give way first. */
+  @media (max-width:359px){
+    .tab[aria-selected="true"] .tab-label, .tab.more-active .tab-label{max-width:6ch;}
+    .calls-head{flex-wrap:wrap;}
+  }
+
+  /* ---- Motion: every transition and animation lives here, and only for
+     people who have not asked for less of it. The page is complete at rest. ---- */
+  @media (prefers-reduced-motion: no-preference){
+    section[role="tabpanel"]{animation:panel-in .22s ease-out;}
+    @keyframes panel-in{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
+    .auth-chip{transition:transform .12s ease, background .15s ease;}
+    .tab{transition:color .15s ease;}
+    .sheet-backdrop{transition:opacity .25s ease-out;}
+    .sheet{transition:transform .3s cubic-bezier(.2,.8,.2,1);}
+    .sheet.dragging{transition:none;}
+    .sheet-action{transition:transform .12s ease;}
+    @media (min-width:768px){ .sheet{transition:transform .22s ease-out, opacity .22s ease-out;} }
+    .toast{transition:opacity .2s ease-out, transform .2s ease-out;}
+    .auth-go, .refresh-btn, .reset-btn, .text-toggle-btn, .add-slip-btn, .remove-card-btn, .chat-send, .sheet-action{transition:transform .12s ease, opacity .15s ease, background .15s ease;}
+    .top25-head .chev{transition:transform .18s ease;}
+    .call-side{transition:border-color .15s ease, transform .12s ease;}
+    .call-side .bar{transition:width .45s cubic-bezier(.2,.8,.2,1);}
+    .why-toggle .arrow{transition:transform .2s ease;}
+    .switch .track{transition:background .2s ease;}
+    .switch .track::after{transition:transform .2s cubic-bezier(.2,.8,.2,1);}
+    .typing i{animation:typing 1.2s infinite ease-in-out;}
+    .typing i:nth-child(2){animation-delay:.15s;}
+    .typing i:nth-child(3){animation-delay:.3s;}
+    @keyframes typing{0%,60%,100%{opacity:.35; transform:translateY(0);} 30%{opacity:1; transform:translateY(-3px);}}
+    .live-dot{animation:live-pulse 1.6s ease-in-out infinite;}
+    @keyframes live-pulse{0%,100%{opacity:1;} 50%{opacity:.35;}}
+    .live-chip{transition:transform .12s ease;}
+    .btn-primary, .btn-quiet, .calls-you{transition:transform .12s ease;}
+    .results-head .chev{transition:transform .18s ease;}
+    .live-alert{animation:alert-in .28s cubic-bezier(.2,.8,.2,1);}
+    @keyframes alert-in{from{opacity:0; transform:translateY(-10px);} to{opacity:1; transform:none;}}
   }
 </style>
 
-<div class="compact-header" id="compact-header" aria-hidden="true"><span class="compact-title" id="compact-title">College Football</span></div>
-
-<div class="page">
-<header class="app-header">
-  <div class="header-row">
-    <div>
-      <div class="eyebrow"><span id="week-label">CFB</span></div>
-      <div class="asof-line" id="asof-line">Loading this week’s lines…</div>
-      <h1 class="large-title" id="large-title">College Football</h1>
-    </div>
+<!-- Chrome (redesign 2026-11): a thin translucent bar with the name and the
+     account button. The one nav element is a floating pill on a phone and sits in
+     this bar from 900px. Every tab id is unchanged. -->
+<header class="topbar">
+  <div class="topbar-in">
+    <h1 class="brand" id="large-title">College Football</h1>
+    <nav class="tabbar" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" aria-selected="true" aria-controls="panel-card" id="tab-card" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></svg>
+      <span class="tab-label"><span class="l-short">Home</span><span class="l-full">Home</span></span>
+    </button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-games" id="tab-games" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>
+      <span class="tab-label"><span class="l-short">Games</span><span class="l-full">Games</span></span>
+    </button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-slip" id="tab-slip" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21z"/><path d="M9 8.5h6M9 12h6M9 15.5h3.5"/></svg>
+      <span class="tab-label"><span class="l-short">Slip</span><span class="l-full">My Slip</span></span>
+    </button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-research" id="tab-research" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
+      <span class="tab-label"><span class="l-short">Research</span><span class="l-full">Research</span></span>
+    </button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-futures" id="tab-futures" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5.5-6 4 4L21 7"/><path d="M15 7h6v6"/></svg>
+      <span class="tab-label"><span class="l-short">Futures</span><span class="l-full">Futures</span></span>
+    </button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-uga" id="tab-uga" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.500-7-10V6z"/></svg>
+      <span class="tab-label"><span class="l-short">Team</span><span class="l-full">My Team</span></span>
+    </button>
+      <button class="tab" id="tab-more" type="button" aria-haspopup="dialog" aria-controls="more-sheet" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg>
+        <span class="tab-label"><span class="l-short">More</span></span>
+      </button>
+    </nav>
     <button class="auth-chip" id="auth-chip" type="button" aria-label="Account" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.5 3.600-6 8-6s8 2.500 8 6"/></svg>
       <span class="auth-chip-label"></span>
     </button>
   </div>
 </header>
 
-<nav class="tabbar dk-tabbar" role="tablist" aria-label="Sections">
-  <button class="tab" role="tab" aria-selected="true" aria-controls="panel-card" id="tab-card" type="button">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 6v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-6z"/><path d="M12 9.5l.9 1.9 2.1.3-1.5 1.5.4 2.1-1.9-1-1.9 1 .4-2.1-1.5-1.5 2.1-.3z"/></svg>
-    <span class="tab-label"><span class="l-short">Card</span><span class="l-full">Today's Card</span></span>
-  </button>
-  <button class="tab" role="tab" aria-selected="false" aria-controls="panel-games" id="tab-games" type="button">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
-    <span class="tab-label"><span class="l-short">Games</span><span class="l-full">All Games</span></span>
-  </button>
-  <button class="tab" role="tab" aria-selected="false" aria-controls="panel-slip" id="tab-slip" type="button">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-2.3-1.5L14.4 21l-2.4-1.5L9.6 21l-2.3-1.5L5 21z"/><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"/></svg>
-    <span class="tab-label"><span class="l-short">Slip</span><span class="l-full">My Slip</span></span>
-  </button>
-  <button class="tab" role="tab" aria-selected="false" aria-controls="panel-research" id="tab-research" type="button">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
-    <span class="tab-label"><span class="l-short">Research</span><span class="l-full">Research</span></span>
-  </button>
-  <button class="tab" role="tab" aria-selected="false" aria-controls="panel-futures" id="tab-futures" type="button">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5.5-6 4 4L21 7"/><path d="M15 7h6v6"/></svg>
-    <span class="tab-label"><span class="l-short">Futures</span><span class="l-full">Futures Watch</span></span>
-  </button>
-  <button class="tab" role="tab" aria-selected="false" aria-controls="panel-uga" id="tab-uga" type="button">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-4.6-7-10.5A4.5 4.5 0 0 1 12 8a4.5 4.5 0 0 1 7 2.5C19 16.4 12 21 12 21z"/></svg>
-    <span class="tab-label"><span class="l-short">My Dawgs</span><span class="l-full">My Dawgs</span></span>
-  </button>
-  <button class="tab" id="tab-more" type="button" aria-haspopup="dialog" aria-controls="more-sheet" aria-expanded="false">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="8" cy="12" r=".6" fill="currentColor"/><circle cx="12" cy="12" r=".6" fill="currentColor"/><circle cx="16" cy="12" r=".6" fill="currentColor"/></svg>
-    <span class="tab-label"><span class="l-short">More</span></span>
-  </button>
-</nav>
-
+<div class="page">
 <main>
 <section role="tabpanel" id="panel-card" aria-labelledby="tab-card">
+  <!-- What this is, for someone who has just arrived (signed out only). The
+       page under it is the demo: real scores, real games to call. -->
+  <section class="hero" id="hero" aria-labelledby="hero-title" hidden>
+    <h2 class="hero-title" id="hero-title">Call every game.</h2>
+    <p class="hero-sub">Live scores, the crowd’s split on every spread, and a season record for your calls. Free, no account needed.</p>
+    <div class="hero-actions">
+      <button class="btn-primary" id="hero-call" type="button">Call a game</button>
+      <button class="btn-quiet" id="hero-signin" type="button">Sign in</button>
+    </div>
+  </section>
+  <div class="week-line"><span id="week-label">CFB</span><span id="asof-line">Loading this week’s lines…</span></div>
   <!-- Live scores. Filled from /api/live/slip; empty until the first answer,
        and a quiet "unavailable" line rather than anything louder if the feed
        is down - it decorates the board and must never break it. -->
   <section class="live-root" id="live-root" aria-label="Live scores"></section>
-  <div class="intro">
-    <p>This week’s plays — straight bets and parlays — built from DraftKings-market lines and this week’s injury and personnel notes. Confidence dots reflect how much the number, not just the winner, is in our favor.</p>
-    <div class="slate-strip" id="slate-strip"></div>
-    <p class="board-note" id="board-note" hidden></p>
-  </div>
-  <!-- The board's season, one tap from the top (2026-09-26): a new visitor
-       should be able to see how the picks have done before reading them. -->
-  <button class="season-chip" id="season-chip" type="button" hidden></button>
-  <section class="results-strip" id="results-strip" hidden aria-label="How last week finished"></section>
+  <!-- Said plainly when the board is from a finished week; its picks then wait
+       behind a button instead of posing as Saturday's card. -->
+  <div class="board-note" id="board-note" hidden></div>
   <!-- Call it (2026-09-26): one tap per game, the split once you have
        answered, graded against the final. Free, no account needed. -->
   <section class="calls" id="calls" hidden aria-labelledby="calls-title">
@@ -1059,17 +1286,33 @@
     </div>
     <div class="calls-list" id="calls-list"></div>
   </section>
-  <!-- The poll. A different question from the best bets: who is ranked and
-       what are they doing on Saturday, rather than what to back. -->
-  <section class="top25" id="top25" hidden aria-label="This week's Top 25">
-    <button class="top25-head" id="top25-toggle" type="button" aria-expanded="false" aria-controls="top25-list">
-      <b>Top 25 this week</b><span class="chev" aria-hidden="true">›</span>
-    </button>
-    <div class="top25-list" id="top25-list" hidden></div>
-  </section>
-  <!-- Said once, just above the first "on DraftKings" link, not on every card. -->
-  <p class="dk-note" id="dk-note">“On DraftKings” links open DraftKings, where the price may differ from ours. Only where sports betting is legal and you’re 21+.</p>
-  <div class="card-list dk-grid" id="card-list"></div>
+  <!-- The week's games as a plain list: only when there is nothing to call
+       (Call it shows the same games) and the board is this week's. -->
+  <div class="slate-strip" id="slate-strip"></div>
+  <!-- How the picks have done, then the poll: three quiet rows. The board's
+       season is one tap from the top (2026-09-26): a new visitor should be
+       able to see how the picks have done before reading them. -->
+  <div class="rows">
+    <button class="season-chip" id="season-chip" type="button" hidden></button>
+    <section class="results-strip" id="results-strip" hidden aria-label="How last week finished"></section>
+    <!-- The poll. A different question from the best bets: who is ranked and
+         what are they doing on Saturday, rather than what to back. -->
+    <section class="top25" id="top25" hidden aria-label="This week's Top 25">
+      <button class="top25-head" id="top25-toggle" type="button" aria-expanded="false" aria-controls="top25-list">
+        <b>Top 25 this week</b><span class="chev" aria-hidden="true">›</span>
+      </button>
+      <div class="top25-list" id="top25-list" hidden></div>
+    </section>
+  </div>
+  <div class="picks-block" id="picks-block">
+    <div class="intro">
+      <h2 class="sec-title" id="picks-title">This week’s picks</h2>
+      <p>Straight bets and parlays from DraftKings lines. More dots, more conviction in the number.</p>
+    </div>
+    <!-- Said once, just above the first "on DraftKings" link, not on every card. -->
+    <p class="dk-note" id="dk-note">“On DraftKings” links open DraftKings, where the price may differ from ours. Only where sports betting is legal and you’re 21+.</p>
+    <div class="card-list dk-grid" id="card-list"></div>
+  </div>
   <!-- Below the picks since 2026-09-26: on a phone the first pick used to
        start 780px down, under two forms most readers never open. -->
   <div class="add-card-block">
@@ -1108,7 +1351,7 @@
 </section>
 
 <section role="tabpanel" id="panel-games" aria-labelledby="tab-games" hidden>
-  <div class="intro"><p>This week’s games from the board, with research notes where a research pass has covered them. Notes stop updating once a game kicks off. Open a game for the detail.</p></div>
+  <div class="intro"><h2 class="sec-title">Games</h2><p>This week’s games with research notes. Open one for the detail.</p></div>
   <div class="games-search-row sticky-search">
     <input type="search" id="games-search" placeholder="Search a team or matchup…" aria-label="Search tracked games" enterkeyhint="search" autocomplete="off" autocapitalize="words">
   </div>
@@ -1123,7 +1366,7 @@
 </section>
 
 <section role="tabpanel" id="panel-research" aria-labelledby="tab-research" hidden>
-  <div class="intro"><p>Game-by-game research notes behind this week’s card: the line, the injuries and the reasoning, game by game.</p></div>
+  <div class="intro"><h2 class="sec-title">Research</h2><p>The line, the injuries and the reasoning behind each pick.</p></div>
   <!-- Owner-only: shown when /api/auth/status says canResearch. -->
   <div class="custom-research" id="custom-research" hidden>
     <div class="custom-research-label">Custom research</div>
@@ -1138,12 +1381,12 @@
 </section>
 
 <section role="tabpanel" id="panel-futures" aria-labelledby="tab-futures" hidden>
-  <div class="intro"><p>Season-long DraftKings futures, tracked separately from the weekly card. These are watch-list positions, not part of this week’s plays — and a snapshot, not live odds.</p></div>
+  <div class="intro"><h2 class="sec-title">Futures</h2><p>Season-long DraftKings futures to watch. A snapshot, not live odds.</p></div>
   <div id="futures-list"></div>
 </section>
 
 <section role="tabpanel" id="panel-slip" aria-labelledby="tab-slip" hidden>
-  <div class="intro"><p>Check off what you actually place and set a stake. You'll get a full summary of your week below — every pick, the full "why," and your payout — plus a Good / Bad / Different read on the slip you've built. <span id="slip-where">Your slip stays in this browser unless you sign in.</span> Nothing here places a bet.</p></div>
+  <div class="intro"><h2 class="sec-title">My slip</h2><p>Tick what you placed and set a stake for a payout and a read on your week. <span id="slip-where">Your slip stays in this browser unless you sign in.</span> Nothing here places a bet.</p></div>
   <div class="bankroll-row">
     <label for="bankroll-input">Bankroll for this slate<span class="bankroll-hint">Optional — powers the risk-% notes below</span></label>
     <div class="bankroll-input-wrap"><span>$</span><input type="number" min="0" step="25" id="bankroll-input" placeholder="e.g. 500" inputmode="decimal" enterkeyhint="done" autocomplete="off"></div>
@@ -1277,13 +1520,13 @@
   <div class="grabber"></div>
   <h2 class="sheet-title">More</h2>
   <div class="list-group">
-    <button class="list-row" type="button" data-tab-target="tab-futures">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5.5-6 4 4L21 7"/><path d="M15 7h6v6"/></svg>
-      <span>Futures Watch</span><span class="chev" aria-hidden="true">›</span>
+    <button class="list-row" type="button" data-tab-target="tab-research">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
+      <span>Research</span><span class="chev" aria-hidden="true">›</span>
     </button>
-    <button class="list-row" type="button" data-tab-target="tab-uga">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-4.6-7-10.5A4.5 4.5 0 0 1 12 8a4.5 4.5 0 0 1 7 2.5C19 16.4 12 21 12 21z"/></svg>
-      <span>My Dawgs</span><span class="chev" aria-hidden="true">›</span>
+    <button class="list-row" type="button" data-tab-target="tab-futures">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5.5-6 4 4L21 7"/><path d="M15 7h6v6"/></svg>
+      <span>Futures</span><span class="chev" aria-hidden="true">›</span>
     </button>
   </div>
 </div>
@@ -1887,8 +2130,30 @@
     if (canResearch && dbCap && !asksSubscribed){ asksSubscribed = true; subscribeAsks(); }
   }
   var asksSubscribed = false;
+  /** The welcome block. Signed out: say what this is and point at the first
+   *  thing to do. Signed in (either door): it steps aside for the board. */
+  var heroSignedOut = false;
+  function paintHero(){
+    var hero = document.getElementById('hero');
+    if (!hero) return;
+    hero.hidden = !heroSignedOut;
+    var call = document.getElementById('hero-call');
+    var calls = document.getElementById('calls');
+    if (call) call.textContent = (calls && !calls.hidden) ? 'Call a game' : 'See the Top 25';
+  }
+  function heroGo(){
+    var calls = document.getElementById('calls');
+    var target = (calls && !calls.hidden) ? calls : document.getElementById('top25');
+    if (target === calls){ if (calls.scrollIntoView) calls.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' }); return; }
+    var t = document.getElementById('top25-toggle');
+    if (t && t.getAttribute('aria-expanded') !== 'true') t.click();
+    if (target && target.scrollIntoView) target.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+  }
+
   function refreshAuthStatus(){
     return fetch('/api/auth/status').then(function(r){ return r.json(); }).then(function(state){
+      heroSignedOut = !state.signedIn && !state.signedInAnywhere;
+      paintHero();
       syncEnabled = !!state.signedIn || syncEnabled;
       paintAuthButtons(state);
       if (state.signedIn) setAuthStatus('Signed in — slip syncs across your devices');
@@ -2417,9 +2682,9 @@
   // ---------- render: slate strip ----------
   function renderSlate(){
     var el = document.getElementById('slate-strip');
-    el.innerHTML = GAMES.map(function(g){
-      return '<div class="slate-chip"><b>' + esc(String(g.time || '').split(' · ')[0]) + '</b> · ' + esc(g.label) + '</div>';
-    }).join('');
+    el.innerHTML = GAMES.length ? '<h2 class="sec-title">This week\u2019s games</h2>' + GAMES.map(function(g){
+      return '<div class="slate-chip"><span>' + esc(g.label) + '</span><b>' + esc(String(g.time || '').split(' \u00b7 ')[0]) + '</b></div>';
+    }).join('') : '';
   }
 
   // ---------- render: pick cards ----------
@@ -2890,8 +3155,8 @@
       summaryEl.innerHTML = '';
       bodyEl.innerHTML = '<div class="empty-slip">' + EMPTY_GLYPH +
         '<div class="state-title">Your slip is empty</div>' +
-        '<div>Nothing on your slip yet. Check “On my slip” on any play in Today’s Card to track it here.</div>' +
-        '<button class="reset-btn" type="button" data-go-tab="tab-card" style="margin-top:14px;">Go to Today’s Card</button></div>';
+        '<div>Nothing on your slip yet. Turn on “On my slip” on any pick to track it here.</div>' +
+        '<button class="reset-btn" type="button" data-go-tab="tab-card" style="margin-top:14px;">See the picks</button></div>';
       renderReview(placedOnes);
       return;
     }
@@ -3906,7 +4171,7 @@
 
     root.innerHTML =
       '<div class="team-hero">' +
-        '<div class="eyebrow">' + esc(name + (meta.mascot ? ' ' + meta.mascot : '')) + ' · Just for you</div>' +
+        '<div class="eyebrow">' + esc(name + (meta.mascot ? ' ' + meta.mascot : '')) + '</div>' +
         '<h2>' + esc(headline) + '</h2>' +
         (u.record || conf ?
           '<div class="team-stats">' +
@@ -4193,7 +4458,7 @@
     document.getElementById('reset-slip').addEventListener('click', function(){
       confirmSheet({
         title: 'Clear my slip?',
-        message: 'This unchecks every play and resets the stakes. Your added cards stay on Today’s Card.',
+        message: 'This unchecks every play and resets the stakes. Your added cards stay on Home.',
         confirmLabel: 'Clear my slip',
         destructive: true
       }).then(function(ok){
@@ -4302,7 +4567,7 @@
     });
   }
 
-  // ---------- chrome: tabs, sheets, toast, compact header ----------
+  // ---------- chrome: tabs, sheets, toast ----------
   var TAB_HASHES = {'tab-card': 'card', 'tab-games': 'games', 'tab-research': 'research', 'tab-futures': 'futures', 'tab-slip': 'slip', 'tab-uga': 'uga'};
 
   function showTab(tabEl, opts){
@@ -4314,7 +4579,7 @@
     var panel = document.getElementById(tabEl.getAttribute('aria-controls'));
     if (panel) panel.hidden = false;
     var more = document.getElementById('tab-more');
-    if (more) more.classList.toggle('more-active', tabEl.id === 'tab-futures' || tabEl.id === 'tab-uga');
+    if (more) more.classList.toggle('more-active', tabEl.id === 'tab-futures' || tabEl.id === 'tab-research');
     if (dbCap && dbCap.kick) dbCap.kick();
     var hash = TAB_HASHES[tabEl.id];
     if (hash && !opts.fromHash){
@@ -4447,18 +4712,6 @@
       if (dy > 80) dismissSheet();
       dragY = null; dragEl = null;
     });
-
-    // Compact header fades in once the large title has scrolled away.
-    var large = document.getElementById('large-title');
-    var compact = document.getElementById('compact-header');
-    if (large && compact && 'IntersectionObserver' in window){
-      new IntersectionObserver(function(entries){
-        var en = entries[0];
-        var gone = !en.isIntersecting && en.boundingClientRect.top < 0;
-        compact.classList.toggle('on', gone);
-        compact.setAttribute('aria-hidden', gone ? 'false' : 'true');
-      }, {rootMargin: '-44px 0px 0px 0px', threshold: 0}).observe(large);
-    }
 
     if (!applyHash()) showTab(document.getElementById('tab-card'), {fromHash: true});
   }
@@ -4897,6 +5150,9 @@
     var shown = liveGames.length ? games.filter(function(g){ return g.live || g.mine || ranked(g); }) : games;
     var rest = games.length - shown.length;
     if (live.showAll) { shown = games; rest = 0; }
+    else if (shown.length > 6 && window.matchMedia && window.matchMedia('(max-width: 699px)').matches){
+      shown = shown.slice(0, 6); rest = games.length - shown.length;
+    }
     var finals = games.filter(function(g){ return g.final; }).length;
     var later = games.filter(function(g){ return g.state === 'pre' || g.state === 'delayed'; }).length;
     var head = liveGames.length
@@ -5075,6 +5331,8 @@
     refreshAllRows();
     paintBoardDates(b);
     boardStale = !!b.stale;
+    boardWeekKey = b.weekKey || '';
+    boardBuiltAt = b.generatedAt || '';
     paintBoardNote();
     // The Games tab falls back to the slate until its notes arrive.
     if (!lastGamesDocs.length) paintGamesStatus();
@@ -5086,14 +5344,31 @@
    *  calls a board stale from 6 AM Eastern on Sunday, and it is not said
    *  while anything is still live: at 1 AM a late game is on, and "last
    *  week's board" is wrong about the game in front of them. */
-  var boardStale = false;
+  var boardStale = false, boardWeekKey = '', boardBuiltAt = '', showOldBoard = false;
   function paintBoardNote(){
     var note = document.getElementById('board-note');
     if (!note) return;
     var anyLive = !!(live && live.resp && live.resp.available && live.resp.anyLive);
     var show = boardStale && !anyLive;
+    var wk = seasonWeekLabel(boardWeekKey);
+    var built = new Date(boardBuiltAt);
+    var when = boardBuiltAt && !isNaN(built)
+      ? built.toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' }) : '';
+    var n = PICKS.length + PARLAYS.length;
     note.hidden = !show;
-    note.textContent = show ? 'This is last week\u2019s board \u2014 the new one has not been built yet.' : '';
+    note.innerHTML = show
+      ? '<b>No new picks yet.</b> <span>The last board is ' + esc(wk ? wk + '\u2019s' : 'an earlier week\u2019s') +
+          (when ? ' (built ' + esc(when) + ')' : '') + ', and those games have been played.</span>' +
+        (n ? '<button class="btn-quiet" type="button" id="old-board-toggle" aria-expanded="' + (showOldBoard ? 'true' : 'false') + '" aria-controls="picks-block">' +
+          (showOldBoard ? 'Hide ' : 'Show ') + esc(wk ? wk + '\u2019s' : 'the old') + ' picks</button>' : '')
+      : '';
+    // Played games are not "this week's picks": the heading says which week,
+    // and the cards wait behind the button above.
+    var title = document.getElementById('picks-title');
+    if (title) title.textContent = show ? (wk ? wk + ' picks' : 'Earlier picks') : 'This week\u2019s picks';
+    var block = document.getElementById('picks-block');
+    if (block) block.hidden = show && !showOldBoard;
+    document.body.classList.toggle('board-stale', show);
   }
 
   /** "Week 4" from a board's weekKey, by the usual numbering: Week 1 is the
@@ -5122,7 +5397,7 @@
   function paintBoardDates(b){
     var wk = seasonWeekLabel(b.weekKey);
     var label = document.getElementById('week-label');
-    if (label) label.textContent = 'CFB' + (wk ? ' \u00b7 ' + wk : '');
+    if (label) label.textContent = wk || 'College football';
     var stamp = etStamp(b.generatedAt);
     var asof = document.getElementById('asof-line');
     if (asof){
@@ -5170,6 +5445,7 @@
         (from.games ? '. Games from the live scoreboard.' : '. This week\u2019s games could not be read just now.')) + '</div>' : '');
   }
 
+  var resultsOpen = false;
   function renderResults(){
     var el = document.getElementById('results-strip');
     if (!el) return;
@@ -5178,11 +5454,17 @@
     var won = rows.filter(function(r){ return r.outcome === 'win'; }).length;
     var lost = rows.filter(function(r){ return r.outcome === 'loss'; }).length;
     var pushed = rows.filter(function(r){ return r.outcome === 'push'; }).length;
+    var voided = rows.filter(function(r){ return r.outcome === 'void'; }).length;
+    // Graded rows lead; a run of "void" is a footnote, not the headline.
+    var ordered = rows.filter(function(r){ return r.outcome !== 'void'; }).concat(rows.filter(function(r){ return r.outcome === 'void'; }));
     el.hidden = false;
     el.innerHTML =
-      '<div class="results-head"><b>Last week</b><span class="results-record">' +
-        won + '-' + lost + (pushed ? '-' + pushed : '') + '</span></div>' +
-      rows.map(function(r){
+      '<button class="results-head" type="button" id="results-toggle" aria-expanded="' + (resultsOpen ? 'true' : 'false') + '" aria-controls="results-rows">' +
+        '<b>Last week</b><span class="results-record">' +
+        won + '-' + lost + (pushed ? '-' + pushed : '') + (voided ? ' \u00b7 ' + voided + ' not graded' : '') +
+        '</span><span class="chev" aria-hidden="true">\u203a</span></button>' +
+      '<div class="results-rows" id="results-rows"' + (resultsOpen ? '' : ' hidden') + '>' +
+      ordered.map(function(r){
         return '<div class="result-row">' +
           '<span class="result-badge ' + escapeHtml(r.outcome) + '">' + escapeHtml(r.outcome) + '</span>' +
           '<span class="result-text">' +
@@ -5190,7 +5472,7 @@
             '<span class="result-sub">' + escapeHtml([r.finalScore, r.note].filter(Boolean).join(' \u00b7 ')) + '</span>' +
           '</span>' +
         '</div>';
-      }).join('');
+      }).join('') + '</div>';
   }
 
   /** The cached board, or null. Drawn first so the card tab is never empty
@@ -5279,8 +5561,10 @@
     var box = document.getElementById('calls');
     var list = document.getElementById('calls-list');
     if (!box || !list) return;
-    if (!CROWD || !CROWD.open || !Array.isArray(CROWD.games) || !CROWD.games.length){ box.hidden = true; list.innerHTML = ''; return; }
+    if (!CROWD || !CROWD.open || !Array.isArray(CROWD.games) || !CROWD.games.length){ box.hidden = true; list.innerHTML = ''; document.body.classList.remove('has-calls'); paintHero(); return; }
     box.hidden = false;
+    document.body.classList.add('has-calls');
+    paintHero();
     var you = CROWD.you || {};
     var btn = document.getElementById('calls-you');
     if (btn) btn.textContent = you.called
@@ -5394,7 +5678,7 @@
     if (!t || !(t.w + t.l)){ el.hidden = true; return; }
     el.hidden = false;
     el.innerHTML = '<span>Our picks this season</span> <b>' + esc(wlpText(t)) + '</b>' +
-      (t.priced ? ' <span class="u">' + esc((t.units >= 0 ? '+' : '') + t.units + 'u') + '</span>' : '') +
+      (t.priced ? ' <span class="u' + (t.units < 0 ? ' down' : '') + '">' + esc((t.units >= 0 ? '+' : '') + t.units + 'u') + '</span>' : '') +
       '<span class="chev" aria-hidden="true">›</span>';
     el.setAttribute('aria-label', 'Our picks this season: ' + wlpText(t) + '. Open the record.');
   }
@@ -5452,7 +5736,7 @@
     var weeks = d.weeks || [];
     var html = '<div class="grabber"></div><h2 class="sheet-title">Your record</h2>';
     if (!d.known || !weeks.length){
-      html += '<p class="sheet-msg">Call a game on Today’s Card and your record starts here: every call graded against the spread, streaks, and badges to earn. No account needed.</p>';
+      html += '<p class="sheet-msg">Call a game on Home and your record starts here: every call graded against the spread, streaks, and badges to earn. No account needed.</p>';
     } else if (!d.signedIn){
       html += '<p class="sheet-msg">Your calls are kept in this browser. Sign in to keep them on every device and to grade your slip as well.</p>';
     }
@@ -5571,6 +5855,22 @@
     if (you) you.addEventListener('click', openMyRecord);
     var chip = document.getElementById('season-chip');
     if (chip) chip.addEventListener('click', openBoardRecord);
+    var heroCall = document.getElementById('hero-call');
+    if (heroCall) heroCall.addEventListener('click', heroGo);
+    var heroIn = document.getElementById('hero-signin');
+    if (heroIn) heroIn.addEventListener('click', function(){ openAuthPanel(); });
+    var results = document.getElementById('results-strip');
+    if (results) results.addEventListener('click', function(e){
+      if (!e.target.closest('#results-toggle')) return;
+      resultsOpen = !resultsOpen;
+      renderResults();
+    });
+    var note = document.getElementById('board-note');
+    if (note) note.addEventListener('click', function(e){
+      if (!e.target.closest('#old-board-toggle')) return;
+      showOldBoard = !showOldBoard;
+      paintBoardNote();
+    });
   }
 
   function start(){
