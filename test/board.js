@@ -54,6 +54,19 @@ const GOOD = {
   refuses('two cards with one id are refused',
           { ...GOOD, picks: [GOOD.picks[0], { ...GOOD.picks[0], title: 'Other' }] }, 'duplicate id');
 
+  // Week 13 (2026-11-23): a game and a card both "gt-uga" refused the whole
+  // board. The game is renamed now; the pick keeps its id.
+  {
+    const clash = board.validate({ ...GOOD,
+      games: [{ ...GOOD.games[0], id: GOOD.picks[0].id }, ...GOOD.games.slice(1)],
+      results: [{ id: GOOD.picks[0].id, title: 'x', outcome: 'WIN' }],
+      rankings: [{ rank: 1, team: 'Georgia', gameId: GOOD.picks[0].id }] });
+    const ids = [...clash.games, ...clash.picks, ...clash.parlays, ...clash.results].map((r) => r.id);
+    ok('a game or result sharing a card id is renamed, not refused',
+       new Set(ids).size === ids.length && clash.picks[0].id === GOOD.picks[0].id, ids.join(','));
+    ok('...and a Top 25 row follows the renamed game', clash.rankings[0].gameId === clash.games[0].id, clash.rankings[0].gameId);
+  }
+
   // The cards are written into innerHTML by the page. They used to be typed
   // by a person; they come from a model with web search now.
   const nasty = board.validate({ ...GOOD, picks: [{ ...GOOD.picks[0], why: '<script>alert(1)</script>ok' }] });

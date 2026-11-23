@@ -467,11 +467,29 @@ function validate(raw) {
   // Ids address a card from the slip, the payout table and the share link.
   // Two cards answering to one id means adding either one to a slip picks
   // whichever the filter happens to reach first.
+  // Picks and parlays are what a slip and a share link point at, so they keep
+  // their ids and two of them sharing one is still a real error. A game or a
+  // graded result whose id clashes is renamed instead (2026-11-23): Week 13's
+  // board was refused whole because the model gave the Georgia Tech-Georgia
+  // game and a card the same id ("gt-uga"), and the board stayed on Week 9.
   const seen = new Set();
-  for (const row of [...games, ...picks, ...parlays, ...results]) {
+  for (const row of [...picks, ...parlays]) {
     if (seen.has(row.id)) throw new Error(`duplicate id "${row.id}"`);
     seen.add(row.id);
   }
+  const unique = (row, tag) => {
+    if (!seen.has(row.id)) { seen.add(row.id); return; }
+    const base = String(row.id).slice(0, MAX.id - 6);
+    let id = `${base}-${tag}`;
+    for (let n = 2; seen.has(id); n++) id = `${base}-${tag}${n}`;
+    row.id = id;
+    seen.add(id);
+  };
+  const renamed = new Map();
+  for (const row of games) { const was = row.id; unique(row, 'g'); if (row.id !== was && !renamed.has(was)) renamed.set(was, row.id); }
+  for (const row of results) unique(row, 'r');
+  // A Top 25 row names its game by id; follow the game if it was renamed.
+  for (const r of rankings) if (renamed.has(r.gameId)) r.gameId = renamed.get(r.gameId);
 
   return {
     weekKey: clean(raw.weekKey, MAX.id),
