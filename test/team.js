@@ -11,6 +11,7 @@ h.install();
 // client once at startup, so swapping require.cache later does nothing - a
 // mistake that made two assertions pass for the wrong reason before this.
 let researchCalls = 0;
+let lastParams = null;
 let reply = {
   rank: '#11', record: '3-1', confRecord: '1-0 Big Ten',
   nextGame: { opponent: 'at Ohio State', kickoffISO: '2026-10-03T16:00:00Z', tv: 'FOX' },
@@ -33,7 +34,7 @@ require.cache['FAKE_AN'].exports = function () {
       // price the call and the caller calls it again, and on the real SDK both
       // resolve the same single request. Counting the resolutions would have
       // reported two API calls for every one that happened.
-      stream: () => { researchCalls++; return { finalMessage: message }; },
+      stream: (params) => { researchCalls++; lastParams = params; return { finalMessage: message }; },
     },
     batches: {},
   };
@@ -256,6 +257,114 @@ const jar = (r) => (r.headers.getSetCookie() || []).map((c) => c.split(';')[0]).
   ok('a non-array arrangement reads back empty, not broken',
       Array.isArray(junk.hidden) && junk.hidden.length === 0 && Array.isArray(junk.own));
   ok('...and non-string ids are dropped', junk.pinned.join(',') === 'ok', junk.pinned.join(','));
+
+  // --- "Write every team page" (owner-only batch, 2026-11-24) --------------
+  // A few pages per request, through the SAME researchTeamPage() a member's
+  // Refresh uses, skipping pages refreshed in the last 7 days, under a $40 a
+  // month guard. The page calls again until `remaining` is 0.
+  reply = {
+    rank: '#11', record: '3-1', confRecord: '1-0 Big Ten',
+    nextGame: { opponent: 'at Ohio State', kickoffISO: '2026-10-03T16:00:00Z', tv: 'FOX' },
+    schedule: [{ wk: 'Sep 5', opp: 'Fresno State', loc: 'home', result: 'W 30-10' }],
+    storyline: ['A paragraph about the season.'],
+  };
+  const OWNER = { authorization: 'Basic ' + Buffer.from('erik:site-password-here-1').toString('base64') };
+  const batch = (body, headers) => fetch(B + '/api/research/teams-batch', {
+    method: 'POST', headers: { ...J, ...(headers || {}) }, body: JSON.stringify(body || {}),
+  });
+  const fanBag = h.bag('college-football-app');
+  const DAY = 24 * 3600 * 1000;
+  const ago = (ms) => new Date(Date.now() - ms).toISOString();
+  // Every team fresh except five: three never written, two a week+ old.
+  const ids = teams.TEAMS.map((t) => t.id);
+  for (const id of ids) fanBag.set('fan/' + id, { record: 'fresh', schedule: [], storyline: [], lastChecked: ago(2 * DAY) });
+  const missing = ids.slice(0, 3);
+  const stale = ids.slice(3, 5);
+  for (const id of missing) fanBag.delete('fan/' + id);
+  for (const id of stale) fanBag.set('fan/' + id, { record: 'old', schedule: [], storyline: [], lastChecked: ago(8 * DAY) });
+  fanBag.delete('control/teams-batch');
+
+  let calls0 = researchCalls;
+  r = await batch({});
+  ok('writing every team page needs someone signed in (401)', r.status === 401, String(r.status));
+  r = await batch({}, { cookie });
+  ok('...and a member who is not the owner is refused (403)', r.status === 403, String(r.status));
+  ok('...spending nothing', researchCalls === calls0, String(researchCalls - calls0));
+
+  r = await batch({}, OWNER);
+  let b = await r.json();
+  ok('the owner may write every team page', r.status === 200, JSON.stringify(b).slice(0, 200));
+  ok('...writing only the missing and the stale ones',
+      JSON.stringify([...b.done].sort()) === JSON.stringify([...missing, ...stale].sort()), JSON.stringify(b.done));
+  ok('...missing pages first', missing.every((id) => b.done.indexOf(id) > -1 && b.done.indexOf(id) < 5));
+  ok('...one model call each', researchCalls === calls0 + 5, String(researchCalls - calls0));
+  ok('...skipping every page refreshed in the last 7 days', b.skipped === ids.length - 5, String(b.skipped));
+  ok('...untouched', fanBag.get('fan/' + ids[10]).record === 'fresh');
+  ok('...with nothing left to do', b.remaining === 0 && b.written === ids.length, JSON.stringify([b.remaining, b.written]));
+  ok('...each page written through validate()',
+      [...missing, ...stale].every((id) => fanBag.get('fan/' + id).record === '3-1' && Date.now() - Date.parse(fanBag.get('fan/' + id).lastChecked) < 60000));
+  ok('...by the same research as a team Refresh (same prompt, same budget)',
+      lastParams && lastParams.max_tokens === 12000 && /^Research .+ for the \d{4} season\./.test(lastParams.messages[0].content)
+      && /return ONE JSON object/.test(lastParams.system), JSON.stringify(lastParams && lastParams.max_tokens));
+  const ctl = fanBag.get('control/teams-batch') || {};
+  ok('...with its spend kept for the month in control/teams-batch',
+      ctl.month === new Date().toISOString().slice(0, 7) && ctl.teams === 5 && ctl.usd > 0 && b.costUsd > 0,
+      JSON.stringify(ctl));
+
+  calls0 = researchCalls;
+  r = await batch({}, OWNER);
+  b = await r.json();
+  ok('a second run with nothing stale spends nothing', b.remaining === 0 && b.done.length === 0 && researchCalls === calls0,
+      JSON.stringify(b).slice(0, 200));
+
+  // Remaining counts down across calls, n is bounded.
+  const twenty = ids.slice(10, 30);
+  for (const id of twenty) fanBag.set('fan/' + id, { record: 'old', schedule: [], storyline: [], lastChecked: ago(30 * DAY) });
+  r = await batch({ n: 4 }, OWNER);
+  b = await r.json();
+  ok('a call writes the number asked for', b.done.length === 4, String(b.done.length));
+  ok('...and says how many are left', b.remaining === 16 && b.written === ids.length - 16, JSON.stringify([b.remaining, b.written]));
+  r = await batch({ n: 500 }, OWNER);
+  b = await r.json();
+  ok('...never more than 12 in one call', b.done.length === 12 && b.remaining === 4, JSON.stringify([b.done.length, b.remaining]));
+  r = await batch({}, OWNER);
+  b = await r.json();
+  ok('...and the default call finishes the rest', b.done.length === 4 && b.remaining === 0, JSON.stringify([b.done.length, b.remaining]));
+
+  // A bad answer is refused by validate(): the old page stays, and the team
+  // is held back so the page's loop does not buy the same failure again.
+  const bad = ids[40];
+  fanBag.set('fan/' + bad, { record: 'kept', schedule: [], storyline: [], lastChecked: ago(9 * DAY) });
+  reply = { schedule: [{ wk: 'Sep 5', loc: 'home' }] };
+  r = await batch({}, OWNER);
+  b = await r.json();
+  ok('a page the model gets wrong is not written', b.failed.join() === bad && fanBag.get('fan/' + bad).record === 'kept',
+      JSON.stringify(b).slice(0, 200));
+  ok('...and is held back rather than counted as remaining', b.remaining === 0 && b.held === 1, JSON.stringify([b.remaining, b.held]));
+  calls0 = researchCalls;
+  r = await batch({}, OWNER);
+  b = await r.json();
+  ok('...so the next call does not buy the same failure', researchCalls === calls0 && b.remaining === 0, String(researchCalls - calls0));
+
+  // The monthly guard.
+  const month = new Date().toISOString().slice(0, 7);
+  reply = { record: '3-1', schedule: [{ wk: 'Sep 5', opp: 'Fresno State', loc: 'home' }], storyline: ['x'] };
+  fanBag.set('fan/' + ids[50], { record: 'old', schedule: [], storyline: [], lastChecked: ago(9 * DAY) });
+  const held = (fanBag.get('control/teams-batch') || {}).failedAt;
+  fanBag.set('control/teams-batch', { month, usd: 39.95, teams: 100, failedAt: held });
+  calls0 = researchCalls;
+  r = await batch({}, OWNER);
+  b = await r.json();
+  ok('the batch refuses (409) once another page could pass $40 this month', r.status === 409 && b.code === 'cap',
+      String(r.status) + ' ' + JSON.stringify(b).slice(0, 160));
+  ok('...spending nothing', researchCalls === calls0, String(researchCalls - calls0));
+  ok('...and still says what is left', b.remaining === 1, String(b.remaining));
+  fanBag.set('control/teams-batch', { month: '2000-01', usd: 39.95, teams: 100, failedAt: held });
+  r = await batch({}, OWNER);
+  b = await r.json();
+  ok('...last month\'s spend does not count', r.status === 200 && b.done.join() === ids[50], String(r.status));
+  ok('...and the month starts again from what this one spent',
+      (fanBag.get('control/teams-batch') || {}).month === month && (fanBag.get('control/teams-batch') || {}).usd < 1);
 
   console.log(`\n${pass} passed, ${fail} failed`);
   process.exit(fail ? 1 : 0);

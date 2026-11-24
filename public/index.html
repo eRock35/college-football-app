@@ -952,6 +952,8 @@
   }
   .hero .btn-quiet{min-height:48px; padding:0 24px; font-size:var(--fs-body);}
   .refresh-btn{min-height:44px; padding:0 18px; border-radius:999px; background:var(--tint-fill); color:#fff;}
+  .teams-batch{margin-top:20px;}
+  .teams-batch-row{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
   .games-actions .refresh-btn{background:transparent; border:1px solid var(--border); color:var(--tint);}
   .reset-btn.destructive, #reset-slip{color:var(--negative);}
   .add-slip-btn{border-radius:999px; background:transparent; border:1px solid var(--border);}
@@ -1376,6 +1378,16 @@
     </div>
     <div class="refresh-meta" id="custom-research-status"></div>
     <div class="asks-feed" id="asks-feed"></div>
+  </div>
+  <!-- Owner-only: shown when /api/auth/status says canResearch. Writes every
+       FBS team page, a few per request, calling again until none are left. -->
+  <div class="teams-batch" id="teams-batch" hidden>
+    <div class="custom-research-label">Team pages</div>
+    <div class="teams-batch-row">
+      <button class="refresh-btn" id="teams-batch-btn" type="button">Write every team page</button>
+      <button class="btn-quiet" id="teams-batch-stop" type="button" hidden>Stop</button>
+    </div>
+    <div class="refresh-meta" id="teams-batch-status" aria-live="polite">Researches every team not updated in the last 7 days. Up to $40 a month.</div>
   </div>
   <div id="research-list"></div>
 </section>
@@ -2122,6 +2134,8 @@
     if (refresh) refresh.hidden = !canResearch;
     var custom = document.getElementById('custom-research');
     if (custom) custom.hidden = !canResearch;
+    var batch = document.getElementById('teams-batch');
+    if (batch) batch.hidden = !canResearch;
     var where = document.getElementById('slip-where');
     if (where) where.textContent = (state && (state.signedIn || state.signedInAnywhere))
       ? 'Signed in, so your slip follows you to your other devices.'
@@ -3987,6 +4001,60 @@
     if (input) input.value = '';
   }
 
+  /* "Write every team page" (owner-only). The server writes a few pages per
+     request and says how many are left; this calls again, one request after
+     the other, until none are. Nothing runs in the background on the server,
+     so Stop is simply not asking again. */
+  var teamsBatch = {running: false, stop: false, usd: 0, idle: 0};
+  function teamsBatchLine(d, usd){
+    return (d.written || 0) + ' of ' + (d.total || 0) + ' written · $' + Number(usd || 0).toFixed(2) + ' so far';
+  }
+  function runTeamsBatch(){
+    if (teamsBatch.running) return;
+    var btn = document.getElementById('teams-batch-btn');
+    var stop = document.getElementById('teams-batch-stop');
+    var statusEl = document.getElementById('teams-batch-status');
+    var say = function(t){ if (statusEl) statusEl.textContent = t; };
+    teamsBatch = {running: true, stop: false, usd: 0, idle: 0};
+    btn.disabled = true;
+    stop.hidden = false;
+    stop.disabled = false;
+    say('Starting…');
+    var finish = function(t){
+      teamsBatch.running = false;
+      btn.disabled = false;
+      stop.hidden = true;
+      say(t);
+    };
+    var step = function(){
+      if (teamsBatch.stop) return finish('Stopped · $' + teamsBatch.usd.toFixed(2) + ' spent. Tap again to carry on.');
+      fetch('/api/research/teams-batch', {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'
+      }).then(function(r){
+        return r.json().catch(function(){ return {}; }).then(function(d){ return {status: r.status, ok: r.ok, d: d}; });
+      }).then(function(x){
+        var d = x.d || {};
+        if (x.status === 401) return finish('Sign in to write team pages.');
+        if (x.status === 403) return finish('Writing team pages is the site owner’s.');
+        if (!x.ok) return finish((d.error || 'That batch failed.') + (teamsBatch.usd ? ' · $' + teamsBatch.usd.toFixed(2) + ' spent.' : ''));
+        teamsBatch.usd += Number(d.costUsd || 0);
+        var line = teamsBatchLine(d, teamsBatch.usd);
+        if (!d.remaining){
+          var held = d.held ? ' · ' + d.held + ' could not be written; try again later' : '';
+          return finish('Done. ' + line + held + '.');
+        }
+        // Two calls in a row that wrote nothing: stop rather than spin.
+        teamsBatch.idle = (d.done && d.done.length) || (d.failed && d.failed.length) ? 0 : teamsBatch.idle + 1;
+        if (teamsBatch.idle >= 2) return finish('No progress · ' + line + '. Try again later.');
+        say(line + (teamsBatch.stop ? ' · stopping…' : ' · working…'));
+        step();
+      }).catch(function(){
+        finish('Lost the connection · $' + teamsBatch.usd.toFixed(2) + ' spent. Tap again to carry on.');
+      });
+    };
+    step();
+  }
+
   function subscribeGames(){
     try{
       gamesUnsub = dbCap.collection('games').onSnapshot(function(snap){
@@ -4410,6 +4478,13 @@
       requestResearchRefresh(e.currentTarget);
     });
 
+    document.getElementById('teams-batch-btn').addEventListener('click', runTeamsBatch);
+    document.getElementById('teams-batch-stop').addEventListener('click', function(){
+      teamsBatch.stop = true;
+      this.disabled = true;
+      var statusEl = document.getElementById('teams-batch-status');
+      if (statusEl) statusEl.textContent = statusEl.textContent.replace(' · working…', '') + ' · stopping after this batch…';
+    });
     document.getElementById('custom-research-btn').addEventListener('click', function(){
       requestCustomResearch(document.getElementById('custom-research-btn'));
     });
@@ -5914,7 +5989,7 @@
       renderGamesGrid: renderGamesGrid, renderResearchList: renderResearchList, renderAsksFeed: renderAsksFeed,
       gameCardHtml: gameCardHtml, researchGameCardHtml: researchGameCardHtml, slipLiveHtml: slipLiveHtml,
       escapeHtml: escapeHtml, weekKeyAt: weekKeyAt, seasonWeekLabel: seasonWeekLabel, dkLinkHtml: dkLinkHtml,
-      paintOwnerControls: paintOwnerControls, expireStaleWeek: expireStaleWeek,
+      paintOwnerControls: paintOwnerControls, expireStaleWeek: expireStaleWeek, teamsBatchLine: teamsBatchLine,
       renderCalls: renderCalls, myRecordHtml: myRecordHtml, paintSeasonChip: paintSeasonChip, paintCardCrowd: paintCardCrowd,
       openBoardRecord: openBoardRecord,
       setCrowd: function(c){ CROWD = c; }, setBoardRecord: function(r){ BOARD_RECORD = r; },

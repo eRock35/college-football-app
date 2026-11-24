@@ -156,6 +156,16 @@ written.push({ id: 'my-record', html: api.myRecordHtml({ known: true, signedIn: 
 api.renderCards();
 api.renderSlipTab();
 api.paintOwnerControls({ canResearch: false, signedIn: false });
+const batchRow = document.getElementById('teams-batch');
+batchRow.hidden = false;
+api.paintOwnerControls({ canResearch: false, signedIn: true });
+ok('"Write every team page" is hidden from anyone who may not research', batchRow.hidden === true);
+api.paintOwnerControls({ canResearch: true, signedIn: true });
+ok('...and shown to the owner', batchRow.hidden === false);
+api.paintOwnerControls({ canResearch: false, signedIn: false });
+ok('...and hidden again when they sign out', batchRow.hidden === true);
+ok('...its progress line reads "38 of 132 written · $4.10 so far"',
+  api.teamsBatchLine({ written: 38, total: 132 }, 4.1) === '38 of 132 written · $4.10 so far');
 
 const all = written.map((w) => w.html).join('\n');
 const found = [];

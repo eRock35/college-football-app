@@ -780,6 +780,40 @@ This repo's part:
 DraftKings links (guideline 5.3); TestFlight's beta review is lighter, and the
 reviewer notes in `mobile/testflight.json` say the app takes no bets.
 
+## Write every team page (2026-11-24)
+
+Erik asked to pre-research every FBS team page in one tap before his Claude
+credit resets on Dec 1 (about $15-30 approved).
+
+- **`POST /api/research/teams-batch`** `{n?}` - owner-only, the same gate as
+  `/api/research/custom` (`requireResearch`, `requireBudgetOrOwnerDoor`,
+  `requireDailyCap`): members 403, signed-out 401. Writes up to `n` (default
+  8, max 12) team pages that are **missing or older than 7 days**, missing
+  first then oldest, 3 at a time. Answers `{done, failed, skipped (fresh),
+  held, remaining, written, total, costUsd, monthUsd, capUsd}`.
+- **One code path**: `researchTeamPage()` is the prompt, ESPN facts as
+  "known, do not contradict", `fan.validate()` and the write. Both this and
+  `POST /api/fan/:team/research` call it; the member route keeps its own
+  12-hour cache check in front.
+- **Billed per request**: no loop on the server. The Research tab's "Write
+  every team page" row calls again, one request after the other, until
+  `remaining` is 0, drawing "38 of 132 written · $4.10 so far"; Stop just
+  does not ask again. A call stops starting pages when the average so far
+  (90 s until one finishes) would pass 240 s, and aborts anything still in
+  flight at 240 s (counted at the estimate, retried by the next call).
+- **Guard**: `control/teams-batch` `{month, usd, teams, failedAt}` keeps this
+  UTC month's spend (the priced usage of each response, `identity.priceOf`).
+  A call never starts a page whose worst case (60k input, all 12000 output
+  tokens, every search) would take the month past **$40**; with nothing
+  affordable it is a 409 `code: 'cap'`. A team whose answer `validate()`
+  refused is held back for 6 hours (`held`), not counted in `remaining`, so
+  the page's loop does not buy the same failure again. One batch per
+  instance at a time (409 `busy`).
+- Logs `[teams-batch] wrote <id> $x in Ns` per team and a total line.
+- Tests: `test/team.js` (gates, fresh skipped, missing/stale written through
+  validate, remaining, the cap, held failures), `test/render.js` (row hidden
+  unless `canResearch`, the progress line).
+
 ## Commit and PR conventions
 
 **Never put a Claude session link in anything pushed to GitHub.** No

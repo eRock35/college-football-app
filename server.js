@@ -1003,6 +1003,74 @@ app.get('/api/fan/:team', async (req, res) => {
 // spend somebody's credit to learn the same thing.
 const TEAM_FRESH_HOURS = 12;
 
+/**
+ * Research one team and write its page. The ONE code path for a team page
+ * (2026-11-24): the member's own Refresh (POST /api/fan/:team/research) and
+ * the owner's "Write every team page" (POST /api/research/teams-batch) both
+ * come here, so the prompt, ESPN's facts as "known, do not contradict",
+ * fan.validate() on the proposal and the write cannot drift apart.
+ *
+ * `facts`/`poll` are teamFacts' answers (either may be null). `signal`
+ * aborts the model call; `spend` ({usd, unpriced}) is added to with what each
+ * response cost. Throws on a bad answer - validate() runs BEFORE the write,
+ * so a bad run leaves the last good page serving.
+ */
+const TEAM_RESEARCH_MAX_TOKENS = 12000;
+async function researchTeamPage(id, { user, facts, poll, signal, spend } = {}) {
+  const meta = teams.get(id);
+  // What ESPN already says, so the model writes about the season as it
+  // stands rather than re-deriving a record it might get wrong.
+  const rankNow = teamfacts.overlay(null, facts, poll, { teamId: id, meta }).rank;
+  const known = facts ? [
+    '',
+    `Known facts (from the scoreboard, correct as of ${facts.fetchedAt}; do not contradict them):`,
+    `- Record ${facts.record}${facts.confRecord ? `, ${facts.confRecord} in conference` : ''}` +
+      `${rankNow ? `, ${rankNow} in the AP poll` : ', unranked'}.`,
+    ...facts.schedule.filter((r) => r.result).map((r) => `- ${r.wk}: ${r.opp}, ${r.result}`),
+    facts.nextGame ? `- Next: ${facts.nextGame.opponent}, ${facts.nextGame.kickoffLabel}` : '- No game left on the schedule.',
+  ] : [];
+
+  const season = new Date().getFullYear();
+  const raw = await runStructuredResearch({
+    user,
+    signal,
+    spend,
+    maxTokens: TEAM_RESEARCH_MAX_TOKENS,
+    systemPrompt:
+      'You research one college football team and return ONE JSON object and nothing else. '
+      + 'Search the web for current information. Never invent a game, a score or a date: leave a '
+      + 'field empty rather than guessing at it.',
+    prompt: [
+      `Research ${meta.name} (${meta.mascot}), ${meta.conf}, for the ${season} season.`,
+      '',
+      'Return exactly this JSON object:',
+      '{',
+      '  "rank": "#2 or empty string if unranked",',
+      '  "record": "2-0",',
+      '  "confRecord": "0-0 SEC",',
+      '  "nextGame": { "opponent": "at Arkansas", "kickoffISO": "2026-09-19T16:00:00Z",',
+      '                "tv": "ABC", "line": "Georgia -24.5" },',
+      '  "schedule": [ { "wk": "Sep 5", "opp": "Tennessee State", "loc": "home|away|neutral|bye",',
+      '                  "result": "W 63-3 or empty if unplayed", "current": true for THIS week only,',
+      '                  "ranked": true if the opponent is ranked, "rivalry": true for a rivalry game } ],',
+      '  "storyline": ["2 to 4 paragraphs on where the season stands: form, injuries, what to watch."]',
+      '}',
+      '',
+      'The full regular-season schedule, in order, including bye weeks. Mark exactly one row current.',
+      'kickoffISO must be a real UTC instant or an empty string - the page runs a live countdown off it.',
+      ...known,
+    ].join('\n'),
+  });
+
+  // Validated BEFORE it is written, so a bad run leaves the last good
+  // document serving rather than replacing it with a broken tab.
+  const page = fan.validate({ ...raw, lastChecked: new Date().toISOString() }, id);
+  // No `researchedBy` (2026-09-27). It was the researcher's email, or its
+  // base64url, on a document every reader is served, and nothing read it.
+  await db.collection('fan').doc(id).set(page);
+  return page;
+}
+
 app.post('/api/fan/:team/research', requireLoginSilent, requireSharedAccount, requireBudgetOrOwnerDoor, identity.requireDailyCap,
   async (req, res) => {
     try {
@@ -1026,54 +1094,7 @@ app.post('/api/fan/:team/research', requireLoginSilent, requireSharedAccount, re
         }
       }
 
-      // What ESPN already says, so the model writes about the season as it
-      // stands rather than re-deriving a record it might get wrong.
-      const rankNow = view(null, {}).rank;
-      const known = facts ? [
-        '',
-        `Known facts (from the scoreboard, correct as of ${facts.fetchedAt}; do not contradict them):`,
-        `- Record ${facts.record}${facts.confRecord ? `, ${facts.confRecord} in conference` : ''}` +
-          `${rankNow ? `, ${rankNow} in the AP poll` : ', unranked'}.`,
-        ...facts.schedule.filter((r) => r.result).map((r) => `- ${r.wk}: ${r.opp}, ${r.result}`),
-        facts.nextGame ? `- Next: ${facts.nextGame.opponent}, ${facts.nextGame.kickoffLabel}` : '- No game left on the schedule.',
-      ] : [];
-
-      const season = new Date().getFullYear();
-      const raw = await runStructuredResearch({
-        user: req.user,
-        maxTokens: 12000,
-        systemPrompt:
-          'You research one college football team and return ONE JSON object and nothing else. '
-          + 'Search the web for current information. Never invent a game, a score or a date: leave a '
-          + 'field empty rather than guessing at it.',
-        prompt: [
-          `Research ${meta.name} (${meta.mascot}), ${meta.conf}, for the ${season} season.`,
-          '',
-          'Return exactly this JSON object:',
-          '{',
-          '  "rank": "#2 or empty string if unranked",',
-          '  "record": "2-0",',
-          '  "confRecord": "0-0 SEC",',
-          '  "nextGame": { "opponent": "at Arkansas", "kickoffISO": "2026-09-19T16:00:00Z",',
-          '                "tv": "ABC", "line": "Georgia -24.5" },',
-          '  "schedule": [ { "wk": "Sep 5", "opp": "Tennessee State", "loc": "home|away|neutral|bye",',
-          '                  "result": "W 63-3 or empty if unplayed", "current": true for THIS week only,',
-          '                  "ranked": true if the opponent is ranked, "rivalry": true for a rivalry game } ],',
-          '  "storyline": ["2 to 4 paragraphs on where the season stands: form, injuries, what to watch."]',
-          '}',
-          '',
-          'The full regular-season schedule, in order, including bye weeks. Mark exactly one row current.',
-          'kickoffISO must be a real UTC instant or an empty string - the page runs a live countdown off it.',
-          ...known,
-        ].join('\n'),
-      });
-
-      // Validated BEFORE it is written, so a bad run leaves the last good
-      // document serving rather than replacing it with a broken tab.
-      const page = fan.validate({ ...raw, lastChecked: new Date().toISOString() }, id);
-      // No `researchedBy` (2026-09-27). It was the researcher's email, or its
-      // base64url, on a document every reader is served, and nothing read it.
-      await ref.set(page);
+      const page = await researchTeamPage(id, { user: req.user, facts, poll });
       res.json(view(page, { cached: false }));
     } catch (err) {
       console.error('POST /api/fan/:team/research', err);
@@ -1317,7 +1338,7 @@ async function runResearch({ prompt, systemPrompt, user }) {
 // searching, not just for the answer.
 const MAX_CONTINUATIONS = 5;
 
-async function runStructuredResearch({ prompt, systemPrompt, user, maxTokens = 3072, tier }) {
+async function runStructuredResearch({ prompt, systemPrompt, user, maxTokens = 3072, tier, signal, spend }) {
   // `tier: 'paid'` is for work the APP wants done, not work a visitor asked
   // for: the weekly board is the front page, it runs unattended from Cloud
   // Scheduler with no user to bill or tier, and four searches cannot survey a
@@ -1339,7 +1360,13 @@ async function runStructuredResearch({ prompt, systemPrompt, user, maxTokens = 3
       system: systemPrompt,
       tools: [plan.webSearch],
       messages,
-    }).finalMessage();
+    }, signal ? { signal } : undefined).finalMessage();
+    // What this response cost, for a caller keeping its own tally (the
+    // teams batch's monthly guard). The meter still records it as always.
+    if (spend) {
+      const usd = identityLib.priceOf(plan.model, response.usage);
+      if (usd === null) spend.unpriced = true; else spend.usd += usd;
+    }
     if (response.stop_reason !== 'pause_turn') break;
     messages.push({ role: 'assistant', content: response.content });
   }
@@ -1430,6 +1457,197 @@ app.post('/api/research/custom', requireResearch, requireBudgetOrOwnerDoor, iden
   } catch (err) {
     console.error('POST /api/research/custom', err);
     res.status(500).json({ error: 'Research request failed.' });
+  }
+});
+
+/* ---------- the owner's "Write every team page" (2026-11-24) ---------- */
+
+// Erik asked to pre-research every FBS team page in one tap before his
+// Claude credit resets on Dec 1, and approved about $15-30 for it.
+//
+// This service is billed per request, so there is NO background loop: each
+// call writes a few pages inside its own request and says how many are left,
+// and the page calls again (one after the other) until `remaining` is 0.
+// Every page goes through researchTeamPage() - the same prompt, ESPN facts and
+// fan.validate() as a member's Refresh - and lands in the SHARED fan/<id>
+// cache, so every reader of that team gets it free afterwards.
+//
+// Owner-only, behind the same gate as /api/research/custom (requireResearch:
+// site password, owner flag, granted research). Members get 403, signed-out
+// 401. The owner's doors are unmetered by design (requireBudgetOrOwnerDoor).
+const TEAMS_BATCH_FRESH_DAYS = 7;          // a page refreshed this recently is skipped
+const TEAMS_BATCH_DEFAULT = 8;
+const TEAMS_BATCH_MAX = 12;
+const TEAMS_BATCH_PARALLEL = 3;
+const TEAMS_BATCH_BUDGET_MS = 240 * 1000;  // stop well inside the request timeout
+const TEAMS_BATCH_GUESS_MS = 90 * 1000;    // how long one team takes, until one has
+const TEAMS_BATCH_CAP_USD = 40;            // per UTC month, across every call
+const TEAMS_BATCH_RETRY_HOURS = 6;         // a team that failed is not retried sooner
+// Prompt plus search results, the input a thorough team search runs to. Used
+// only for the guard's worst-case estimate; what is recorded is the real cost.
+const TEAM_EST_INPUT_TOKENS = 60000;
+let teamsBatchRunning = false;             // one batch per instance at a time
+
+/** A worst-case dollar figure for one team page on this caller's model:
+ *  TEAM_EST_INPUT_TOKENS in, the whole max_tokens out, every search used. */
+function teamPageEstimateUsd(user) {
+  const plan = identityLib.planFor(user, MODEL_TIERS);
+  const price = identityLib.PRICES[plan.model] || { input: 5, output: 25 };
+  return (TEAM_EST_INPUT_TOKENS * price.input + TEAM_RESEARCH_MAX_TOKENS * price.output) / 1e6
+    + Number(plan.maxUses || 0) * 0.01;
+}
+
+/** Which teams need a page: missing, or older than TEAMS_BATCH_FRESH_DAYS,
+ *  missing first, then oldest first. Teams that failed recently are held back
+ *  (and counted), or the page's loop would buy the same failure forever. */
+async function teamsNeedingPages(failedAt, now = Date.now()) {
+  const snap = await db.collection('fan').get();
+  const checked = new Map();
+  for (const d of snap.docs) checked.set(d.id, Date.parse((d.data() || {}).lastChecked || '') || 0);
+  const freshMs = TEAMS_BATCH_FRESH_DAYS * 24 * 3600 * 1000;
+  const retryMs = TEAMS_BATCH_RETRY_HOURS * 3600 * 1000;
+  const due = [];
+  let fresh = 0;
+  let held = 0;
+  for (const t of teams.TEAMS) {
+    const at = checked.get(t.id) || 0;
+    if (at && now - at < freshMs) { fresh++; continue; }
+    const failed = Date.parse((failedAt || {})[t.id] || '') || 0;
+    if (failed && now - failed < retryMs) { held++; continue; }
+    due.push({ id: t.id, at });
+  }
+  due.sort((a, b) => a.at - b.at);
+  return { due: due.map((d) => d.id), fresh, held };
+}
+
+app.post('/api/research/teams-batch', requireResearch, requireBudgetOrOwnerDoor, identity.requireDailyCap, async (req, res) => {
+  if (teamsBatchRunning) {
+    return res.status(409).json({ error: 'A batch is already running. Wait for it to finish.', code: 'busy' });
+  }
+  teamsBatchRunning = true;
+  const started = Date.now();
+  const controllers = new Set();
+  let deadline = null;
+  try {
+    const asked = Number.parseInt((req.body || {}).n, 10);
+    let n = Math.min(TEAMS_BATCH_MAX, Math.max(1, Number.isFinite(asked) ? asked : TEAMS_BATCH_DEFAULT));
+
+    // control/teams-batch: this UTC month's spend, and which teams failed.
+    const month = new Date().toISOString().slice(0, 7);
+    const ref = db.collection('control').doc('teams-batch');
+    const doc = await ref.get();
+    const prior = doc.exists ? doc.data() : {};
+    const sameMonth = prior.month === month;
+    const state = {
+      month,
+      usd: sameMonth ? Number(prior.usd || 0) : 0,
+      teams: sameMonth ? Number(prior.teams || 0) : 0,
+      failedAt: prior.failedAt && typeof prior.failedAt === 'object' ? { ...prior.failedAt } : {},
+      updatedAt: prior.updatedAt || '',
+    };
+
+    const { due, fresh, held } = await teamsNeedingPages(state.failedAt);
+    const total = teams.TEAMS.length;
+    const answer = (extra) => ({
+      done: [], failed: [], skipped: fresh, held, total, costUsd: 0,
+      monthUsd: Math.round(state.usd * 100) / 100, capUsd: TEAMS_BATCH_CAP_USD, ...extra,
+    });
+    if (!due.length) return res.json(answer({ remaining: 0, written: fresh }));
+
+    // The cost guard: never start a page whose worst case would take this
+    // month's batch spend past the cap.
+    const estimate = teamPageEstimateUsd(req.user);
+    const affordable = Math.floor((TEAMS_BATCH_CAP_USD - state.usd) / estimate);
+    if (affordable < 1) {
+      console.log(`[teams-batch] refused: $${state.usd.toFixed(2)} spent this month, cap $${TEAMS_BATCH_CAP_USD}`);
+      return res.status(409).json({
+        ...answer({ remaining: due.length, written: fresh }),
+        code: 'cap',
+        error: `This month's team pages have spent $${state.usd.toFixed(2)}; another could pass the $${TEAMS_BATCH_CAP_USD} cap.`,
+      });
+    }
+    n = Math.min(n, affordable, due.length);
+
+    const poll = await teamFacts.poll();
+    const queue = due.slice(0, n);
+    const done = [];
+    const failed = [];
+    const durations = [];
+    let costUsd = 0;
+    let save = Promise.resolve();
+    const persist = () => {
+      state.updatedAt = new Date().toISOString();
+      const snap = JSON.parse(JSON.stringify(state));
+      save = save.then(() => ref.set(snap)).catch((e) => console.error('[teams-batch] save failed:', e.message));
+      return save;
+    };
+
+    // A model call still in flight at the budget is aborted, so nothing runs
+    // on after the response (billed per request). Cleared in `finally`.
+    deadline = setTimeout(() => { for (const c of controllers) c.abort(); }, TEAMS_BATCH_BUDGET_MS);
+
+    const worker = async () => {
+      while (queue.length) {
+        // Stop early rather than start a page that cannot finish in time;
+        // the page's next call picks it up.
+        const expect = durations.length ? durations.reduce((a, b) => a + b, 0) / durations.length : TEAMS_BATCH_GUESS_MS;
+        if (Date.now() - started + expect > TEAMS_BATCH_BUDGET_MS) return;
+        const id = queue.shift();
+        const t0 = Date.now();
+        const ctl = new AbortController();
+        controllers.add(ctl);
+        const spend = { usd: 0, unpriced: false };
+        try {
+          const facts = await teamFacts.facts(id);
+          await researchTeamPage(id, { user: req.user, facts, poll, signal: ctl.signal, spend });
+          const usd = spend.unpriced ? Math.max(spend.usd, estimate) : spend.usd;
+          costUsd += usd;
+          state.usd += usd;
+          state.teams += 1;
+          delete state.failedAt[id];
+          done.push(id);
+          durations.push(Date.now() - t0);
+          console.log(`[teams-batch] wrote ${id} $${usd.toFixed(3)} in ${Math.round((Date.now() - t0) / 1000)}s`);
+        } catch (err) {
+          // Whatever it spent before failing was spent: count it. An aborted
+          // call's usage never arrives, so it is counted at the estimate.
+          const usd = ctl.signal.aborted || spend.unpriced ? Math.max(spend.usd, estimate) : spend.usd;
+          costUsd += usd;
+          state.usd += usd;
+          if (ctl.signal.aborted) {
+            console.log(`[teams-batch] ${id} stopped at the time budget`);
+          } else {
+            state.failedAt[id] = new Date().toISOString();
+            failed.push(id);
+            console.error(`[teams-batch] ${id} failed: ${err.message}`);
+          }
+        } finally {
+          controllers.delete(ctl);
+        }
+        await persist();
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(TEAMS_BATCH_PARALLEL, n) }, worker));
+    await persist();
+
+    const remaining = due.length - done.length - failed.length;
+    console.log(`[teams-batch] total: ${done.length} written, ${failed.length} failed, ${remaining} remaining, `
+      + `$${costUsd.toFixed(2)} this call, $${state.usd.toFixed(2)} this month, ${Math.round((Date.now() - started) / 1000)}s`);
+    res.json(answer({
+      remaining,
+      written: fresh + done.length,
+      done,
+      failed,
+      held: held + failed.length,
+      costUsd: Math.round(costUsd * 10000) / 10000,
+      monthUsd: Math.round(state.usd * 100) / 100,
+    }));
+  } catch (err) {
+    console.error('POST /api/research/teams-batch', err);
+    res.status(500).json({ error: err.message || 'The team batch failed.' });
+  } finally {
+    if (deadline) clearTimeout(deadline);
+    teamsBatchRunning = false;
   }
 });
 
