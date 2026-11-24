@@ -4979,10 +4979,17 @@
     var d = new Date(iso);
     return isNaN(d) ? '' : d.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
   }
+  // "Thu 8:00 PM ET", in Eastern time like the rest of the board. ESPN files a kickoff with no
+  // time yet at midnight Eastern, so that reads "Thu, time TBA" (the server's kickoff label does
+  // the same). It used to be the phone's own zone, which read "Wed 12:00 AM" off the East Coast.
   function liveDay(iso){
     var d = new Date(iso);
     if (isNaN(d)) return '';
-    return d.toLocaleDateString([], {weekday: 'short'}) + ' ' + liveTime(iso);
+    var et = {timeZone: 'America/New_York'};
+    var day = d.toLocaleDateString('en-US', Object.assign({weekday: 'short'}, et));
+    var hm = d.toLocaleTimeString('en-US', Object.assign({hour: 'numeric', minute: '2-digit', hourCycle: 'h23'}, et));
+    if (/^0?0:00$/.test(hm) || hm === '24:00') return day + ', time TBA';
+    return day + ' ' + d.toLocaleTimeString('en-US', Object.assign({hour: 'numeric', minute: '2-digit'}, et)) + ' ET';
   }
   function liveColor(c){ return /^#[0-9a-f]{6}$/i.test(String(c || '')) ? c : 'var(--fill-2)'; }
 

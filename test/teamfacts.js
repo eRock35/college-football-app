@@ -348,9 +348,13 @@ const STALE_UGA = {
   eq('...with ESPN\'s record, rank and next game over the stale page',
     [page.record, page.confRecord, page.rank, page.nextGame.opponent], ['3-0', '1-0', '#2', 'at Oklahoma']);
   eq('...the Arkansas result on the schedule', page.schedule[2].result, 'W 34-20');
-  eq('...and the model\'s storyline, dated and flagged',
-    [page.storyline[0], page.storylineAsOf, page.storylineNote],
-    [STALE_UGA.storyline[0], STALE_UGA.lastChecked, 'Written before the Arkansas game — refresh for a new take']);
+  // The route reads the real clock, and the fixture's later games pass into history as the
+  // season goes on, so the exact phrase is held by the overlay unit tests above; here
+  // only that the note is there and dated (it read "the last 3 games" from 2026-11-23).
+  eq('...and the model\'s storyline, dated',
+    [page.storyline[0], page.storylineAsOf], [STALE_UGA.storyline[0], STALE_UGA.lastChecked]);
+  ok('...and flagged as written before games since played',
+    /^Written before (the Arkansas game|the last \d+ games) — refresh for a new take$/.test(page.storylineNote || ''), page.storylineNote);
   ok('...leaving the stored page untouched', appBag.get('fan/uga').record === '2-0');
   ok('...and caching the facts for a cold instance', (appBag.get('teamfacts/uga') || {}).record === '3-0');
 
